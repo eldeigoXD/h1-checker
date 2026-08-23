@@ -1111,11 +1111,44 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryText.innerHTML = `Found <strong>${currentBugs.length}</strong> reports.`;
 
         const CAT_COLORS = { Content: '#22c55e', Link: '#3b82f6', Config: '#eab308', Styling: '#ec4899' };
-        const TYPE_CLASS = { 'Critical': 'badge-critical', 'Failed': 'badge-failed', 'Opportunity': 'badge-opportunity' };
+        const TYPE_CLASS = { 'Critical': 'badge-critical', 'Failed': 'badge-failed', 'Opportunity': 'badge-opportunity', 'Observed': 'badge-observed' };
+
+        const getBugImageUrl = (bug) => {
+            if (!bug) return '';
+            const isValid = (url) => {
+                if (!url || typeof url !== 'string') return false;
+                const low = url.trim().toLowerCase();
+                if (low.startsWith('data:image/')) return false;
+                if (['blank.gif', 'spacer.gif', 'pixel.gif', 'transparent.png', 'cleardot.gif', 'empty.gif'].some(p => low.includes(p))) return false;
+                return low.startsWith('http://') || low.startsWith('https://') || low.startsWith('/') || low.startsWith('//');
+            };
+
+            let url = (bug.img && isValid(bug.img)) ? bug.img : ((bug.screenshot_link && isValid(bug.screenshot_link)) ? bug.screenshot_link : '');
+            
+            if (!url && bug.message) {
+                const match = bug.message.match(/https?:\/\/[^\s\)\'\"]+(?:\.jpg|\.png|\.webp|\.gif|\.jpeg|pictures\.dealer\.com[^\s\)\'\"]*|images\.dealer\.com[^\s\)\'\"]*)/i);
+                if (match && isValid(match[0])) {
+                    url = match[0];
+                }
+            }
+
+            if (!url) return '';
+            url = url.trim().replace(/ /g, '%20');
+            return url.startsWith('//') ? 'https:' + url : url;
+        };
 
         currentBugs.forEach((bug, i) => {
             const row = document.createElement('div');
-            row.className = `bug-row ${bug.isEditing ? 'editing' : 'viewing'}`;
+            row.className = 'bug-row';
+
+            const cleanImgUrl = getBugImageUrl(bug);
+            const isRealImg = Boolean(cleanImgUrl);
+
+            // Sync resolved image URL back to bug object so edit modal receives it
+            if (cleanImgUrl) {
+                bug.screenshot_link = cleanImgUrl;
+                bug.img = cleanImgUrl;
+            }
 
             if (bug.isEditing) {
                 // Edit Mode
@@ -1124,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="edit-grid">
                             <div class="edit-field">
                                 <label>Platform</label>
-                                <input type="text" value="${escapeHTML(bug.platform)}" onchange="updateBugField(${i}, 'platform', this.value)">
+                                <input type="text" value="${escapeHTML(bug.platform || 'D/M')}" onchange="updateBugField(${i}, 'platform', this.value)">
                             </div>
                             <div class="edit-field">
                                 <label>Priority</label>
@@ -1132,20 +1165,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <option value="Critical" ${bug.type === 'Critical' ? 'selected' : ''}>Critical</option>
                                     <option value="Failed" ${bug.type === 'Failed' ? 'selected' : ''}>Failed</option>
                                     <option value="Opportunity" ${bug.type === 'Opportunity' ? 'selected' : ''}>Opportunity</option>
+                                    <option value="Observed" ${bug.type === 'Observed' ? 'selected' : ''}>Observed</option>
                                 </select>
                             </div>
                             <div class="edit-field">
                                 <label>Category</label>
-                                <input type="text" value="${escapeHTML(bug.category)}" onchange="updateBugField(${i}, 'category', this.value)">
+                                <input type="text" value="${escapeHTML(bug.category || 'General')}" onchange="updateBugField(${i}, 'category', this.value)">
                             </div>
                         </div>
                         <div class="edit-field">
                             <label>Message</label>
-                            <textarea onchange="updateBugField(${i}, 'message', this.value)">${escapeHTML(bug.message)}</textarea>
+                            <textarea onchange="updateBugField(${i}, 'message', this.value)">${escapeHTML(bug.message || '')}</textarea>
                         </div>
                         <div class="edit-field">
-                            <label>Screenshot Link (prnt.sc/...)</label>
-                            <input type="text" value="${escapeHTML(bug.screenshot_link)}" onchange="updateBugField(${i}, 'screenshot_link', this.value)">
+                            <label>Screenshot Link / Image URL</label>
+                            <input type="text" value="${escapeHTML(cleanImgUrl)}" onchange="updateBugField(${i}, 'screenshot_link', this.value); updateBugField(${i}, 'img', this.value)">
                         </div>
                         <div class="edit-actions">
                             <button class="done-btn" onclick="toggleEditBug(${i})">Done</button>
@@ -1154,10 +1188,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             } else {
-                // View Mode (Premium Card)
+                // View Mode (Media Visualizer Style Card)
                 const typeClass = TYPE_CLASS[bug.type] || 'badge-failed';
                 const catColor = CAT_COLORS[bug.category] || '#94a3b8';
-                const hasScreenshot = bug.screenshot_link && bug.screenshot_link.length > 5;
 
                 row.innerHTML = `
                     <div class="bug-view-header">
@@ -1166,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="bug-badge small">${escapeHTML(bug.platform)}</span>
                             <span class="bug-badge ${typeClass}">${escapeHTML(bug.type)}</span>
                             <span class="bug-badge small" style="color:${catColor}">${escapeHTML(bug.category)}</span>
-                            ${hasScreenshot ? '<span class="bug-badge screenshot-tag">📸 Image Added</span>' : ''}
+                            ${isRealImg ? '<span class="bug-badge screenshot-tag">📸 Image Added</span>' : ''}
                         </div>
                         <div class="header-actions">
                             <button class="icon-btn copy-bug-btn" title="Copy for Smartsheet">📋</button>
@@ -1176,20 +1209,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="bug-view-content">
                         <p class="bug-message-text">${escapeHTML(bug.message)}</p>
-                        ${bug.img ? `
-                            <div style="margin-top: 10px;">
-                                <a href="${escapeHTML(bug.img)}" target="_blank" style="display: inline-block;">
-                                    <img 
-                                        src="${escapeHTML(bug.img)}" 
-                                        style="max-height: 120px; max-width: 100%; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; display: block;" 
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
-                                    >
-                                    <span style="display:none; font-size: 0.78rem; color: #64b5f6; word-break: break-all;">${escapeHTML(bug.img)}</span>
-                                </a>
+                        ${isRealImg ? `
+                            <div class="media-visualizer-preview" style="margin-top: 0.85rem; padding: 0.85rem; background: rgba(0, 0, 0, 0.35); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); border-left: 4px solid #ff4d4d;">
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #ff7b72; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>🖼️ Image Visualizer</span>
+                                </div>
+                                <div style="display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap;">
+                                    <a href="${escapeHTML(cleanImgUrl)}" target="_blank" title="Click to view image in full resolution">
+                                        <img 
+                                            src="${escapeHTML(cleanImgUrl)}" 
+                                            alt="Bug Image Visualizer"
+                                            style="width: 80px; height: 80px; border-radius: 6px; object-fit: cover; background: #111; border: 1.5px solid rgba(255, 255, 255, 0.2); cursor: pointer; transition: transform 0.2s;"
+                                            onmouseover="this.style.transform='scale(1.05)';"
+                                            onmouseout="this.style.transform='scale(1)';"
+                                            onerror="this.style.opacity='0.4';"
+                                        />
+                                    </a>
+                                    <div style="flex: 1; min-width: 180px; word-break: break-all;">
+                                        <a href="${escapeHTML(cleanImgUrl)}" target="_blank" style="font-size: 0.82rem; color: #64b5f6; font-weight: 600; text-decoration: underline; line-height: 1.4; display: inline-block;">
+                                            ${escapeHTML(cleanImgUrl)} ↗
+                                        </a>
+                                        <div style="font-size: 0.73rem; color: #94a3b8; margin-top: 4px;">
+                                            Click thumbnail or URL link to view image in full resolution.
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         ` : ''}
                     </div>
                 `;
+
+
 
                 // Copy listener
                 const copyBtn = row.querySelector('.copy-bug-btn');
