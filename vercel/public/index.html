@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Web Tool Pro</title>
+    <!-- SEO meta -->
+    <meta name="description" content="Herramienta avanzada de QA para revisar etiquetas, coherencia SEO y links rotos.">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header style="position: relative;">
+            <h1>QA Web Tool Pro</h1>
+            <p>Verifica validaciones H1, coherencia semántica y salud de <strong>Call to Actions</strong>.</p>
+            <button id="history-btn" class="outline-btn" style="position: absolute; right: 0; top: 0; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">📜 History</button>
+        </header>
+
+        <main>
+            <form id="url-form">
+                <!-- Seamless URL Input Bar -->
+                <div class="search-bar">
+                    <div class="case-input-wrapper">
+                        <span class="case-icon">📁</span>
+                        <input type="text" id="case-number-input" placeholder="Case # (e.g. D-123)" maxlength="15">
+                    </div>
+                    <input type="url" id="url-input" placeholder="Enter the URL to review... (e.g. google.com)"
+                        style="border-radius: 0;" required>
+                    <button type="button" id="clear-btn" class="secondary-btn" title="Clear inputs">✘</button>
+                    <button type="submit" id="submit-btn">
+                        <span class="btn-text">Scan Quality</span>
+                        <span class="loader" style="display: none;"></span>
+                    </button>
+                </div>
+
+                <!-- SEO Expected Inputs Expansion Panel -->
+                <div class="seo-panel" id="seo-inputs-section">
+                    <div class="seo-panel-header" id="toggle-seo-inputs">
+                        <span class="seo-panel-title">Optional: Expected SEO Content Validation</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="seo-panel-body" style="display: none;">
+                        <div class="seo-field">
+                            <label for="expected-title-input">Target H1 Title</label>
+                            <input type="text" id="expected-title-input" placeholder="e.g. New Inventory For Sale">
+                        </div>
+                        <div class="seo-field">
+                            <label for="expected-content-input">Target SEO Content Copy</label>
+                            <textarea id="expected-content-input"
+                                placeholder="Paste the supplied SEO textual content here..." rows="6"></textarea>
+                        </div>
+                        <div class="seo-field">
+                            <label for="special-instructions-input">CTAs and Links in SEO Content</label>
+                            <textarea id="special-instructions-input"
+                                placeholder="e.g. 'View Inventory - /new-inventory/index.htm', 'Schedule Service', etc."
+                                rows="3"></textarea>
+                        </div>
+                        <div class="seo-field">
+                            <label for="custom-rules-input">Custom Rules / Special Layout Instructions</label>
+                            <textarea id="custom-rules-input"
+                                placeholder="e.g. 'Please include inventory config to pre-owned under 30k', 'Must have a hero image', 'Add breadcrumbs code', etc."
+                                rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div id="error-message" class="error-msg" style="display: none;"></div>
+
+            <section id="results-area" style="display: none;">
+                <div class="stats-card">
+                    <h2>Results for: <span id="result-url" class="highlight"></span></h2>
+                    <p class="count-text">Found <strong id="h1-count">0</strong> H1 tags.</p>
+                </div>
+
+                <!-- SEO Content Coverage Card -->
+                <div id="seo-coverage-card" class="stats-card" style="display: none; border-left:4px solid #b39ddb;">
+                    <h2>Content Coverage Validation</h2>
+                    <div id="expected-title-result" class="coverage-item" style="margin-bottom: 1rem;">
+                        <strong>Expected Title H1 Status:</strong> <span id="title-match-status"
+                            class="badge">Checking...</span>
+                    </div>
+                    <div id="expected-content-result" class="coverage-item" style="margin-top: 1rem;">
+                        <!-- Desktop Coverage -->
+                        <div class="coverage-platform-label">🖥️ Desktop</div>
+                        <div class="coverage-bar-container">
+                            <div id="coverage-bar-fill" class="coverage-bar"
+                                style="background:#b39ddb; height:100%; width:0%; transition: width 0.5s ease;"></div>
+                        </div>
+                        <span id="coverage-percentage-text" style="font-weight:bold; color:#b39ddb;">-</span>
+                        <p id="coverage-explanation" class="coherence-text"
+                            style="margin-top:0.5rem; font-size:0.85rem;"></p>
+                        <div id="missing-chunks-container"
+                            style="display: none; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+                            <h4
+                                style="font-size: 0.8rem; color: #ffab91; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                ⚠ Missing on Desktop</h4>
+                            <ul id="missing-chunks-list" class="missing-chunks-list"></ul>
+                        </div>
+
+                        <!-- Mobile Coverage -->
+                        <div class="coverage-platform-label" style="margin-top: 1.5rem;">📱 Mobile</div>
+                        <div class="coverage-bar-container">
+                            <div id="coverage-bar-fill-mobile" class="coverage-bar"
+                                style="background:#4dd0e1; height:100%; width:0%; transition: width 0.5s ease;"></div>
+                        </div>
+                        <span id="coverage-percentage-text-mobile" style="font-weight:bold; color:#4dd0e1;">-</span>
+                        <p id="coverage-explanation-mobile" class="coherence-text"
+                            style="margin-top:0.5rem; font-size:0.85rem;"></p>
+                        <div id="missing-chunks-container-mobile"
+                            style="display: none; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+                            <h4
+                                style="font-size: 0.8rem; color: #80deea; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                ⚠ Missing on Mobile</h4>
+                            <ul id="missing-chunks-list-mobile" class="missing-chunks-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Validation Card -->
+                <div id="inventory-card" class="stats-card" style="display: none; border-left:4px solid #4caf50;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span
+                                style="font-size: 1.2rem;">🚗</span> Inventory Validation</h2>
+                        <span id="inventory-status-badge" class="badge">Checking...</span>
+                    </div>
+                    <div
+                        style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; text-align: left; margin-top: 1rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem; margin-bottom: 0.8rem;">
+                            <span style="color: var(--text-muted);">Current Page Vehicles:</span>
+                            <strong id="inventory-page-count" style="color: #fff; font-size: 1.1rem;">-</strong>
+                        </div>
+                        <div id="inv-current-configs" style="display: none; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem; margin-bottom: 0.8rem;">
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem; margin-bottom: 0.8rem;">
+                            <span style="color: var(--text-muted);">Dynamic Target Filter:</span>
+                            <div style="text-align: right;">
+                                <a id="inventory-filter-link" href="#" target="_blank"
+                                    style="color: #64b5f6; font-size: 0.9rem; text-decoration: none; word-break: break-all; display: block; margin-bottom: 0.5rem;">-</a>
+                                <div id="correction-container" style="display: none; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="correction-input" placeholder="Enter correct URL filter..." style="padding: 4px 8px; border-radius: 4px; border: 1px solid #444; background: rgba(0,0,0,0.5); color: #fff; font-size: 0.8rem; width: 250px;">
+                                    <button id="correction-save-btn" onclick="saveInventoryCorrection()" style="background: #4caf50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">Save Correction</button>
+                                </div>
+                                <button id="correction-toggle-btn" onclick="document.getElementById('correction-container').style.display='flex'; this.style.display='none';" style="background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Edit Filter ✏️</button>
+                            </div>
+                        </div>
+                        <div id="layout-breadcrumbs-row"
+                            style="display: none; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem; margin-bottom: 0.8rem;">
+                            <span style="color: var(--text-muted);">Layout & Breadcrumbs:</span>
+                            <div style="text-align: right;">
+                                <span id="inventory-layout"
+                                    style="color: #fff; font-size: 0.95rem; margin-right: 10px;">-</span>
+                                <span id="inventory-breadcrumbs" style="color: #fff; font-size: 0.95rem;">-</span>
+                            </div>
+                        </div>
+                        <div id="inventory-actions" class="inventory-actions"></div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-muted);">Target Filter Vehicles:</span>
+                            <strong id="inventory-filter-count" style="color: #fff; font-size: 1.1rem;">-</strong>
+                        </div>
+                        <div id="inv-target-configs" style="display: none; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem; margin-bottom: 0.8rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Media Library Audit Card -->
+                <div id="media-audit-card" class="stats-card" style="display: none; border-left: 4px solid #9c27b0;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0;">Media Library Audit</h2>
+                        <span id="media-audit-badge" class="badge">Checking...</span>
+                    </div>
+
+                    <div class="media-tabs"
+                        style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                        <div id="tab-desktop" class="m-tab active" onclick="switchMediaTab('desktop')">💻 Desktop</div>
+                        <div id="tab-mobile" class="m-tab" onclick="switchMediaTab('mobile')">📱 Mobile</div>
+                    </div>
+
+                    <div id="media-view-desktop">
+                        <div id="media-audit-dealer-id-desktop"
+                            style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.8rem;"></div>
+                        <div id="media-audit-container-desktop" style="text-align: left;"></div>
+                    </div>
+
+                    <div id="media-view-mobile" style="display: none;">
+                        <div id="media-audit-dealer-id-mobile"
+                            style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.8rem;"></div>
+                        <div id="media-audit-container-mobile" style="text-align: left;"></div>
+                    </div>
+                </div>
+
+
+                <div id="rules-validation-card" class="stats-card"
+                    style="display: none; border-left:4px solid #3f51b5;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span
+                                style="font-size: 1.2rem;">⚖️</span> Custom CTA Rules</h2>
+                        <span id="rules-status-badge" class="badge">Checking...</span>
+                    </div>
+                    <div id="rules-container"
+                        style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; text-align: left; margin-top: 1rem;">
+                        <!-- Rules list will be injected here -->
+                    </div>
+                </div>
+
+                <div id="custom-layout-rules-card" class="stats-card"
+                    style="display: none; border-left:4px solid #ff9800;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span
+                                style="font-size: 1.2rem;">📐</span> Layout & Custom Rules</h2>
+                        <span id="custom-layout-status-badge" class="badge">Checking...</span>
+                    </div>
+                    <div id="custom-layout-rules-container"
+                        style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; text-align: left; margin-top: 1rem;">
+                        <!-- Layout rules list will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Sitemap Validation Card -->
+                <div id="sitemap-card" class="stats-card" style="display: none; border-left:4px solid #00acc1;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span
+                                style="font-size: 1.2rem;">🗺️</span> Sitemap Validation</h2>
+                        <span id="sitemap-status-badge" class="badge">Checking...</span>
+                    </div>
+                    <div
+                        style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; text-align: left; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.6rem;">
+                            <div>
+                                <strong style="color: #fff; font-size: 0.9rem;">XML Sitemap (/sitemap.xml)</strong>
+                                <div id="sitemap-xml-url"
+                                    style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all; margin-top: 0.2rem;">
+                                    -</div>
+                            </div>
+                            <span id="sitemap-xml-badge" class="badge"
+                                style="flex-shrink: 0; margin-left: 10px;">Checking...</span>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.2rem;">
+                            <div>
+                                <strong style="color: #fff; font-size: 0.9rem;">HTML Sitemap (/sitemap.htm)</strong>
+                                <div id="sitemap-html-url"
+                                    style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all; margin-top: 0.2rem;">
+                                    -</div>
+                            </div>
+                            <span id="sitemap-html-badge" class="badge"
+                                style="flex-shrink: 0; margin-left: 10px;">Checking...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lead Form Source Card -->
+                <div id="lead-form-card" class="stats-card" style="display: none; border-left:4px solid #26a69a;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span
+                                style="font-size: 1.2rem;">📋</span> Lead Form Source</h2>
+                        <span id="lead-form-badge" class="badge">Checking...</span>
+                    </div>
+                    <div
+                        style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem; text-align: left; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;">
+                            <span style="color: var(--text-muted); font-size: 0.85rem; flex-shrink: 0;">Current source
+                                value:</span>
+                            <strong id="lead-form-source-value"
+                                style="color: #fff; font-size: 0.85rem; text-align: right; word-break: break-all;">-</strong>
+                        </div>
+                        <div id="lead-form-expected-row"
+                            style="display: none; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.6rem;">
+                            <div
+                                style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;">
+                                <span style="color: var(--text-muted); font-size: 0.85rem; flex-shrink: 0;">Ideal
+                                    value:</span>
+                                <span id="lead-form-expected-value"
+                                    style="color: #80cbc4; font-size: 0.8rem; text-align: right; word-break: break-all; font-style: italic;">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="coherence-card" class="stats-card" style="display: none;">
+                    <h2>Semantic Coherence Index</h2>
+                    <div class="coherence-display">
+                        <div class="circular-progress">
+                            <svg viewBox="0 0 36 36" class="circular-chart">
+                                <path class="circle-bg"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle" id="coherence-circle" stroke-dasharray="0, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <text x="18" y="20.35" class="percentage" id="coherence-value">0%</text>
+                            </svg>
+                        </div>
+                        <div class="coherence-text">
+                            <p id="coherence-explanation">Loading AI semantic analysis...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="links-card" class="stats-card" style="display: none;">
+                    <h2>Links & CTAs Health Matrix</h2>
+                    <p class="count-text">Tested <strong id="total-links-count">0</strong> total internal links.</p>
+
+                    <div id="links-success-msg" class="success-msg" style="display: none;">
+                        All internal links and Anchors are healthy! 🎉
+                    </div>
+
+                    <!-- Pop Up Alerts -->
+                    <div id="popup-links-container" class="links-list-container warning-container"
+                        style="display: none;">
+                        <h3 class="warning-heading">Pop-Up Triggers (Needs Manual Review)</h3>
+                        <p class="description-text text-muted" style="font-size:0.8rem; margin:0 0 0.5rem 0;">These CTAs
+                            trigger UI dialogs instead of page routing.</p>
+                        <ul id="popup-links-list" class="error-list warning-list"></ul>
+                    </div>
+
+                    <!-- Coherence Alerts -->
+                    <div id="coherence-links-container" class="links-list-container warning-container"
+                        style="display: none; border-left: 4px solid #ff9800;">
+                        <h3 class="warning-heading" style="color: #ffb74d;">CTA Coherence Warnings (AI Check)</h3>
+                        <p class="description-text text-muted" style="font-size:0.8rem; margin:0 0 0.5rem 0;">Spelling
+                            errors or logical mismatches between the CTA label and destination URL.</p>
+                        <ul id="coherence-links-list" class="error-list warning-list"></ul>
+                    </div>
+
+                    <!-- Major Errors -->
+                    <div id="broken-links-container" class="links-list-container" style="display: none;">
+                        <h3 class="error-heading">Broken Links (HTTP Errors)</h3>
+                        <ul id="broken-links-list" class="error-list"></ul>
+                    </div>
+
+                    <div id="broken-anchors-container" class="links-list-container" style="display: none;">
+                        <h3 class="error-heading">Broken or Duplicated Anchors (#id)</h3>
+                        <ul id="broken-anchors-list" class="error-list"></ul>
+                    </div>
+
+                    <!-- View All Valid CTAS -->
+                    <div class="valid-links-wrapper" style="margin-top: 1.5rem;">
+                        <button id="toggle-valid-links" class="outline-btn">View All Analyzed Links
+                            <span>▼</span></button>
+                        <div id="valid-links-container" class="links-list-container valid-container"
+                            style="display: none; border-left: 4px solid #4caf50;">
+                            <ul id="valid-links-list" class="error-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="snippets-container" class="snippets-grid">
+                    <!-- Dinamic snippets here -->
+                </div>
+
+                <!-- Page Audit Card -->
+                <div id="page-audit-card" class="stats-card" style="display: none; border-left: 4px solid #00bcd4;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
+                            id="toggle-page-audit">
+                            <span style="font-size: 1.2rem;">📊</span> Page Audit <span class="toggle-icon"
+                                style="font-size: 0.9rem; color: var(--text-muted);">▼</span>
+                        </h2>
+                        <span id="page-audit-score-badge" class="badge"
+                            style="font-size: 1rem; padding: 0.4rem 0.8rem;">–</span>
+                    </div>
+                    <!-- Collapsible wrapper -->
+                    <div id="page-audit-content" style="display: none; margin-top: 1rem;">
+                        <!-- Score summary bar -->
+                        <div id="page-audit-summary"
+                            style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.2rem; font-size: 0.82rem; color: var(--text-muted);">
+                        </div>
+                        <!-- Category panels -->
+                        <div id="page-audit-categories" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bug Report Card -->
+
+                <div id="bug-report-card" class="stats-card" style="display:none; border-left: 4px solid #ff4d4d;">
+                    <div class="bug-report-header">
+                        <h2>🐞 Bug Report</h2>
+                        <button id="download-pdf-btn" class="pdf-btn">⬇ Download PDF</button>
+                    </div>
+                    <p class="count-text" id="bug-summary-text"></p>
+                    <div id="bug-list"></div>
+                    <button id="add-manual-bug-btn" class="secondary-btn" style="margin-top: 1rem; width: 100%;">+ Add
+                        Manual Bug</button>
+                    <div id="no-bugs-msg" class="success-msg" style="display:none;">
+                        ✅ No bugs detected. The page passed all automated checks!
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📜 Audit History</h2>
+                <button id="close-history-btn" class="icon-btn">✖</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="history-search" placeholder="Search by ID, Title, or Path..." style="width: 100%; padding: 0.8rem; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: white;">
+                <div id="history-list-container" style="max-height: 400px; overflow-y: auto;">
+                    <ul id="history-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <!-- JS injects here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

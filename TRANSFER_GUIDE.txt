@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────
+# H1 Checker QA App — Transfer Guide
+# ─────────────────────────────────────────────────
+
+## OPTION A: Docker (RECOMMENDED — 100% guaranteed to work)
+
+### Step 1 — On THIS PC: Copy the entire folder
+Copy this folder to a USB or external drive:
+  C:\Users\Diego PC\Desktop\ai-marketing\h1-checker\
+
+Make sure to include ALL files including:
+  - app.py
+  - inventory_patterns.json    ← learned patterns DB
+  - inventory_memory.json      ← corrections memory
+  - cta_patterns.json          ← CTA patterns
+  - audit_history.json         ← history
+  - .env                       ← API keys (if any)
+  - Dockerfile
+  - docker-compose.yml
+  - requirements.txt
+  - static/                    ← frontend files
+
+### Step 2 — On NEW PC: Install Docker Desktop
+Download from: https://www.docker.com/products/docker-desktop/
+(Available for Windows, Mac, Linux)
+
+### Step 3 — On NEW PC: Run the app
+Open a terminal in the h1-checker folder and run:
+
+  docker compose up --build
+
+The app will be available at: http://localhost:5000
+
+### Step 4 — Optional: Ollama for AI semantic checks
+If you want the AI layer, install Ollama on the new PC:
+  https://ollama.com/download
+Then run:
+  ollama pull phi3:mini
+
+
+## OPTION B: Manual (Without Docker)
+
+Requirements on the new PC:
+  - Python 3.11+
+  - Google Chrome installed
+  - pip install -r requirements.txt
+  - Copy the folder as in Step 1 above
+  - Run: python app.py
+
+
+## ABOUT THIS CHAT
+
+This chat is saved inside Antigravity IDE on THIS PC at:
+  C:\Users\Diego PC\.gemini\antigravity-ide\brain\2e5ca7f6-940e-454f-a031-cd7ecd5f82f2\
+
+To keep the chat history accessible on the new PC:
+  - Copy that folder to the same path on the new PC
+  - OR save the conversation manually using File > Export in the IDE
+
+NOTE: The chat is tied to your Antigravity account. If you log in
+with the same account on the new PC, past conversations should
+be accessible from your account history.

@@ -1,0 +1,10 @@
+{
+  "name": "h1-checker-vercel-relay",
+  "version": "1.0.0",
+  "description": "Vercel Relay Server for H1 Checker QA Tool",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {}
+}
