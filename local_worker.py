@@ -91,14 +91,16 @@ def poll_and_process():
         try:
             local_resp = requests.post(local_target, json=payload, timeout=120)
             if local_resp.status_code == 200:
-                if endpoint == '/api/generate-pdf':
+                is_pdf = ('generate-pdf' in endpoint) or local_resp.content.startswith(b'%PDF') or ('pdf' in local_resp.headers.get('Content-Type', '').lower())
+                if is_pdf:
                     import base64
                     pdf_b64 = base64.b64encode(local_resp.content).decode('utf-8')
                     result_data = {'pdf_base64': pdf_b64, 'case_number': payload.get('case_number', '')}
-                    print("   [SUCCESS] Local PDF generated successfully!")
+                    print("   [SUCCESS] Local PDF generated and encoded to Base64!")
                 else:
                     result_data = local_resp.json()
                     print("   [SUCCESS] Local scan completed successfully!")
+
                 
                 # 3. Post complete result back to Vercel
                 post_body = {
