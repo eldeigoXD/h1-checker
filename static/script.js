@@ -1313,18 +1313,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if (!resp.ok) throw new Error('PDF generation failed');
 
-                const blob = await resp.blob();
-                const blobUrl = URL.createObjectURL(blob);
+                const contentType = resp.headers.get('content-type') || '';
+                let blobUrl = '';
+
+                if (contentType.includes('application/json')) {
+                    const jsonRes = await resp.json();
+                    if (jsonRes.is_relay && jsonRes.job_id) {
+                        const result = await pollRelayJob(jsonRes.job_id);
+                        if (result && result.pdf_base64) {
+                            const byteCharacters = atob(result.pdf_base64);
+                            const byteNumbers = new Array(byteCharacters.length);
+                            for (let j = 0; j < byteCharacters.length; j++) {
+                                byteNumbers[j] = byteCharacters.charCodeAt(j);
+                            }
+                            const byteArray = new Uint8Array(byteNumbers);
+                            const blob = new Blob([byteArray], { type: 'application/pdf' });
+                            blobUrl = URL.createObjectURL(blob);
+                        } else {
+                            throw new Error('PDF payload missing from remote worker.');
+                        }
+                    } else {
+                        throw new Error(jsonRes.error || 'Invalid PDF server response');
+                    }
+                } else {
+                    const blob = await resp.blob();
+                    blobUrl = URL.createObjectURL(blob);
+                }
+
                 const a = document.createElement('a');
                 a.href = blobUrl;
                 a.download = caseNum ? `${caseNum}.pdf` : 'Bug-Report.pdf';
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                URL.revokeObjectURL(blobUrl);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
             } catch (err) {
                 alert('Could not generate PDF: ' + err.message);
-            } finally {
+            }
+ finally {
                 pdfBtn.disabled = false;
                 pdfBtn.textContent = '⬇ Download PDF';
             }

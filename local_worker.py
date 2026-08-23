@@ -91,8 +91,14 @@ def poll_and_process():
         try:
             local_resp = requests.post(local_target, json=payload, timeout=120)
             if local_resp.status_code == 200:
-                result_data = local_resp.json()
-                print("   [SUCCESS] Local scan completed successfully!")
+                if endpoint == '/api/generate-pdf':
+                    import base64
+                    pdf_b64 = base64.b64encode(local_resp.content).decode('utf-8')
+                    result_data = {'pdf_base64': pdf_b64, 'case_number': payload.get('case_number', '')}
+                    print("   [SUCCESS] Local PDF generated successfully!")
+                else:
+                    result_data = local_resp.json()
+                    print("   [SUCCESS] Local scan completed successfully!")
                 
                 # 3. Post complete result back to Vercel
                 post_body = {
@@ -101,6 +107,7 @@ def poll_and_process():
                 }
                 requests.post(complete_url, json=post_body, headers=headers, timeout=15)
                 print(f"   [SYNCED] Audit results sent back to Vercel for Job {job_id}.\n")
+
             else:
                 err_msg = f"Local Flask returned status code {local_resp.status_code}: {local_resp.text[:200]}"
                 print(f"   [FAIL] {err_msg}")
