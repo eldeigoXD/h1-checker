@@ -59,12 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSeoInputs.addEventListener('click', () => {
             const body = document.querySelector('.seo-panel-body');
             const icon = toggleSeoInputs.querySelector('.toggle-icon');
-            if (body.style.display === 'none') {
-                body.style.display = 'flex';
-                icon.textContent = '▲';
-            } else {
-                body.style.display = 'none';
-                icon.textContent = '▼';
+            if (body) {
+                const isHidden = getComputedStyle(body).display === 'none';
+                body.style.display = isHidden ? 'flex' : 'none';
+                if (icon) icon.textContent = isHidden ? '▲' : '▼';
             }
         });
     }
@@ -74,12 +72,10 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleValidLinks.addEventListener('click', () => {
             const container = document.getElementById('valid-links-container');
             const span = toggleValidLinks.querySelector('span');
-            if (container.style.display === 'none') {
-                container.style.display = 'block';
-                span.textContent = '▲';
-            } else {
-                container.style.display = 'none';
-                span.textContent = '▼';
+            if (container) {
+                const isHidden = getComputedStyle(container).display === 'none';
+                container.style.display = isHidden ? 'block' : 'none';
+                if (span) span.textContent = isHidden ? '▲' : '▼';
             }
         });
     }
@@ -89,15 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
         togglePageAudit.addEventListener('click', () => {
             const content = document.getElementById('page-audit-content');
             const icon = togglePageAudit.querySelector('.toggle-icon');
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                icon.textContent = '▲';
-            } else {
-                content.style.display = 'none';
-                icon.textContent = '▼';
+            if (content) {
+                const isHidden = getComputedStyle(content).display === 'none';
+                content.style.display = isHidden ? 'block' : 'none';
+                if (icon) icon.textContent = isHidden ? '▲' : '▼';
             }
         });
     }
+
 
     const clearBtn = document.getElementById('clear-btn');
     if (clearBtn) {
