@@ -59,10 +59,12 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSeoInputs.addEventListener('click', () => {
             const body = document.querySelector('.seo-panel-body');
             const icon = toggleSeoInputs.querySelector('.toggle-icon');
-            if (body) {
-                const isHidden = getComputedStyle(body).display === 'none';
-                body.style.display = isHidden ? 'flex' : 'none';
-                if (icon) icon.textContent = isHidden ? '▲' : '▼';
+            if (body.style.display === 'none') {
+                body.style.display = 'flex';
+                icon.textContent = '▲';
+            } else {
+                body.style.display = 'none';
+                icon.textContent = '▼';
             }
         });
     }
@@ -72,10 +74,12 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleValidLinks.addEventListener('click', () => {
             const container = document.getElementById('valid-links-container');
             const span = toggleValidLinks.querySelector('span');
-            if (container) {
-                const isHidden = getComputedStyle(container).display === 'none';
-                container.style.display = isHidden ? 'block' : 'none';
-                if (span) span.textContent = isHidden ? '▲' : '▼';
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                span.textContent = '▲';
+            } else {
+                container.style.display = 'none';
+                span.textContent = '▼';
             }
         });
     }
@@ -85,14 +89,15 @@ document.addEventListener('DOMContentLoaded', () => {
         togglePageAudit.addEventListener('click', () => {
             const content = document.getElementById('page-audit-content');
             const icon = togglePageAudit.querySelector('.toggle-icon');
-            if (content) {
-                const isHidden = getComputedStyle(content).display === 'none';
-                content.style.display = isHidden ? 'block' : 'none';
-                if (icon) icon.textContent = isHidden ? '▲' : '▼';
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
             }
         });
     }
-
 
     const clearBtn = document.getElementById('clear-btn');
     if (clearBtn) {
@@ -1276,79 +1281,14 @@ document.addEventListener('DOMContentLoaded', () => {
             currentBugs.push({
                 platform: 'M/D',
                 type: 'Failed',
-    async function generateClientSidePDF(bugs, scanUrl, caseNum) {
-        if (!window.jspdf || !window.jspdf.jsPDF) {
-            throw new Error('jsPDF library not loaded');
-        }
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const now = new Date().toLocaleString();
-
-        // Banner
-        doc.setFillColor(30, 30, 46);
-        doc.rect(0, 0, 210, 25, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        const titleText = caseNum ? `QA Bug Report: ${caseNum}` : 'QA Bug Report';
-        doc.text(titleText, 105, 16, { align: 'center' });
-
-        // Meta
-        doc.setTextColor(100, 100, 100);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`URL: ${scanUrl}`, 15, 33);
-        doc.text(`Date: ${now}`, 15, 38);
-
-        let y = 48;
-
-        for (let i = 0; i < bugs.length; i++) {
-            const bug = bugs[i];
-            if (y > 260) {
-                doc.addPage();
-                y = 20;
-            }
-
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 41, 59);
-            const bugTitle = `${i + 1}. [${bug.platform || 'D/M'}] ${bug.type || 'Observed'} | ${bug.category || 'Styling'}:`;
-            doc.text(bugTitle, 15, y);
-            y += 6;
-
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(51, 65, 85);
-            const splitMsg = doc.splitTextToSize(bug.message || '', 180);
-            doc.text(splitMsg, 20, y);
-            y += splitMsg.length * 5 + 3;
-
-            const imgUrl = getBugImageUrl(bug);
-            if (imgUrl) {
-                doc.setFontSize(9);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(100, 116, 139);
-                doc.text('Image Link: ', 20, y);
-                doc.setFont('helvetica', 'underline');
-                doc.setTextColor(37, 99, 235);
-                const splitLink = doc.splitTextToSize(imgUrl, 150);
-                doc.text(splitLink, 42, y);
-                y += splitLink.length * 4 + 4;
-            }
-
-            doc.setDrawColor(226, 232, 240);
-            doc.line(15, y, 195, y);
-            y += 8;
-        }
-
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(148, 163, 184);
-        doc.text('Generated by: Diego Torrez  |  MS Team - Coderoad', 105, 285, { align: 'center' });
-
-        const filename = caseNum ? `${caseNum}.pdf` : 'Bug-Report.pdf';
-        doc.save(filename);
+                category: 'Manual',
+                message: 'New manual bug description...',
+                screenshot_link: ''
+            });
+            renderBugReport();
+        });
     }
+
 
     // PDF Download
     const pdfBtn = document.getElementById('download-pdf-btn');
@@ -1366,13 +1306,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                // Primary: Instant client-side PDF generation (0.05 seconds, no timeouts)
-                if (window.jspdf && window.jspdf.jsPDF) {
-                    await generateClientSidePDF(currentBugs, lastScanData.url, caseNum);
-                    return;
-                }
-
-                // Fallback to server endpoint
                 const resp = await fetch('/api/generate-pdf', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1388,14 +1321,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                URL.revokeObjectURL(blobUrl);
             } catch (err) {
-                console.warn('Server PDF failed, using instant client PDF generator:', err);
-                try {
-                    await generateClientSidePDF(currentBugs, lastScanData.url, caseNum);
-                } catch (fallbackErr) {
-                    alert('Could not generate PDF: ' + fallbackErr.message);
-                }
+                alert('Could not generate PDF: ' + err.message);
             } finally {
                 pdfBtn.disabled = false;
                 pdfBtn.textContent = '⬇ Download PDF';

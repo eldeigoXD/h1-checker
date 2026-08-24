@@ -86,55 +86,30 @@ def poll_and_process():
             print("   [WARN] Local Flask server is not running on 127.0.0.1:5000.")
             print("   [INFO] Starting local scan process...")
 
-        # 2. Execute local request against Flask app (with native in-memory fallback)
-        result_data = None
+        # 2. Execute local request against Flask app
         local_target = f"{LOCAL_FLASK_URL}{endpoint}"
         try:
             local_resp = requests.post(local_target, json=payload, timeout=120)
             if local_resp.status_code == 200:
-                is_pdf = ('generate-pdf' in endpoint) or local_resp.content.startswith(b'%PDF') or ('pdf' in local_resp.headers.get('Content-Type', '').lower())
-                if is_pdf:
-                    import base64
-                    pdf_b64 = base64.b64encode(local_resp.content).decode('utf-8')
-                    result_data = {'pdf_base64': pdf_b64, 'case_number': payload.get('case_number', '')}
-                    print("   [SUCCESS] Local PDF generated and encoded to Base64!")
-                else:
-                    result_data = local_resp.json()
-                    print("   [SUCCESS] Local scan completed successfully!")
+                result_data = local_resp.json()
+                print("   [SUCCESS] Local scan completed successfully!")
+                
+                # 3. Post complete result back to Vercel
+                post_body = {
+                    "job_id": job_id,
+                    "result": result_data
+                }
+                requests.post(complete_url, json=post_body, headers=headers, timeout=15)
+                print(f"   [SYNCED] Audit results sent back to Vercel for Job {job_id}.\n")
             else:
                 err_msg = f"Local Flask returned status code {local_resp.status_code}: {local_resp.text[:200]}"
                 print(f"   [FAIL] {err_msg}")
                 requests.post(complete_url, json={"job_id": job_id, "error": err_msg}, headers=headers, timeout=15)
-                return
+
         except Exception as local_err:
-            print(f"   [INFO] Local Flask port 5000 not reachable ({local_err}). Running in-memory Flask fallback...")
-            try:
-                import app as _local_app
-                with _local_app.app.test_request_context(endpoint, method='POST', json=payload):
-                    if 'generate-pdf' in endpoint:
-                        pdf_resp = _local_app.generate_pdf()
-                        import base64
-                        pdf_b64 = base64.b64encode(pdf_resp.data).decode('utf-8')
-                        result_data = {'pdf_base64': pdf_b64, 'case_number': payload.get('case_number', '')}
-                        print("   [SUCCESS] Native in-memory PDF generated and encoded to Base64!")
-                    else:
-                        h1_resp = _local_app.extract_h1()
-                        result_data = h1_resp.get_json()
-                        print("   [SUCCESS] Native in-memory scan completed successfully!")
-            except Exception as mem_err:
-                err_msg = f"Failed to execute local scan: {str(mem_err)}"
-                print(f"   [ERROR] {err_msg}")
-                requests.post(complete_url, json={"job_id": job_id, "error": err_msg}, headers=headers, timeout=15)
-                return
-
-        if result_data:
-            post_body = {
-                "job_id": job_id,
-                "result": result_data
-            }
-            requests.post(complete_url, json=post_body, headers=headers, timeout=15)
-            print(f"   [SYNCED] Results sent back to Vercel for Job {job_id}.\n")
-
+            err_msg = f"Failed to execute local scan: {str(local_err)}"
+            print(f"   [ERROR] {err_msg}")
+            requests.post(complete_url, json={"job_id": job_id, "error": err_msg}, headers=headers, timeout=15)
 
     except requests.exceptions.RequestException as net_err:
         # Silently retry on transient network glitch
