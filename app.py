@@ -1155,7 +1155,9 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
     # Match price or mileage filters (Bargain / Under X / Low Mileage / Custom Rule Price)
     is_mileage = any(k in slug for k in [' miles ', ' mile ', ' mileage ', ' low mileage', 'low-mileage', 'mileage-selection', 'low-miles'])
     inst_low = instructions.lower() if instructions else ""
-    has_price_rule = any(k in slug for k in [' bargain ', ' under ']) or is_mileage or any(k in inst_low for k in ['under', 'below', 'bargain', '$'])
+    
+    price_patterns = [r'under\s*\$?\d+', r'below\s*\$?\d+', r'under\s*\d+k', r'below\s*\d+k', r'price\s*under', r'price\s*below', r'max\s*price', r'budget', r'\$\d+']
+    has_price_rule = any(k in slug for k in [' bargain ', ' under ']) or is_mileage or (instructions and any(re.search(p, inst_low) for p in price_patterns))
 
     if has_price_rule:
         # Default limits
@@ -1165,9 +1167,7 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
         if instructions:
             import re
             pr_m = re.search(r'(?:under|below|less than|filter by|vehicles|cars|\$)\s*\$?(\d{2,3})[,\.]?(\d{3})', inst_low)
-            if not pr_m:
-                pr_m = re.search(r'\$?(\d{2,3})[,\.]?(\d{3})', inst_low)
-            pr_k = re.search(r'\$?(\d{1,3})\s*k', inst_low)
+            pr_k = re.search(r'(?:under|below|less than|max|budget|\$)?\s*\$?(\d{1,3})\s*k', inst_low)
 
             if pr_m:
                 limit = pr_m.group(1) + pr_m.group(2)
@@ -1726,14 +1726,19 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             # Apply explicit user instructions (e.g. "below $30,000" or "new vehicles") to override DB/cached filters
             inst_low = instructions.lower()
             import re
-            pr_m = re.search(r'(\d{2,3})[,\.]?(\d{3})', inst_low)
-            pr_k = re.search(r'\$?(\d{1,3})\s*k', inst_low)
-            if pr_m or pr_k:
-                req_price = (pr_m.group(1) + pr_m.group(2)) if pr_m else str(int(pr_k.group(1)) * 1000)
-                if 'internetprice' in res.lower():
-                    res = re.sub(r'internetPrice=[^&]+', f'internetPrice=1-{req_price}', res, flags=re.IGNORECASE)
-                else:
-                    res = res + ('&' if '?' in res else '?') + f'internetPrice=1-{req_price}'
+            
+            price_patterns = [r'under\s*\$?\d+', r'below\s*\$?\d+', r'under\s*\d+k', r'below\s*\d+k', r'price\s*under', r'price\s*below', r'max\s*price', r'budget', r'\$\d+']
+            has_price_intent = any(re.search(p, inst_low) for p in price_patterns)
+            
+            if has_price_intent:
+                pr_m = re.search(r'(?:under|below|less than|max|budget|\$)\s*\$?(\d{2,3})[,\.]?(\d{3})', inst_low)
+                pr_k = re.search(r'(?:under|below|less than|max|budget|\$)?\s*\$?(\d{1,3})\s*k', inst_low)
+                if pr_m or pr_k:
+                    req_price = (pr_m.group(1) + pr_m.group(2)) if pr_m else str(int(pr_k.group(1)) * 1000)
+                    if 'internetprice' in res.lower():
+                        res = re.sub(r'internetPrice=[^&]+', f'internetPrice=1-{req_price}', res, flags=re.IGNORECASE)
+                    else:
+                        res = res + ('&' if '?' in res else '?') + f'internetPrice=1-{req_price}'
             
             if any(kw in inst_low for kw in ['new vehicle', 'new inventory', 'new car', 'new truck', 'new bargain', 'new option']):
                 res = res.replace('/used-inventory/', '/new-inventory/').replace('/bargain-inventory/', '/new-inventory/')
