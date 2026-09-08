@@ -4465,9 +4465,20 @@ def extract_dynamics_deliverable(url):
     
     driver = None
     should_quit = True
+    original_window = None
+    new_tab_opened = False
     try:
         driver, should_quit = get_authenticated_chrome_driver()
-        driver.get(url)
+        
+        if not should_quit:
+            # Attached to active open Chrome on port 9222
+            original_window = driver.current_window_handle
+            # Open Dynamics URL in a background tab to avoid disturbing active tab
+            driver.execute_script("window.open(arguments[0], '_blank');", url)
+            driver.switch_to.window(driver.window_handles[-1])
+            new_tab_opened = True
+        else:
+            driver.get(url)
         
         # Wait up to 25 seconds for the Dynamics 365 form to load
         wait = WebDriverWait(driver, 25)
@@ -4547,6 +4558,13 @@ def extract_dynamics_deliverable(url):
             "error": str(e)
         }
     finally:
+        if new_tab_opened and driver:
+            try:
+                driver.close() # Close temporary tab
+                if original_window:
+                    driver.switch_to.window(original_window) # Return focus to user's original tab
+            except Exception:
+                pass
         if driver and should_quit:
             try:
                 driver.quit()
