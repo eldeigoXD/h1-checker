@@ -4523,16 +4523,19 @@ def extract_dynamics_deliverable(url):
 
             function cleanCtaLabel(val) {
                 if (!val) return '';
-                let lines = val.split('\n').map(l => l.trim()).filter(l => l && !/^(calls\s*to\s*action|links)$/i.test(l));
+                let cleaned = val.replace(/[\u25A0-\u25FF\u200B-\u200D\uFEFF\uFFFD\uF000-\uFFFF]/g, '').trim();
+                let lines = cleaned.split('\n')
+                    .map(l => l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim())
+                    .filter(l => l && !/^(calls\s*to\s*action|links)$/i.test(l));
                 return lines.join('\n');
             }
 
-            let title = getFieldText(['name.fieldControl', 'ddcms_name', 'name']);
+            let title = getFieldText(['h1title.fieldControl', 'targeth1.fieldControl', 'pagetitle.fieldControl', 'ddcms_h1', 'ddcms_title', 'h1', 'name.fieldControl', 'ddcms_name', 'name']);
             let completedCopy = getFieldText(['completedcopy.fieldControl', 'completedcopy']);
             let completedPageUrl = getFieldText(['completedpageurl.fieldControl', 'completedpageurl']);
             let rawLinks = cleanCtaLabel(getFieldText(['links.fieldControl', 'links']));
             let rawCtas = cleanCtaLabel(getFieldText(['callstoaction.fieldControl', 'callstoaction']));
-            let details = getFieldText(['details.fieldControl', 'details']);
+            let details = cleanCtaLabel(getFieldText(['details.fieldControl', 'details']));
 
             let matchUrl = completedPageUrl.match(/https?:\/\/[^\s\)\'\"]+/i);
             if (matchUrl) {
