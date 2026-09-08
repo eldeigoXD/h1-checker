@@ -13,6 +13,7 @@ Usage:
 
 import os
 import time
+import base64
 import requests
 from dotenv import load_dotenv
 
@@ -91,8 +92,19 @@ def poll_and_process():
         try:
             local_resp = requests.post(local_target, json=payload, timeout=120)
             if local_resp.status_code == 200:
-                result_data = local_resp.json()
-                print("   [SUCCESS] Local scan completed successfully!")
+                content_type = local_resp.headers.get("content-type", "").lower()
+                if "application/pdf" in content_type or endpoint.endswith("generate-pdf"):
+                    pdf_b64 = base64.b64encode(local_resp.content).decode("utf-8")
+                    case_num = payload.get("case_number", "").strip() if isinstance(payload, dict) else ""
+                    filename = f"{case_num}.pdf" if case_num else "Bug-Report.pdf"
+                    result_data = {
+                        "pdf_base64": pdf_b64,
+                        "filename": filename
+                    }
+                    print("   [SUCCESS] Local PDF report generated successfully!")
+                else:
+                    result_data = local_resp.json()
+                    print("   [SUCCESS] Local scan completed successfully!")
                 
                 # 3. Post complete result back to Vercel
                 post_body = {

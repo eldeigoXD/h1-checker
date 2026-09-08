@@ -1,0 +1,1467 @@
+// ─── Module-level state ────────────────────────────────────────────────────
+// RISK: These globals can hold stale data during rapid navigation between records.
+// Kept as-is since the BPF pattern requires them, but formCurrentState always
+// reinitialises them before use.
+var currentRoles;
+var stages;
+var userId;
+var formReloadEnabled = false;
+
+// ─── Utility helpers ────────────────────────────────────────────────────────
+
+/**
+ * Strips Dataverse GUID braces/hyphens to a plain lowercase id string.
+ * Centralised here to avoid repetitive inline .replace() chains.
+ */
+function cleanGuid(raw) {
+    if (!raw) return null;
+    return raw.toLowerCase().replace(/[{}]/g, "");
+}
+
+/**
+ * Safe attribute getter — returns null instead of throwing when attribute
+ * or its lookup value is absent.
+ */
+function getLookupId(formContext, attributeName) {
+    return cleanGuid(
+        formContext.getAttribute(attributeName)?.getValue()?.[0]?.id ?? null
+    );
+}
+
+// ─── Escalated Reason ────────────────────────────────────────────────────────────
+
+function escalatedReason(executionContext) {
+    const formContext = executionContext.getFormContext();
+    const isEscalated = formContext.getAttribute("ddcms_criticalpriorityapproved").getValue();
+
+    if(isEscalated === true) {
+        formContext.getControl("ddcms_criticalpriorityreason").setVisible(true);
+    } else {
+        formContext.getControl("ddcms_criticalpriorityreason").setVisible(false);
+    }
+}
+
+// ─── SLA Deadline ────────────────────────────────────────────────────────────
+
+function unlockSlaDeadlineForDmm(formContext) {
+    const slaDeadlineControl = formContext.getControl("header_ddcms_duedate");
+    if (!slaDeadlineControl) return;
+
+    const accountId = getLookupId(formContext, "ddcms_account");
+
+    const allowedAdminRoleIds = [
+        "ac551c72-dbe7-ef11-be21-000d3a8f4215", // operations
+        "ef3df4b6-60b7-ef11-b8e9-000d3a5986ef"  // leadership
+    ];
+    const hasAdminRole = Xrm.Utility.getGlobalContext().userSettings.roles
+        .getAll()
+        .some(role => allowedAdminRoleIds.includes(cleanGuid(role.id)));
+
+    // Admin/ops/leadership always gets unlocked regardless of account assignment
+    if (hasAdminRole) {
+        slaDeadlineControl.setDisabled(false);
+        return;
+    }
+
+    if (!accountId) {
+        console.warn("No account associated with this record.");
+        slaDeadlineControl.setDisabled(true);
+        return;
+    }
+
+    Xrm.WebApi.retrieveRecord("account", accountId, "?$select=_ddcms_managedservicescrm_value")
+        .then(function (accountRecord) {
+            const managedServicesCrmId = cleanGuid(accountRecord._ddcms_managedservicescrm_value);
+            slaDeadlineControl.setDisabled(managedServicesCrmId !== userId);
+        })
+        .catch(function (error) {
+            console.error("Error retrieving account record:", error.message);
+            slaDeadlineControl.setDisabled(true);
+        });
+}
+
+// ─── Environment Variables ───────────────────────────────────────────────────
+
+async function getEnvironmentUrlParam(envSchemaNameColumn) {
+    try {
+        const result = await Xrm.WebApi.retrieveMultipleRecords(
+            "environmentvariablevalue",
+            `?$select=value&$expand=EnvironmentVariableDefinitionId` +
+            `&$filter=EnvironmentVariableDefinitionId/schemaname eq '${envSchemaNameColumn}'`
+        );
+
+        if (!result.entities?.length) {
+            console.warn(`No environment variable found for schema name: ${envSchemaNameColumn}`);
+            return null;
+        }
+
+        return result.entities[0].value;
+    } catch (error) {
+        Xrm.Navigation.openErrorDialog({
+            details: error.message,
+            message: "A problem occurred while retrieving an Environment Variable value. Please contact support."
+        });
+        return null;
+    }
+}
+
+// ─── Email Body Builder ──────────────────────────────────────────────────────
+
+async function buildEmailBody(formContext, deliverableId, notifyingUser, appUrl, recordId, entityName, appId, deliverableName, emailSubject) {
+    const deliverableType    = formContext.getAttribute("ddcms_deliverabletype").getText();
+    const deliverableSubtype = formContext.getAttribute("ddcms_deliverablesubtype").getText();
+
+    // FIX: accountsub was implicitly global and undefined when no account was set,
+    // causing a ReferenceError in the subject line construction below.
+    let accountRow = "";
+    let accountsub = "";
+    let campaignRow = "";
+    let pageRow    = "";
+
+    const accountId = getLookupId(formContext, "ddcms_account");
+    if (accountId) {
+        const accountRecord = await Xrm.WebApi.retrieveRecord(
+            "account", accountId, "?$select=name,ddcms_productfulfillmentaccountid"
+        );
+        accountRow = `<li>Account Name: ${accountRecord.name}</li>` +
+                     `<li>Account Id: ${accountRecord.ddcms_productfulfillmentaccountid}</li>`;
+        accountsub = `${accountRecord.ddcms_productfulfillmentaccountid} | `;
+    }
+
+    const campaignId = getLookupId(formContext, "ddcms_campaign");
+    if (campaignId) {
+        const campaignRecord = await Xrm.WebApi.retrieveRecord(
+            "ddcms_marketingcampaign", campaignId, "?$select=ddcms_campaignid,ddcms_name"
+        );
+        campaignRow = `<li>Campaign Name: ${campaignRecord.ddcms_name}</li>` +
+                      `<li>Campaign Id: ${campaignRecord.ddcms_campaignid}</li>`;
+    }
+
+    const pageType = formContext.getAttribute("ddcms_pagetype").getText();
+    if (pageType) pageRow = `<li>Page Type: ${pageType}</li>`;
+
+    return {
+        subject: `${accountsub}${deliverableId} | ${emailSubject}`,
+        body:
+            `Hello,
+            <p>${notifyingUser} has moved ${deliverableId} into a stage that is ready for your input.</p>
+            <ul>
+                <li>Name: ${deliverableName}</li>
+                ${accountRow}
+                ${campaignRow}
+                <li>Deliverable Type: ${deliverableType}</li>
+                <li>Deliverable Subtype: ${deliverableSubtype}</li>
+                ${pageRow}
+            </ul>
+            <h4><a href="${appUrl}/main.aspx?appid=${appId}&pagetype=entityrecord&etn=${entityName}&id=${recordId}">
+                🧐 Review ${deliverableId}
+            </a></h4>`
+    };
+}
+
+// ─── Notification Recipient ──────────────────────────────────────────────────
+
+async function defineNotificationRecipient(formContext, fieldToCheck) {
+    const campaignId = getLookupId(formContext, "ddcms_campaign");
+    console.log(`Campaign to Check: ${campaignId}`);
+
+    try {
+        let recipientId = null;
+
+        if (campaignId) {
+            const campaignResult = await Xrm.WebApi.retrieveRecord(
+                "ddcms_marketingcampaign", campaignId, `?$select=${fieldToCheck}`
+            );
+            recipientId = campaignResult[fieldToCheck] ?? null;
+        }
+
+        if (!recipientId) return null;
+
+        const userResult   = await Xrm.WebApi.retrieveRecord("systemuser", recipientId, "?$select=domainname");
+        return {
+            recipientId:     recipientId,
+            recipientDomain: userResult.domainname
+        };
+    } catch (error) {
+        console.error("Error defining notification recipient:", error);
+        return null;
+    }
+}
+
+// ─── HyperDrive Helpers ──────────────────────────────────────────────────────
+
+const HYPERDRIVE_SOURCE_PATTERN = /<!-- source="(https:\/\/app\.prod\.seogen\.coxautoai\.com\/prompt\/[^"]+)" -->/;
+
+function logHyperDriveUrl(executionContext) {
+    const formContext = executionContext.getFormContext();
+    const copyToEdit  = formContext.getAttribute("ddcms_copytoedit").getValue();
+    // FIX: Guard against null before calling .match()
+    if (!copyToEdit) return;
+
+    const match = copyToEdit.match(HYPERDRIVE_SOURCE_PATTERN);
+    if (!match) { console.log("Not eligible"); return; }
+
+    const outSourceId = formContext.getAttribute("ddcms_copywritingoutsourceid");
+    outSourceId.setValue(match[1]);
+    formContext.getControl("ddcms_copytoedit").setDisabled(false);
+    outSourceId.fireOnChange();
+}
+
+function updateCopyToEdit(executionContext) {
+    const formContext  = executionContext.getFormContext();
+    const copyAttribute = formContext.getAttribute("ddcms_copytoedit");
+    const copyToEdit   = copyAttribute.getValue();
+    // FIX: Guard against null before calling .includes()
+    if (!copyToEdit) return;
+
+    if (copyToEdit.match(HYPERDRIVE_SOURCE_PATTERN)) {
+        // Strip the comment prefix — everything after '-->' is the real content
+        const finalContent = copyToEdit.split("-->")[1]?.trim() ?? "";
+        copyAttribute.setValue(finalContent);
+    } else {
+        console.log("Not eligible");
+    }
+}
+
+// ─── Compliance Visibility ───────────────────────────────────────────────────
+
+function complianceRequiredOnChange(executionContext) {
+    const formContext        = executionContext.getFormContext();
+    const activeStageId      = formContext.data.process.getActiveStage().getId();
+    const complianceRequired = formContext.getAttribute("ddcms_compliancerequired").getValue();
+
+    const showComplianceDate = [120730001, 120730002].includes(complianceRequired);
+    formContext.getControl("ddcms_compliancecompleteddate").setVisible(showComplianceDate);
+    formContext.getControl("ddcms_complianceowner").setVisible(showComplianceDate);
+}
+
+// ─── Campaign / Marketing Plan Fetchers ─────────────────────────────────────
+
+async function getMarketingPlan(marketingPlan) {
+    return Xrm.WebApi.retrieveRecord("ddcms_dealermarketingplan", marketingPlan, "?$select=_ownerid_value");
+}
+
+async function getCampaignRecord(getCampaignId) {
+    return Xrm.WebApi.retrieveRecord(
+        "ddcms_marketingcampaign", getCampaignId,
+        "?$select=_ddcms_cccontributor_value,_ddcms_seocontributor_value," +
+        "_ddcms_socialcontributor_value,ddcms_servicesutilized,_ownerid_value"
+    );
+}
+
+// ─── HyperDrive Reset ────────────────────────────────────────────────────────
+
+function resetHyperDriveStatus(executionContext) {
+    const formContext        = executionContext.getFormContext();
+    const outsourceStatus    = formContext.getAttribute("ddcms_iscopyoutsourced");
+
+    if (outsourceStatus.getValue() !== false) return;
+
+    Xrm.Navigation.openConfirmDialog({
+        text:  "HyperDrive Generation Id and Copy to Edit will be deleted from this Record and you will have to start over.",
+        title: "Are you sure you want to reset HyperDrive Generation Status"
+    }).then(function (success) {
+        if (success.confirmed) {
+            formContext.getAttribute("ddcms_copytoedit").setValue(null);
+            formContext.getAttribute("ddcms_copywritingoutsourceid").setValue(null);
+        } else {
+            outsourceStatus.setValue(true);
+            formContext.getControl("ddcms_copytoedit").setVisible(true);
+            formContext.getControl("ddcms_copywritingoutsourceid").setVisible(true);
+        }
+    });
+}
+
+// ─── Stage Change Execution ──────────────────────────────────────────────────
+
+function executeStageChange(executionContext) {
+    console.log("Executing Stage Change!");
+    const formContext     = executionContext.getFormContext();
+    // FIX: Remove the correct handler name. Previously this removed "executeStageChange"
+    // which was never registered under that name — the registered handler is processPreStageChange.
+    formContext.data.process.removeOnPreStageChange(processPreStageChange);
+
+    const recordId         = cleanGuid(formContext.data.entity.getId());
+    const changeEventArgs  = executionContext.getEventArgs();
+    const entityName       = formContext.data.entity.getEntityName();
+    const movementDirection = changeEventArgs._direction;
+    const preProcessStageId = changeEventArgs._stage._activeStageId;
+    const expectedStageId   = changeEventArgs._stage._stageStep.id;
+
+    const currentStageParams  = stages.find(s => s.stageId === preProcessStageId);
+    const expectedStageParams = stages.find(s => s.stageId === expectedStageId);
+
+    // FIX: Guard against unrecognised stage ids to avoid cryptic TypeErrors downstream
+    if (!currentStageParams || !expectedStageParams) {
+        console.error(`Unknown stage id encountered: current=${preProcessStageId}, expected=${expectedStageId}`);
+        return;
+    }
+
+    const deliverableUpdate = { statuscode: expectedStageParams.stageStatusCode };
+
+    // FIX: Only write completedDate when the field name is actually defined for this stage.
+    // Previously stages with completedDate:null would write deliverableUpdate["null"] = new Date().
+    if (currentStageParams.completedDate) {
+        deliverableUpdate[currentStageParams.completedDate] = new Date();
+    }
+
+    if (currentStageParams.lastReviewedBy) {
+        deliverableUpdate[currentStageParams.lastReviewedBy] = `/systemusers(${userId})`;
+    }
+
+    Xrm.WebApi.updateRecord("ddcms_campaigndeliverable", recordId, deliverableUpdate)
+        .then(function () {
+            const pageInput = { pageType: "entitylist", entityName };
+            const banner    = {
+                level:           1,
+                message:         currentStageParams.stageExitText,
+                showCloseButton: true,
+                type:            2
+            };
+
+            if (currentStageParams.notifyStakeholder === true) {
+                buildEmailNotification(
+                    formContext, currentStageParams.exitForm, pageInput,
+                    recordId, entityName, currentStageParams.emailSubject,
+                    currentStageParams.fieldToCheck, banner
+                );
+            } else {
+                selfNotifyExitForm(banner, currentStageParams.exitForm, pageInput);
+            }
+        })
+        .catch(function (error) {
+            console.error("Failed to update record during stage change:", error.message);
+            Xrm.Navigation.openErrorDialog({ message: "Stage update failed. Please try again or contact support.", details: error.message });
+        });
+}
+
+// ─── Email Notification Builder ──────────────────────────────────────────────
+
+async function buildEmailNotification(formContext, exitForm, pageInput, recordId, entityName, emailSubject, fieldToCheck, banner) {
+    const notifyingUser   = Xrm.Utility.getGlobalContext().userSettings.userName;
+    const deliverableId   = formContext.getAttribute("ddcms_deliverableid").getValue();
+    const deliverableName = formContext.getAttribute("ddcms_name").getValue();
+
+    const [flowUrlResult, appIdResult, appUrlResult, recipientResult] = await Promise.allSettled([
+        getEnvironmentUrlParam("ddcms_EmailNotificationUrl"),
+        getEnvironmentUrlParam("ddcms_ModelAppId"),
+        getEnvironmentUrlParam("ddcms_ManagedServicesAppUrl"),
+        defineNotificationRecipient(formContext, fieldToCheck)
+    ]);
+
+    const flowUrl  = flowUrlResult.status  === "fulfilled" ? flowUrlResult.value  : null;
+    const appId    = appIdResult.status    === "fulfilled" ? appIdResult.value    : null;
+    const appUrl   = appUrlResult.status   === "fulfilled" ? appUrlResult.value   : null;
+    // FIX: recipient was previously an implicit global — now scoped correctly.
+    const recipient = recipientResult.status === "fulfilled" ? recipientResult.value : null;
+
+    // Guard: if we have no recipient we can still exit the form, just skip notifications.
+    if (!recipient) {
+        console.warn("No notification recipient resolved — skipping email and app notification.");
+        selfNotifyExitForm(banner, exitForm, pageInput);
+        return;
+    }
+
+    const emailBody = await buildEmailBody(
+        formContext, deliverableId, notifyingUser,
+        appUrl, recordId, entityName, appId, deliverableName, emailSubject
+    );
+
+    // In-app notification
+    const sendAppNotificationStakeholder = new Example.SendAppNotificationRequest(
+        `${deliverableId} Deliverable Activity Update`,
+        `/systemusers(${cleanGuid(recipient.recipientId)})`,
+        `${deliverableName} Updated by ${notifyingUser}`,
+        200000000, 100000004, 200000000, 604800, null, null
+    );
+
+    Xrm.WebApi.online.execute(sendAppNotificationStakeholder)
+        .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+        .then(body => console.log("App notification sent:", body?.NotificationId))
+        .catch(err => console.error("App notification failed:", err));
+
+    // Email via Power Automate flow
+    if (!flowUrl) {
+        console.warn("Flow URL not available — skipping email notification.");
+        selfNotifyExitForm(banner, exitForm, pageInput);
+        return;
+    }
+
+    fetch(flowUrl, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+            recipientDomains: recipient.recipientDomain,
+            emailSubject:     emailBody.subject,
+            emailBody:        emailBody.body,
+            blindCarbonCopy:  "joe.evans@coxautoinc.com"
+        })
+    })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.text().then(t => { try { return t ? JSON.parse(t) : {}; } catch { return {}; } });
+        })
+        .then(data  => console.log("Flow triggered successfully:", data))
+        .catch(error => console.error("Error triggering flow:", error))
+        .finally(() => selfNotifyExitForm(banner, exitForm, pageInput));
+}
+
+// ─── Self-Notify & Exit ──────────────────────────────────────────────────────
+
+function selfNotifyExitForm(banner, exitForm, pageInput) {
+    if (exitForm !== true) return;
+
+    Xrm.App.addGlobalNotification(banner).then(function (notificationGuid) {
+        // Persist banner guid so the list view can clear it on load
+        const bannerGuids = JSON.parse(sessionStorage.getItem("bannerGuids") || "[]");
+        bannerGuids.push(notificationGuid);
+        sessionStorage.setItem("bannerGuids", JSON.stringify(bannerGuids));
+        sessionStorage.setItem("clearBanner", "true");
+
+        Xrm.Navigation.navigateTo(pageInput);
+    }).catch(error => console.error("Failed to add global notification:", error.message));
+}
+
+// ─── On Stage Select ────────────────────────────────────────────────────────
+
+function onStageSelect(executionContext) {
+    const formContext   = executionContext.getFormContext();
+    const activeStageId = formContext.data.process.getActiveStage().getId();
+
+    // Auto-stamp Last QA Check when a contributor selects the Contributor Review stage
+    const isContributorReviewStage = activeStageId === "411c7005-c4e2-4618-b16f-e53a08649ddc";
+    const isContributor =
+        currentRoles.seoOwner   === userId ||
+        currentRoles.ccOwner    === userId ||
+        currentRoles.socialOwner === userId;
+
+    if (isContributorReviewStage && isContributor) {
+        const lastQaControl = formContext.getControl("ddcms_lastqacheck");
+        lastQaControl.setDisabled(false);
+        formContext.getAttribute("ddcms_lastqacheck").setValue(new Date());
+        lastQaControl.setDisabled(true);
+    }
+}
+
+// ─── Pre-Stage Change Gate ───────────────────────────────────────────────────
+
+function processPreStageChange(executionContext) {
+    console.log("Evaluating Pre Stage Change");
+
+    // Evaluate admin override eligibility
+    const allowedAdminRoleIds = [
+        "ac551c72-dbe7-ef11-be21-000d3a8f4215", // operations
+        "ef3df4b6-60b7-ef11-b8e9-000d3a5986ef"  // leadership
+    ];
+    const allowedAdminNav = Xrm.Utility.getGlobalContext().userSettings.roles
+        .getAll()
+        .some(role => allowedAdminRoleIds.includes(cleanGuid(role.id)));
+
+    const preEventArgs      = executionContext.getEventArgs();
+    const formContext       = executionContext.getFormContext();
+    const movementDirection = preEventArgs._direction;
+    const preProcessStageId = preEventArgs._stage._activeStageId;
+    const expectedStageId   = preEventArgs._stage._stageStep.id;
+    const recordId          = cleanGuid(formContext.data.entity.getId());
+
+    const preStageParams = stages.find(s => s.stageId === preProcessStageId);
+
+    // FIX: Guard against unknown stage
+    if (!preStageParams) {
+        console.error(`processPreStageChange: unrecognised stage id ${preProcessStageId}`);
+        preEventArgs.preventDefault();
+        return;
+    }
+
+    let processStageChange;
+
+    if (movementDirection === 0) { // Forward
+        if (preStageParams.canMoveFwd.includes(userId))  processStageChange = "proceed";
+        else if (allowedAdminNav)                        processStageChange = "adminOverride";
+        else                                             processStageChange = "unauthorized";
+    } else { // Backward
+        if (preStageParams.canMoveback.includes(userId)) processStageChange = "proceed";
+        else if (allowedAdminNav)                        processStageChange = "adminOverride";
+        else                                             processStageChange = "unauthorized";
+    }
+
+    const unauthorizedStrings = {
+        text:               "You are not authorized to navigate the Business Process Flow Stage. If you need it moved, please see either the stage owner or your leader for assistance.",
+        title:              "Unauthorized Process Navigation",
+        confirmButtonLabel: "Understood"
+    };
+
+    switch (processStageChange) {
+        case "proceed": // Authorised — proceed
+            formContext.data.process.removeOnPreStageChange(processPreStageChange);
+            if (movementDirection === 0) {
+                executeStageChange(executionContext);
+            } else {
+                formContext.data.process.movePrevious();
+            }
+            break;
+
+        case "adminOverride": // Admin override — confirm first
+            preEventArgs.preventDefault();
+            Xrm.Navigation.openConfirmDialog({
+                text:               "You are moving this process to a stage not currently assigned to you. This may interrupt critical steps such as client approval, posting, or compliance. Are you sure?",
+                title:              "Unauthorized Process Navigation",
+                confirmButtonLabel: "Proceed",
+                cancelButtonLabel:  "Cancel"
+            }).then(function (response) {
+                if (!response.confirmed) return;
+                formContext.data.process.removeOnPreStageChange(processPreStageChange);
+                if (movementDirection === 0) {
+                    formContext.data.process.addOnPreStageChange(executeStageChange);
+                    formContext.data.process.moveNext();
+                } else {
+                    formContext.data.process.movePrevious();
+                }
+            });
+            break;
+
+        case "unauthorized":   // Fully unauthorised
+        default:
+            preEventArgs.preventDefault();
+            Xrm.Navigation.openAlertDialog(unauthorizedStrings);
+            break;
+    }
+}
+
+// ─── Process Status Change ───────────────────────────────────────────────────
+
+function executeProcessStatusChange(executionContext) {
+    const formContext  = executionContext.getFormContext();
+    const recordId     = cleanGuid(formContext.data.entity.getId());
+    const newStatus    = executionContext.getEventArgs()._status;
+
+    let processDeliverableUpdate = {};
+    let bannerMessage;
+
+    switch (newStatus) {
+        case 1: { // Active (reactivation)
+            const currentStage   = formContext.data.process.getActiveStage().getId();
+            const activatedStage = stages.find(s => s.stageId === currentStage);
+            if (!activatedStage) { console.error("Reactivation: unknown stage id", currentStage); return; }
+
+            processDeliverableUpdate.statecode  = 0;
+            processDeliverableUpdate.statuscode = activatedStage.stageStatusCode;
+            bannerMessage = "Deliverable & Tracking Process have been reactivated!";
+            break;
+        }
+        case 2: // Finished
+            processDeliverableUpdate.statecode            = 1;
+            processDeliverableUpdate.statuscode           = 2;
+            processDeliverableUpdate.ddcms_completeddate  = new Date();
+            bannerMessage = "This Deliverable's process has been finished and marked complete!";
+            break;
+
+        case 3: // Aborted
+            processDeliverableUpdate.statecode  = 1;
+            processDeliverableUpdate.statuscode = 120730004;
+            bannerMessage = "This Deliverable's process has been aborted and marked cancelled!";
+            break;
+
+        default:
+            return;
+    }
+
+    Xrm.WebApi.updateRecord("ddcms_campaigndeliverable", recordId, processDeliverableUpdate)
+        .then(function () {
+            Xrm.App.addGlobalNotification({
+                level: 1, message: bannerMessage, showCloseButton: true, type: 2
+            }).then(function (notificationGuid) {
+                sessionStorage.setItem("bannerGuid", notificationGuid);
+                sessionStorage.setItem("clearBanner", "true");
+                Xrm.Page.data.refresh();
+                clearBanners(); // ensure clearBanners() is defined in a companion resource
+            }).catch(err => console.error("Notification failed:", err.message));
+        })
+        .catch(err => console.error("Process status update failed:", err.message));
+}
+
+// ─── Form On Load ────────────────────────────────────────────────────────────
+
+async function formCurrentState(executionContext) {
+    console.log("Getting Form Current State");
+    const formContext     = executionContext.getFormContext();
+    formContext.ui.clearFormNotification("stage_lock");
+
+    userId = cleanGuid(Xrm.Utility.getGlobalContext().userSettings.userId);
+
+    const businessProcess = formContext.data.process;
+    if (!businessProcess) {
+        console.error("Business Process Flow not found on form.");
+        return;
+    }
+
+    const activeStage = businessProcess.getActiveStage();
+    let formLoadStageId = "70084cdd-4cb7-4992-b754-60926e709217"; // Default: Approval
+    let activeStageName = "Approval";
+
+    if (activeStage) {
+        formLoadStageId = activeStage.getId();
+        activeStageName = activeStage.getName();
+    }
+
+    // Cache frequently-used attribute values up front
+    const selectedSubtype        = formContext.getAttribute("ddcms_deliverablesubtype").getValue();
+    const postToSocial           = formContext.getAttribute("ddcms_posttosocialmedia").getValue();
+    const selectedComplianceType = formContext.getAttribute("ddcms_compliancerequired").getValue() ?? null;
+    const marketingPlan          = getLookupId(formContext, "ddcms_marketingplan");
+    const parentCampaign         = getLookupId(formContext, "ddcms_campaign");
+
+    // Fetch campaign & marketing plan data in parallel
+    const [campaignRecord, marketingPlanRecord] = await Promise.all([
+        parentCampaign ? getCampaignRecord(parentCampaign) : Promise.resolve(null),
+        marketingPlan  ? getMarketingPlan(marketingPlan)   : Promise.resolve(null)
+    ]);
+
+    let includesSocial    = false;
+    let campaignCoordinator, campaignSeo, campaignSocial, campaignOwnerId;
+
+    if (campaignRecord) {
+        const socialParamCheck = campaignRecord.ddcms_servicesutilized ?? null;
+        includesSocial         = socialParamCheck ? socialParamCheck.includes(120730002) : false;
+        campaignCoordinator    = campaignRecord._ddcms_cccontributor_value   ?? null;
+        campaignSeo            = campaignRecord._ddcms_seocontributor_value  ?? null;
+        campaignSocial         = campaignRecord._ddcms_socialcontributor_value ?? null;
+        campaignOwnerId        = campaignRecord._ownerid_value               ?? null;
+    } else {
+        // No campaign — fall back to deliverable-level owner fields
+        campaignCoordinator = getLookupId(formContext, "ddcms_ccowner");
+        campaignSeo         = getLookupId(formContext, "ddcms_seoowner");
+        campaignSocial      = getLookupId(formContext, "ddcms_socialowner");
+    }
+
+    const marketingPlanOwnerId = marketingPlanRecord?._ownerid_value ?? null;
+    const campaignRecordOwnerId = campaignRecord?._ownerid_value ?? null;
+
+    // Ensure the correct BPF is active
+    const expectedBpfId   = "4B727CB5-404C-F011-8779-00224833DE88";
+    const activeProcess   = businessProcess.getActiveProcess();
+    if (!activeProcess || activeProcess.getId() !== expectedBpfId) {
+        businessProcess.setActiveProcess(expectedBpfId, result => {
+            if (result !== "success") console.error("Failed to activate BPF.");
+        });
+    }
+
+    currentRoles = {
+        marketingPlanOwner:  marketingPlanOwnerId,
+        campaignOwner:       campaignOwnerId,
+        seoOwner:            campaignSeo,
+        socialOwner:         campaignSocial,
+        pageBuildOwner:      getLookupId(formContext, "ddcms_pagebuildowner"),
+        designOwner:         getLookupId(formContext, "ddcms_designowner"),
+        designPostingOwner:  getLookupId(formContext, "ddcms_designpostingowner"),
+        copywritingOwner:    getLookupId(formContext, "ddcms_copywritingowner"),
+        complianceOwner:     getLookupId(formContext, "ddcms_complianceowner"),
+        ccOwner:             campaignCoordinator,
+        createdBy:           getLookupId(formContext, "createdby"),
+        seoReportingOwner:   getLookupId(formContext, "ddcms_seoowner"),
+        fastLaneCoordinator: getLookupId(formContext, "ddcms_ccowner")
+        // FIX: campaignCoordinator was referenced as currentRoles.campaignCoordinator in
+        // validClientApprover but the key didn't exist. Now exposed correctly as ccOwner.
+    };
+
+    stages = [
+        {
+            stageId: "bd5ff13b-4b76-4b51-b184-e2980750189e",
+            sequence: 1, stageName: "New Deliverable",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.fastLaneCoordinator],
+            canMoveback: [],
+            // ddcms_ccownerDeliverable mirrors fastLaneCoordinator in canMoveFwd:
+            // without it the Fast Lane Coordinator could advance the stage but the
+            // form stayed locked, since "ddcms_ccowner" resolves to the Campaign.
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_ccownerDeliverable","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: false,
+            stageExitText:  "This Deliverable is ready to begin work and will be routed to the appropriate queue or user!",
+            completedDate:  "ddcms_requestcreatedon",
+            stageStatusCode: 1, closeDeliverable: false
+        },
+        {
+            stageId: "bc28eb0c-8060-4745-a057-021ab50ea907",
+            sequence: 2, stageName: "Attach Supporting Documentation",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_designpostingowner"],
+            exitForm: true,
+            stageExitText:  "Documentation complete - This Deliverable will now be queued for posting to the website.",
+            completedDate:  null,
+            stageStatusCode: 120730002, closeDeliverable: false
+        },
+        {
+            stageId: "2114f201-4ece-4f44-a13e-fef8cc642ddc",
+            sequence: 3, stageName: "Post HTML Specials",
+            canMoveFwd:  [currentRoles.designPostingOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Posting Complete - This Deliverable will now be sent for review!",
+            notifyStakeholder: false, fieldToCheck: "_ddcms_cccontributor_value",
+            emailSubject:    "Website Posting Complete",
+            completedDate:   "ddcms_designpostingdate",
+            stageStatusCode: 120730007, closeDeliverable: false
+        },
+        {
+            stageId: "278f1971-8bc1-4083-9bdb-b7d18bad6b41",
+            sequence: 2, stageName: "Create Copy",
+            canMoveFwd:  [currentRoles.copywritingOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_copywritingowner"],
+            exitForm: true,
+            stageExitText:  "Copywriting Complete - This Deliverable will now be queued for posting!",
+            completedDate:  "ddcms_copycompleteddate",
+            stageStatusCode: 120730006, closeDeliverable: false
+        },
+        {
+            stageId: "7b31af9b-5520-479d-92cf-9b46cc0bafb9",
+            sequence: 3, stageName: "Page Build Without Copy",
+            canMoveFwd:  [currentRoles.pageBuildOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_pagebuildowner"],
+            exitForm: true,
+            stageExitText:  "Posting Complete - This Deliverable has been Queued for Review!",
+            completedDate:  "ddcms_pagebuildcompleteddate",
+            stageStatusCode: 120730007, closeDeliverable: false
+        },
+        {
+            stageId: "56e1f7c8-6682-4193-9ae4-d8e690962c15",
+            sequence: 3, stageName: "Page Build With Copy",
+            canMoveFwd:  [currentRoles.pageBuildOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_pagebuildowner"],
+            exitForm: true,
+            stageExitText:  "Posting Complete - This Deliverable has been Queued for Review!",
+            completedDate:  "ddcms_pagebuildcompleteddate",
+            stageStatusCode: 120730007, closeDeliverable: false
+        },
+        {
+            stageId: "0531e638-5426-4292-8dac-cdf2d84e85f0",
+            sequence: 2, stageName: "Create Campaign Brief",
+            canMoveFwd:  [currentRoles.ccOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:  "This Deliverable has been queued for Asset Creation!",
+            completedDate:  "ddcms_requestcreatedon",
+            stageStatusCode: 120730002, closeDeliverable: false
+        },
+        {
+            stageId: "783bf073-c863-40df-82a8-cb30ddb28505",
+            sequence: 2, stageName: "Create Campaign Brief (Proof Required)",
+            canMoveFwd:  [currentRoles.ccOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:  "This Deliverable has been queued for Asset Proof Creation!",
+            completedDate:  "ddcms_requestcreatedon",
+            stageStatusCode: 120730002, closeDeliverable: false
+        },
+        {
+            stageId: "3bb2b1a3-f917-4d7f-99c0-3082042ecdef",
+            sequence: 3, stageName: "Proof Creation",
+            canMoveFwd:  [currentRoles.designOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_designowner"],
+            exitForm: true,
+            stageExitText:   "Design Proof Complete - This Deliverable has been Sent for Review!",
+            notifyStakeholder: false, fieldToCheck: "_ddcms_cccontributor_value",
+            emailSubject:    "Proof Ready to Review",
+            completedDate:   "ddcms_proofcompleteddate",
+            stageStatusCode: 120730003, closeDeliverable: false
+        },
+        {
+            stageId: "e4b072c4-db89-4f40-9190-b15274ee6df5",
+            sequence: 4, stageName: "Proof Review",
+            canMoveFwd:  [currentRoles.ccOwner,currentRoles.marketingPlanOwner,currentRoles.campaignOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Proof Review Complete - This Deliverable will now have Approved Design Assets Created!",
+            notifyStakeholder: false, fieldToCheck: "_ddcms_proofcompletedby_value",
+            emailSubject:    "Proof Approved",
+            completedDate:   "ddcms_lastqacheck",
+            stageStatusCode: 120730008, closeDeliverable: false
+        },
+        {
+            stageId: "8af0da36-4af5-4331-a927-c3aacb6233de",
+            sequence: 4, stageName: "Create Design Assets",
+            canMoveFwd:  [currentRoles.designOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_designowner"],
+            exitForm: true,
+            stageExitText:   "Design Work Complete - This Deliverable has been queued for Review!",
+            notifyStakeholder: false, fieldToCheck: "_ddcms_cccontributor_value",
+            emailSubject:    "Design Ready to Review",
+            completedDate:   "ddcms_designcompleteddate",
+            stageStatusCode: 120730006, closeDeliverable: false
+        },
+        {
+            stageId: "441db87c-9e6d-464d-a952-ffee61e6ef3e",
+            sequence: 4, stageName: "Create Approved Design Assets",
+            canMoveFwd:  [currentRoles.designOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_designowner"],
+            exitForm: true,
+            stageExitText:   "Design Work Complete - This Deliverable has been queued for Review!",
+            notifyStakeholder: false, fieldToCheck: "_ddcms_cccontributor_value",
+            emailSubject:    "Design Ready to Review",
+            completedDate:   "ddcms_designcompleteddate",
+            stageStatusCode: 120730006, closeDeliverable: false
+        },
+        {
+            stageId: "411c7005-c4e2-4618-b16f-e53a08649ddc",
+            sequence: 3, stageName: "Optimize Landing Page w/ Copy",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.createdBy],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Review Complete - This Deliverable has moved onto the next stage in the process!",
+            completedDate:   "ddcms_lastqacheck",
+            lastReviewedBy:  "ddcms_LastReviewedby@odata.bind",
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Contributor Review Complete - Please Review Next Stage!",
+            stageStatusCode: 120730008, closeDeliverable: false
+        },
+        {
+            stageId: "e53b7586-60a1-46ab-a102-89038d12803a",
+            stageName: "C&C Review Page Build Only",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.createdBy],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Review Complete - This Deliverable has moved onto the next stage in the process!",
+            completedDate:   "ddcms_lastqacheck",
+            lastReviewedBy:  "ddcms_LastReviewedby@odata.bind",
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Contributor Review Complete - Please Review Next Stage!",
+            stageStatusCode: 120730008, closeDeliverable: false
+        },
+        {
+            stageId: "ffc7a355-e33e-4d26-9ced-a2c67e3e5787",
+            stageName: "Optimize Page Build only",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.createdBy],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Optimization Complete - This Deliverable has moved onto the next stage in the process!",
+            completedDate:   "ddcms_lastqacheck",
+            lastReviewedBy:  "ddcms_LastReviewedby@odata.bind",
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Contributor Review Complete - Please Review Next Stage!",
+            stageStatusCode: 120730008, closeDeliverable: false
+        },
+        {
+            stageId: "111e1ae8-3b87-4419-a440-b1114d16cff2",
+            stageName: "Campaign Coordinator Review",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.createdBy],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Review Complete - This Deliverable has moved onto the next stage in the process!",
+            completedDate:   "ddcms_lastqacheck",
+            lastReviewedBy:  "ddcms_LastReviewedby@odata.bind",
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Contributor Review Complete - Please Review Next Stage!",
+            stageStatusCode: 120730008, closeDeliverable: false
+        },
+        {
+            stageId: "9e789603-7a2b-41e1-886d-becfab16019f",
+            stageName: "C&C Review Page w/ Copy",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.createdBy],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Review Complete - This Deliverable has moved onto the next stage in the process!",
+            completedDate:   "ddcms_lastqacheck",
+            lastReviewedBy:  "ddcms_LastReviewedby@odata.bind",
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Contributor Review Complete - Please Review Next Stage!",
+            stageStatusCode: 120730008, closeDeliverable: false
+        },
+        {
+            stageId: "fdf676f2-cd4a-4d48-88a5-f86cda8e1c38",
+            stageName: "Review C&C Design Assets",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.createdBy],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:   "Review Complete - This Deliverable has moved onto the next stage in the process!",
+            completedDate:   "ddcms_lastqacheck",
+            lastReviewedBy:  "ddcms_LastReviewedby@odata.bind",
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Contributor Review Complete - Please Review Next Stage!",
+            stageStatusCode: 120730008, closeDeliverable: false
+        },
+        {
+            stageId: "31423d94-8f54-41d3-8e2d-352f9664fa59",
+            stageName: "Post Reactive Design Assets",
+            canMoveFwd:  [currentRoles.designPostingOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner","ddcms_complianceowner"],
+            exitForm: true,
+            stageExitText:  "Posting Complete - this Deliverable will now be sent for review!",
+            completedDate:  "ddcms_designpostingdate",
+            stageStatusCode: 120730007, closeDeliverable: false
+        },
+        {
+            stageId: "70084cdd-4cb7-4992-b754-60926e709217",
+            stageName: "Approval",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.campaignOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner","ddcms_complianceowner", "campaignRecordOwnerId"],
+            exitForm: true,
+            stageExitText:  "Approval Complete - This Deliverable will now move onto the next Stage in the Process!",
+            completedDate:  "ddcms_clientapprovaldate",
+            lastReviewedBy: "ddcms_LastReviewedby@odata.bind",
+            stageStatusCode: 120730011, closeDeliverable: false
+        },
+        {
+            stageId: "4c4d5cc8-2ded-4307-81ba-b6eaf95e0ab1",
+            stageName: "Post Design Assets",
+            canMoveFwd:  [currentRoles.designPostingOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_designpostingowner","ddcms_complianceowner"],
+            exitForm: true,
+            stageExitText:   "Posting Complete - this Deliverable will now be sent for review!",
+            notifyStakeholder: false, fieldToCheck: "_ddcms_cccontributor_value",
+            emailSubject:    "Design Ready to Review",
+            completedDate:   "ddcms_designpostingdate",
+            stageStatusCode: 120730007, closeDeliverable: false
+        },
+        {
+            stageId: "0c9f4b1e-246e-4456-a7d0-66d061364f88",
+            stageName: "Complete Website Request",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner, currentRoles.seoReportingOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: true,
+            stageExitText:  "Website Request Work Completed!",
+            completedDate:  "placeholder",
+            stageStatusCode: 120730006, closeDeliverable: false
+        },
+        {
+            stageId: "e1ee76f6-b3d5-4008-8f1f-73c5fc1268f0",
+            stageName: "Resolve Compliance",
+            canMoveFwd:  [currentRoles.complianceOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_complianceowner"],
+            exitForm: true,
+            stageExitText:  "Compliance Resolved - This Deliverable will now be sent for review!",
+            completedDate:  "ddcms_complianceresolveddate",
+            stageStatusCode: 120730013, closeDeliverable: false
+        },
+        {
+            stageId: "61fd078c-561d-4b40-9bb3-aad2b080bba0",
+            stageName: "Review Design Posting",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            exitForm: false,
+            stageExitText:  "Approved Complete - This Deliverable will now be closed.",
+            completedDate:  "ddcms_copycompleteddate",
+            stageStatusCode: 120730009, closeDeliverable: true
+        },
+        {
+            stageId: "768833c8-9538-40fa-9ec2-b1306e9bb0c5",
+            stageName: "Activate Landing Page",
+            canMoveFwd:  [currentRoles.marketingPlanOwner, currentRoles.seoOwner, currentRoles.ccOwner, currentRoles.socialOwner],
+            canMoveback: [],
+            approvedRoles: ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"],
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Page Activation Complete!",
+            completedDate:   null, // FIX: was missing — added null to prevent deliverableUpdate["undefined"]
+            stageStatusCode: 120730012, closeDeliverable: false
+        },
+        {
+            stageId: "ae11b923-1717-44a9-b25a-85fe9a4e6378",
+            stageName: "Social Posting: Design",
+            canMoveFwd:  [currentRoles.socialOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_socialowner"],
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Social Posting Complete!",
+            completedDate:   "ddcms_socialcompleteddate",
+            stageStatusCode: 120730010, closeDeliverable: true
+        },
+        {
+            stageId: "6245c289-5cef-4774-93ec-89e0ac614481",
+            stageName: "Social Posting: Page",
+            canMoveFwd:  [currentRoles.socialOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_socialowner"],
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Social Posting Complete!",
+            completedDate:   "ddcms_socialcompleteddate",
+            stageStatusCode: 120730010, closeDeliverable: true
+        },
+        {
+            stageId: "8ddd97c4-2842-442e-b7d9-90e89ed9dc76",
+            stageName: "Social Posting: Blog",
+            canMoveFwd:  [currentRoles.socialOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_socialowner"],
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Social Posting Complete!",
+            completedDate:   "ddcms_socialcompleteddate",
+            stageStatusCode: 120730010, closeDeliverable: true
+        },
+        {
+            stageId: "f1e206ba-d779-4d52-8c0c-8eda58cb13cf",
+            stageName: "Complete Social Media Activity",
+            canMoveFwd:  [currentRoles.socialOwner],
+            canMoveback: [],
+            approvedRoles: ["ddcms_socialowner"],
+            notifyStakeholder: false, fieldToCheck: "_ownerid_value",
+            emailSubject:    "Social Posting Complete!",
+            completedDate:   null, // FIX: was missing
+            stageStatusCode: 120730006, closeDeliverable: true
+        }
+    ];
+
+    // ── Admin override ───────────────────────────────────────────────────────
+    // Leadership / Operations may edit at any stage regardless of role assignment.
+    // MUST be resolved before role resolution below: every valid* predicate ORs it in.
+    // Previously this was evaluated ~80 lines later and only overrode formLocked and
+    // validClientApprover, so admins hit "formLocked || !validRequestor" -> still disabled
+    // while the stage_lock notification (driven by formLocked alone) never fired.
+    const ADMIN_ROLE_IDS = [
+        "ac551c72-dbe7-ef11-be21-000d3a8f4215", // Leadership
+        "ef3df4b6-60b7-ef11-b8e9-000d3a5986ef"  // Operations
+    ];
+
+    const isAdmin = Xrm.Utility.getGlobalContext().userSettings.roles
+        .getAll()
+        .some(role => ADMIN_ROLE_IDS.includes(cleanGuid(role.id)));
+
+    // ── Role resolution ──────────────────────────────────────────────────────
+    const validComplianceApprover = isAdmin || currentRoles.complianceOwner === userId;
+    const validAssetUser   = isAdmin || [currentRoles.copywritingOwner, currentRoles.designOwner].includes(userId);
+    const validPostingUser = isAdmin || [currentRoles.pageBuildOwner, currentRoles.designPostingOwner].includes(userId);
+    const validRequestor   = isAdmin || [currentRoles.createdBy, currentRoles.seoOwner, currentRoles.ccOwner,
+                                        currentRoles.socialOwner, currentRoles.marketingPlanOwner,
+                                        currentRoles.fastLaneCoordinator].includes(userId);
+    // FIX: was checking currentRoles.campaignCoordinator (undefined key); correct key is ccOwner
+    const validClientApprover = isAdmin || [currentRoles.marketingPlanOwner, currentRoles.campaignOwner, currentRoles.ccOwner].includes(userId);
+
+    let hasSeo = true; // TODO: make dynamic
+
+    // ── Current stage resolution ─────────────────────────────────────────────
+    let onLoadStageParams = stages.find(s => s.stageId === formLoadStageId);
+    // FIX: Guard against unknown stage id on load
+    if (!onLoadStageParams) {
+        console.error(`formCurrentState: unknown stage id on load: ${formLoadStageId}`);
+        return;
+    }
+
+    // Resolve single-owner stage permissions
+    if (onLoadStageParams.approvedRoles.length === 1 || onLoadStageParams.stageId === "0c9f4b1e-246e-4456-a7d0-66d061364f88") {
+        let ownerField, ownerFieldId;
+
+        if (onLoadStageParams.stageId === "0c9f4b1e-246e-4456-a7d0-66d061364f88") {
+            const websiteRequestOwnerMap = {
+                120730006: "ddcms_seoowner", 120730007: "ddcms_seoowner",
+                120730008: "ddcms_ccowner",  120730009: "ddcms_ccowner",
+                120730010: "ddcms_socialowner", 120730011: "ddcms_socialowner"
+            };
+            ownerField   = websiteRequestOwnerMap[selectedSubtype] ?? null;
+            ownerFieldId = ownerField ? getLookupId(formContext, ownerField) : null;
+            if (ownerFieldId) onLoadStageParams.approvedRoles = [ownerField];
+        } else {
+            ownerField   = onLoadStageParams.approvedRoles[0];
+            ownerFieldId = ownerField === "ddcms_socialowner"
+                ? currentRoles.socialOwner
+                : getLookupId(formContext, ownerField);
+
+            if (!ownerFieldId) {
+                onLoadStageParams.approvedRoles = ["marketingPlanOwnerId","ownerid","createdby","ddcms_ccowner","ddcms_seoowner","ddcms_socialowner"];
+            }
+        }
+    }
+
+    // Website request stage: override completedDate by subtype
+    if (onLoadStageParams.stageId === "0c9f4b1e-246e-4456-a7d0-66d061364f88") {
+        if ([120730006, 120730007, 120730023, 120730025, 120730026, 120730027, 120730028, 120730029, 120730030, 120730031, 120730011].includes(selectedSubtype))      onLoadStageParams.completedDate = "ddcms_seocompleteddate";
+        else if ([120730008, 120730009].includes(selectedSubtype)) onLoadStageParams.completedDate = "ddcms_candccompleteddate";
+        else if ([120730010, 120730011].includes(selectedSubtype)) onLoadStageParams.completedDate = "ddcms_socialcompleteddate";
+    }
+
+   // Map approvedRoles strings to their already-resolved IDs from currentRoles.
+    // This avoids re-querying the form for fields that may actually originate
+    // from the Campaign record rather than the Deliverable form itself.
+    //
+    // NAMING CAVEAT: not every key that looks like a Deliverable logical name
+    // resolves to a Deliverable column. "ddcms_ccowner" and "ownerid" both
+    // resolve to Campaign-sourced values. Deliverable-sourced entries carry a
+    // "Deliverable" suffix so provenance is unambiguous at the call site.
+    const roleIdMap = {
+        "marketingPlanOwnerId":     currentRoles.marketingPlanOwner,
+        "campaignRecordOwnerId":    campaignRecordOwnerId,
+        "ownerid":                  currentRoles.campaignOwner,
+        "createdby":                currentRoles.createdBy,
+        "ddcms_ccowner":            currentRoles.ccOwner,            // Campaign._ddcms_cccontributor_value
+        "ddcms_ccownerDeliverable": currentRoles.fastLaneCoordinator, // Deliverable.ddcms_ccowner
+        "ddcms_seoowner":           currentRoles.seoOwner,
+        "ddcms_socialowner":        currentRoles.socialOwner,
+        "ddcms_copywritingowner":   currentRoles.copywritingOwner,
+        "ddcms_designowner":        currentRoles.designOwner,
+        "ddcms_designpostingowner": currentRoles.designPostingOwner,
+        "ddcms_pagebuildowner":     currentRoles.pageBuildOwner,
+        "ddcms_complianceowner":    currentRoles.complianceOwner,
+    };
+
+    // Determine form lock state
+    const stageApprovedRoles = onLoadStageParams.approvedRoles;
+    const assignedRoles = stageApprovedRoles.filter(role => {
+        const resolvedId = roleIdMap[role] ?? null;
+        if (resolvedId === null) console.warn(`approvedRoles: no mapping found for role "${role}"`);
+        return resolvedId === userId;
+    });
+
+    // Stage assignment is the only remaining input — the admin path is already
+    // folded into isAdmin above, so formLocked has a single definition.
+    const formLocked = !isAdmin && assignedRoles.length === 0;
+
+    // The four record-context lookups below used to be force-enabled here with
+    // unguarded getControl() calls. They now live in fieldConfig, which skips
+    // missing controls instead of throwing mid-load.
+
+    console.log(`Form Locked: ${formLocked} | Admin: ${isAdmin} | Stage: ${activeStageName}`);
+
+    // ── Field configuration ──────────────────────────────────────────────────
+    const fieldConfig = {
+        // Record-context lookups: admin-editable only, at any stage.
+        // visible is left at true so these keep whatever the form designer set;
+        // the loop only ever calls setVisible(true) here, never hides them.
+        "ddcms_account":                         { visible: true, disabled: !isAdmin },
+        "ddcms_marketingplan":                   { visible: true, disabled: !isAdmin },
+        "ddcms_previousmarketingplan":           { visible: true, disabled: !isAdmin },
+        "ddcms_campaign":                        { visible: true, disabled: !isAdmin },
+        "ddcms_budget":                          { visible: [120730015,120730016].includes(selectedSubtype),                                                                                                          disabled: formLocked || !validRequestor },
+        "ddcms_generativeengineoptimizationrequired": { visible: [120730001,120730000,120730003,120730012,120730004].includes(selectedSubtype),                                                                       disabled: formLocked || !validRequestor },
+        "ddcms_copywritingdetails":              { visible: [120730001,120730000,120730003,120730012,120730004].includes(selectedSubtype),                                                                             disabled: formLocked || !validRequestor },
+        "ddcms_callstoaction":                   { visible: [120730001,120730022,120730000,120730002,120730003,120730004,120730005].includes(selectedSubtype),                                                         disabled: formLocked || !validRequestor },
+        "ddcms_contentexample":                  { visible: [120730001,120730000,120730003,120730004,120730012].includes(selectedSubtype),                                                                             disabled: formLocked || !validRequestor },
+        "ddcms_completedcopy":                   { visible: [120730001,120730000,120730003,120730004,120730012,120730013,120730022,120730005].includes(selectedSubtype),                                               disabled: formLocked || !validAssetUser },
+        "ddcms_completedpageurl":                { visible: [120730001,120730022,120730000,120730002,120730003,120730004,120730005,120730012,120730013].includes(selectedSubtype),                                     disabled: formLocked || !validPostingUser },
+        "ddcms_deliverablesused":                { visible: true,                                                                                                                                                     disabled: formLocked || !validRequestor },
+        "ddcms_deliverystartdate":               { visible: [120730017,120730018,120730019,120730020,120730021,120730024].includes(selectedSubtype),                                                                   disabled: formLocked || !validRequestor },
+        "ddcms_details":                         { visible: true,                                                                                                                                                     disabled: formLocked || !validRequestor },
+        "ddcms_expirationdate":                  { visible: [120730017,120730018,120730019,120730020,120730021,120730024].includes(selectedSubtype),                                                                   disabled: formLocked || !validRequestor },
+        "ddcms_geographictargets":               { visible: hasSeo && [120730001,120730000,120730003,120730012,120730004].includes(selectedSubtype),                                                                  disabled: formLocked || !validRequestor },
+        "ddcms_iscopyoutsourced":                { visible: [120730001,120730000,120730003,120730004,120730012,120730013].includes(selectedSubtype) && validAssetUser,                                                disabled: false },
+        "ddcms_links":                           { visible: hasSeo && [120730001,120730000,120730003,120730012,120730004].includes(selectedSubtype),                                                                  disabled: formLocked || !validRequestor },
+        "ddcms_name":                            { visible: true,                                                                                                                                                     disabled: formLocked || !validRequestor },
+        "ddcms_pageexample":                     { visible: [120730001,120730022,120730000,120730002,120730004,120730005].includes(selectedSubtype),                                                                   disabled: formLocked || !validRequestor },
+        "ddcms_pagetype":                        { visible: [120730001,120730022,120730000,120730002,120730003,120730004,120730005].includes(selectedSubtype),                                                         disabled: formLocked || !validRequestor },
+        "ddcms_proofrequired":                   { visible: [120730017].includes(selectedSubtype),                                                                                                                    disabled: formLocked || !validRequestor },
+        "ddcms_publishdate":                     { visible: [120730012,120730014,120730015,120730016].includes(selectedSubtype),                                                                                                                    disabled: formLocked || !validRequestor },
+        "ddcms_referencedeliverable":            { visible: [120730018,120730021].includes(selectedSubtype),                                                                                                          disabled: formLocked || !validRequestor },
+        "ddcms_socialnetworks":                  { visible: [120730014,120730015,120730016].includes(selectedSubtype) || postToSocial === true,                                                                       disabled: formLocked || !validRequestor },
+        "ddcms_theme":                           { visible: [120730018,120730021].includes(selectedSubtype),                                                                                                          disabled: formLocked || !validRequestor },
+        "ddcms_url":                             { visible: [120730001,120730022,120730000,120730002,120730003,120730004,120730005,120730014,120730015,120730016].includes(selectedSubtype),                                                         disabled: formLocked || !validRequestor },
+        // Completed date stamps — visible only when a value exists
+        "ddcms_copycompleteddate":               { visible: !!formContext.getAttribute("ddcms_copycompleteddate").getValue(),      disabled: formLocked },
+        "ddcms_designcompleteddate":             { visible: !!formContext.getAttribute("ddcms_designcompleteddate").getValue(),    disabled: formLocked },
+        "ddcms_designpostingdate":               { visible: !!formContext.getAttribute("ddcms_designpostingdate").getValue(),      disabled: formLocked },
+        "ddcms_pagebuildcompleteddate":          { visible: !!formContext.getAttribute("ddcms_pagebuildcompleteddate").getValue(), disabled: formLocked },
+        "ddcms_completeddate":                   { visible: !!formContext.getAttribute("ddcms_completeddate").getValue(),          disabled: formLocked },
+        "ddcms_socialcompleteddate":             { visible: !!formContext.getAttribute("ddcms_socialcompleteddate").getValue(),    disabled: formLocked },
+        "ddcms_lastqacheck":                     { visible: !!formContext.getAttribute("ddcms_lastqacheck").getValue(),            disabled: formLocked },
+        "ddcms_proofcompleteddate":              { visible: !!formContext.getAttribute("ddcms_proofcompleteddate").getValue(),     disabled: formLocked },
+        // LOE fields
+        "ddcms_prooflevelofeffort":              { visible: !!formContext.getAttribute("ddcms_proofrequired").getValue(),          disabled: !validAssetUser },
+        "ddcms_assetlevelofeffort":              { visible: [120730001,120730000,120730003,120730004,120730012,120730013,120730017,120730018,120730019,120730020,120730021].includes(selectedSubtype), disabled: !validAssetUser },
+        "ddcms_postinglevelofeffort":            { visible: [120730001,120730022,120730000,120730002,120730003,120730004,120730005,120730012,120730013,120730014,120730015,120730016,120730017,120730018,120730019,120730020,120730021,120730024].includes(selectedSubtype), disabled: !validPostingUser },
+        // Owner fields
+        "ddcms_lastreviewedby":                  { visible: !!formContext.getAttribute("ddcms_lastreviewedby").getValue(),         disabled: true },
+        "ddcms_seoowner":                        { visible: [120730006,120730007,120730023].includes(selectedSubtype),             disabled: formLocked },
+        "ddcms_ccowner":                         { visible: [120730001,120730022,120730000,120730002,120730003,120730008,120730009,120730017,120730018,120730019,120730020,120730021,120730024].includes(selectedSubtype), disabled: formLocked },
+        "ddcms_copywritingowner":                { visible: [120730001,120730000,120730003,120730004,120730012,120730013].includes(selectedSubtype), disabled: formLocked },
+        "ddcms_designowner":                     { visible: [120730017,120730018,120730019,120730020,120730021].includes(selectedSubtype),           disabled: formLocked },
+        "ddcms_socialowner":                     { visible: [120730014,120730015,120730016].includes(selectedSubtype) || includesSocial,             disabled: formLocked },
+        "ddcms_complianceowner":                 { visible: [120730001,120730002].includes(selectedComplianceType),                                  disabled: formLocked },
+        "ddcms_pagebuildowner":                  { visible: [120730001,120730022,120730000,120730002,120730003,120730004,120730005,120730012,120730013].includes(selectedSubtype), disabled: formLocked },
+        "ddcms_designpostingowner":              { visible: [120730017,120730018,120730019,120730020,120730021,120730024].includes(selectedSubtype),  disabled: formLocked },
+        "ddcms_compliancerequired":              { visible: [120730017,120730018,120730019,120730020,120730021].includes(selectedSubtype),            disabled: formLocked || !validClientApprover },
+        "ddcms_compliancecompleteddate":         { visible: [120730001,120730002].includes(selectedComplianceType),                                  disabled: !validComplianceApprover, headerPresent: true},
+        "ddcms_clientapprovaldate":              { visible: [120730001,120730022,120730000,120730002,120730003,120730004,120730005,120730012,120730013,120730014,120730015,120730016,120730017,120730018,120730019,120730020,120730021].includes(selectedSubtype), disabled: formLocked || !validClientApprover, headerPresent: true },
+        "ddcms_posttosocialmedia":               { visible: [120730014,120730015,120730016].includes(selectedSubtype) || includesSocial,             disabled: formLocked || !validRequestor },
+        "ddcms_dropboxfolder":                   { visible: [120730017,120730018,120730019,120730020,120730021,120730024].includes(selectedSubtype),  disabled: formLocked || !validRequestor },
+    };
+
+    // Apply field config
+    for (const [field, props] of Object.entries(fieldConfig)) {
+        const control   = formContext.getControl(field);
+        const attribute = formContext.getAttribute(field);
+        if (!control || !attribute) continue;
+
+        control.setVisible(!!props.visible);
+        control.setDisabled(!!props.disabled);
+
+        if (props.headerPresent === true) {
+            const headerControl = formContext.getControl(`header_process_${field}`);
+            headerControl?.setDisabled(!!props.disabled);
+        }
+    }
+
+    if (formLocked) {
+        formContext.ui.setFormNotification(
+            `You are not authorized to edit this record in the current stage: ${activeStageName}`,
+            "WARNING", "stage_lock"
+        );
+    } else if (isAdmin && assignedRoles.length === 0) {
+        // Admin is editing a stage they hold no role on. Surfacing this keeps the
+        // unlock intentional rather than silent.
+        formContext.ui.setFormNotification(
+            `Editing as Leadership/Operations — you are not an assigned owner for stage: ${activeStageName}`,
+            "INFO", "stage_lock"
+        );
+    }
+
+    unlockSlaDeadlineForDmm(formContext);
+
+    // FIX: addOnPreStageChange was called unconditionally on every formCurrentState invocation,
+    // stacking duplicate listeners. Now guarded by the same formReloadEnabled flag.
+    if (!formReloadEnabled) {
+        formReloadEnabled = true;
+        businessProcess.addOnPreStageChange(processPreStageChange);
+        businessProcess.addOnStageChange(formCurrentState);
+        businessProcess.addOnStageSelected(onStageSelect);
+        businessProcess.addOnProcessStatusChange(executeProcessStatusChange);
+    } else {
+        // On subsequent loads (stage changes), re-register only the pre-stage guard
+        // since the stage-change listeners are already active.
+        businessProcess.addOnPreStageChange(processPreStageChange);
+    }
+}
+
+// ─── App Notification Request Prototype ─────────────────────────────────────
+
+var Example = window.Example || {};
+Example.SendAppNotificationRequest = function (title, recipient, body, priority, iconType, toastType, expiry, overrideContent, actions) {
+    this.Title           = title;
+    this.Recipient       = recipient;
+    this.Body            = body;
+    this.Priority        = priority;
+    this.IconType        = iconType;
+    this.ToastType       = toastType;
+    this.Expiry          = expiry;
+    this.OverrideContent = overrideContent;
+    this.Actions         = actions;
+};
+
+Example.SendAppNotificationRequest.prototype.getMetadata = function () {
+    return {
+        boundParameter: null,
+        parameterTypes: {
+            "Title":           { typeName: "Edm.String",       structuralProperty: 1 },
+            "Recipient":       { typeName: "mscrm.systemuser", structuralProperty: 5 },
+            "Body":            { typeName: "Edm.String",       structuralProperty: 1 },
+            "Priority":        { typeName: "Edm.Int",          structuralProperty: 1 },
+            "IconType":        { typeName: "Edm.Int",          structuralProperty: 1 },
+            "ToastType":       { typeName: "Edm.Int",          structuralProperty: 1 },
+            "Expiry":          { typeName: "Edm.Int",          structuralProperty: 1 },
+            "OverrideContent": { typeName: "mscrm.expando",    structuralProperty: 5 },
+            "Actions":         { typeName: "mscrm.expando",    structuralProperty: 5 }
+        },
+        operationType:  0,
+        operationName:  "SendAppNotification"
+    };
+};
+
+// ─── Stub: implement or remove ───────────────────────────────────────────────
+// FIX: complianceApprovalAdded is registered as an event handler but was left empty.
+// Either implement the intended logic or remove the registration to avoid silent no-ops.
+function complianceApprovalAdded(executionContext) {
+    // TODO: implement compliance approval side-effects or remove this handler
+    console.warn("complianceApprovalAdded called but not yet implemented.");
+}
+
+// ddcms_ProofBanner.js
+// Form script (JS web resource) for ddcms_campaigndeliverable Main Form.
+// Owns show/hide of the WebResource_ProofBanner control so the form
+// collapses its space correctly instead of leaving blank whitespace.
+//
+// Registration (Form Designer):
+//   1. Add this as a JS web resource on the form's Form Libraries.
+//   2. Form Properties > Events > On Load > Add function:
+//        ddcms_ProofBanner.onFormLoad
+//      Check "Pass execution context as first parameter".
+//   No other designer event registration is needed - onFormLoad wires up
+//   the field onChange and BPF stage-change listeners programmatically.
+
+var ddcms_ProofBanner = ddcms_ProofBanner || {};
+
+(function () {
+
+  // Set to false once you've confirmed everything is working to quiet the console.
+  ddcms_ProofBanner.DEBUG = true;
+
+  ddcms_ProofBanner._log = function () {
+    if (!ddcms_ProofBanner.DEBUG) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift("[ddcms_ProofBanner]");
+    console.log.apply(console, args);
+  };
+
+  // Must match the exact control name given to the HTML web resource in
+  // the Form Designer (select the control > Name field).
+  ddcms_ProofBanner.WEBRESOURCE_CONTROL_NAME = "WebResource_Page_Proof_Required";
+
+  ddcms_ProofBanner.FIELD_PILOT = "ddcms_pilottested";
+  ddcms_ProofBanner.FIELD_SEO   = "cr65c_seoincluded";
+
+  // Active BPF stage must be one of these for the banner to be eligible to show.
+  ddcms_ProofBanner.VALID_STAGE_IDS = [
+    "7b31af9b-5520-479d-92cf-9b46cc0bafb9", // page build without copy
+    "56e1f7c8-6682-4193-9ae4-d8e690962c15"  // page build with copy
+  ];
+
+  ddcms_ProofBanner._normalizeGuid = function (id) {
+    return id ? id.replace(/[{}]/g, "").toLowerCase() : "";
+  };
+
+  ddcms_ProofBanner._isActiveStageValid = function (formContext) {
+    try {
+      var process = formContext.data && formContext.data.process;
+      if (!process) {
+        ddcms_ProofBanner._log("BPF process object not found on formContext.data.");
+        return false;
+      }
+      var stage = process.getActiveStage();
+      if (!stage) {
+        ddcms_ProofBanner._log("getActiveStage() returned null/undefined.");
+        return false;
+      }
+      var rawId = stage.getId();
+      var normalizedId = ddcms_ProofBanner._normalizeGuid(rawId);
+      var isValid = ddcms_ProofBanner.VALID_STAGE_IDS.indexOf(normalizedId) !== -1;
+      ddcms_ProofBanner._log(
+        "Active stage name:", stage.getName ? stage.getName() : "(no getName)",
+        "| raw id:", rawId,
+        "| normalized id:", normalizedId,
+        "| in allowed list:", isValid
+      );
+      return isValid;
+    } catch (e) {
+      ddcms_ProofBanner._log("Error while reading active stage:", e.message || e);
+      return false;
+    }
+  };
+
+  // Retries the control lookup on its own in case the control registers a
+  // beat after OnLoad fires (e.g. behind a tab that hasn't rendered yet).
+  // Gives up quietly after a bounded number of attempts.
+  ddcms_ProofBanner._applyVisibility = function (formContext, shouldShow, attempt) {
+    attempt = attempt || 1;
+    var control = null;
+    try {
+      control = formContext.ui.controls.get(ddcms_ProofBanner.WEBRESOURCE_CONTROL_NAME);
+    } catch (e) {
+      ddcms_ProofBanner._log("Error calling ui.controls.get():", e.message || e);
+    }
+
+    ddcms_ProofBanner._log(
+      "Attempt", attempt, "- control lookup for '" + ddcms_ProofBanner.WEBRESOURCE_CONTROL_NAME + "':",
+      control ? "FOUND" : "NOT FOUND",
+      "| target visibility:", shouldShow
+    );
+
+    if (control && control.setVisible) {
+      control.setVisible(shouldShow);
+      ddcms_ProofBanner._log(
+        "setVisible(" + shouldShow + ") called. Control now reports getVisible():",
+        control.getVisible ? control.getVisible() : "(no getVisible method)"
+      );
+      return;
+    }
+
+    if (attempt < 15) {
+      setTimeout(function () {
+        ddcms_ProofBanner._applyVisibility(formContext, shouldShow, attempt + 1);
+      }, 500);
+    } else {
+      console.warn(
+        "ddcms_ProofBanner: could not find control '" +
+          ddcms_ProofBanner.WEBRESOURCE_CONTROL_NAME +
+          "' after " + attempt + " attempts. Confirm the name matches the " +
+          "control name set in the Form Designer."
+      );
+    }
+  };
+
+  ddcms_ProofBanner.toggleVisibility = function (executionContext) {
+    ddcms_ProofBanner._log("toggleVisibility() fired.");
+    var formContext = executionContext.getFormContext();
+
+    var pilotAttr = formContext.getAttribute(ddcms_ProofBanner.FIELD_PILOT);
+    var seoAttr   = formContext.getAttribute(ddcms_ProofBanner.FIELD_SEO);
+
+    if (!pilotAttr) {
+      ddcms_ProofBanner._log("WARNING: attribute '" + ddcms_ProofBanner.FIELD_PILOT + "' not found on form. Check the logical name / that it's on this form.");
+    }
+    if (!seoAttr) {
+      ddcms_ProofBanner._log("WARNING: attribute '" + ddcms_ProofBanner.FIELD_SEO + "' not found on form. Check the logical name / that it's on this form.");
+    }
+
+    var pilotTested = pilotAttr ? pilotAttr.getValue() === true : false;
+    var seoIncluded = seoAttr   ? seoAttr.getValue()   === true : false;
+
+    ddcms_ProofBanner._log(
+      ddcms_ProofBanner.FIELD_PILOT + ":", pilotAttr ? pilotAttr.getValue() : "(attribute missing)",
+      "|", ddcms_ProofBanner.FIELD_SEO + ":", seoAttr ? seoAttr.getValue() : "(attribute missing)"
+    );
+
+    var stageValid = ddcms_ProofBanner._isActiveStageValid(formContext);
+
+    var shouldShow =
+      pilotTested === true &&
+      seoIncluded === false &&
+      stageValid;
+
+    ddcms_ProofBanner._log(
+      "Decision -> pilotTested:", pilotTested,
+      "| seoIncluded:", seoIncluded,
+      "| stageValid:", stageValid,
+      "| FINAL shouldShow:", shouldShow
+    );
+
+    ddcms_ProofBanner._applyVisibility(formContext, shouldShow, 1);
+  };
+
+  ddcms_ProofBanner.onFormLoad = function (executionContext) {
+    ddcms_ProofBanner._log("onFormLoad() fired.");
+    var formContext = executionContext.getFormContext();
+
+    // Re-evaluate whenever the relevant fields change.
+    [ddcms_ProofBanner.FIELD_PILOT, ddcms_ProofBanner.FIELD_SEO].forEach(function (fieldName) {
+      var attr = formContext.getAttribute(fieldName);
+      if (attr) {
+        attr.addOnChange(ddcms_ProofBanner.toggleVisibility);
+        ddcms_ProofBanner._log("onChange listener registered for", fieldName);
+      } else {
+        ddcms_ProofBanner._log("WARNING: could not register onChange - attribute", fieldName, "not found.");
+      }
+    });
+
+    // Re-evaluate whenever the BPF active stage changes.
+    if (formContext.data && formContext.data.process) {
+      if (formContext.data.process.addOnStageChange) {
+        formContext.data.process.addOnStageChange(ddcms_ProofBanner.toggleVisibility);
+        ddcms_ProofBanner._log("addOnStageChange listener registered.");
+      }
+      if (formContext.data.process.addOnStageSelected) {
+        formContext.data.process.addOnStageSelected(ddcms_ProofBanner.toggleVisibility);
+        ddcms_ProofBanner._log("addOnStageSelected listener registered.");
+      }
+    } else {
+      ddcms_ProofBanner._log("WARNING: formContext.data.process not available at OnLoad - no BPF on this form/instance?");
+    }
+
+    // Initial evaluation on load.
+    ddcms_ProofBanner.toggleVisibility(executionContext);
+  };
+
+})();

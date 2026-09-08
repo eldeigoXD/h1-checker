@@ -1,0 +1,147 @@
+function stripHtmlPreserveFormatting(html) {
+    // Create a temporary DOM element
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+
+    // Replace <br> and <p> with line breaks
+    const formattedText = tempDiv.innerText
+        .replace(/\n{2,}/g, "\n") // Remove excessive line breaks
+        .trim();
+
+    return formattedText;
+}
+
+
+function showTemporaryBanner(formContext, message, alertLevel) {
+    const notificationId = "copyNotification";
+
+    formContext.ui.setFormNotification(message, alertLevel, notificationId);
+
+    setTimeout(() => {
+        formContext.ui.clearFormNotification(notificationId);
+    }, 5000);
+}
+
+
+async function fallbackCopyTextToClipboard(formContext, text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    let alertLevel = null;
+
+    // Avoid scrolling to bottom
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.width = "2em";
+    textArea.style.height = "2em";
+    textArea.style.padding = "0";
+    textArea.style.border = "none";
+    textArea.style.outline = "none";
+    textArea.style.boxShadow = "none";
+    textArea.style.background = "transparent";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand("copy");
+        if (successful) {
+            alertLevel = "INFO";
+            showTemporaryBanner(formContext, "✅Request details copied to clipboard and ready to write📃✏️!", alertLevel);
+        } else {
+            alertLevel = "ERROR"
+            showTemporaryBanner(formContext, "Request details failed to be copied to clipboard!", alertLevel);
+        }
+    } catch (err) {
+        console.error("Fallback copy failed:", err);
+    };
+
+    document.body.removeChild(textArea);
+}
+
+
+async function copyRequestDetails(PrimaryControl) {
+    const formContext = PrimaryControl;
+    let output = "";
+    const isOutSourced = formContext.getAttribute("ddcms_copywritingoutsourceid").getValue() || null;
+    console.log(isOutSourced);
+
+    //construct an object to be copied to the clipboard
+    let controls = [
+        "ddcms_deliverabletype", //deliverable type
+        "ddcms_deliverablesubtype", //deliverable subtype
+        "ddcms_name", //deliverable name / page title
+        "ddcms_deliverablesused", //deliverables used
+        "ddcms_url", //url for content
+        "ddcms_copywritingdetails", //copywriting details
+        "ddcms_links", //links
+        "ddcms_geographictargets", //geos
+        "ddcms_contentexample", //content exmaple
+    ];
+
+    if(isOutSourced && isOutSourced.length > 0) {
+        controls.push("ddcms_copytoedit", "ddcms_copywritingoutsourceid");
+    }
+    
+    controls.forEach(field => {
+        const attribute = formContext.getAttribute(field);
+        if (attribute) {
+            let value;
+            const label = formContext.getControl(field)?.getLabel() || field;
+
+            //check if attribe is OptionSet or Text value
+            if(attribute.getAttributeType() === "optionset") {
+                value = attribute.getText(); //get label instead of id
+            } else {
+                value = attribute.getValue();
+
+                //if rich text, clean
+                if(typeof value === "string" && value.includes("<") && field !== "ddcms_copytoedit") {
+                    value = stripHtmlPreserveFormatting(value);
+                }
+            }
+
+            output += `${label}: ${value ?? ""}\n`;
+        }
+    });
+
+    //copy to clipboard
+    try {
+        fallbackCopyTextToClipboard(formContext, output);
+    } catch (err) {
+        alertLevel = "ERROR"
+        showTemporaryBanner(formContext, "Request details failed to be copied to clipboard!", alertLevel);
+        console.error("Clipboard copy failed:", err);
+    }
+}
+
+function copyRequestVisibility(PrimaryControl) {
+    const formContext = PrimaryControl;
+    isVisible = false;
+    const userRoles = Xrm.Utility.getGlobalContext().userSettings.roles.getAll();
+    const userId = Xrm.Utility.getGlobalContext().userSettings.userId.toLowerCase().replace(/[{}]/g, "");
+    const copywritingOwner = formContext.getAttribute("ddcms_copywritingowner")?.getValue()?.[0]?.id?.toLowerCase().replace(/[{}]/g, "") || null
+
+    userRoles.forEach(function (role) {
+        let allowedRoles = [
+            "b996dbc2-dbe7-ef11-be21-000d3a8f4215", //copywriting
+            "ef3df4b6-60b7-ef11-b8e9-000d3a5986ef" //leadership
+        ];
+        let roleId = role.id.replace(/{|}/g, "").toLowerCase();
+        if (allowedRoles.includes(roleId)) {
+            if(roleId === "b996dbc2-dbe7-ef11-be21-000d3a8f4215") {//check if assigned copywriter
+                if(userId === copywritingOwner) {
+                    isVisible = true;
+                } else {
+                    isVisible = false;
+                }
+            } else {
+                isVisible = true;
+            }
+            
+        }
+    });
+    return isVisible;
+}
+

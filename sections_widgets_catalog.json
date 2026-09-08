@@ -1,0 +1,2417 @@
+{
+  "sections_catalog": [
+    {
+      "name": "Page Title",
+      "relevant": true,
+      "category": "Header & Titles"
+    },
+    {
+      "name": "Page Title with Background Image",
+      "relevant": false,
+      "category": "Header & Titles"
+    },
+    {
+      "name": "Page Title with CTAs",
+      "relevant": false,
+      "category": "Header & Titles"
+    },
+    {
+      "name": "Background Slideshow",
+      "relevant": true,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "Centered Content Left with Image",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Centered Content Right with Image",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Hero Collage",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "Tabbed Color Swatch Picker",
+      "relevant": false,
+      "category": "Interactive"
+    },
+    {
+      "name": "Content w/ Image Left",
+      "relevant": true,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content w/ Image Right",
+      "relevant": true,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Centered",
+      "relevant": true,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Centered Over Background Image",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Expandable",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content 50/50",
+      "relevant": true,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Left Over Background Image",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Left Sidebar",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Right Over Background Image",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Right Sidebar",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Content Thirds",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "2 CTA Block",
+      "relevant": false,
+      "category": "Call to Action"
+    },
+    {
+      "name": "3 CTA Block",
+      "relevant": false,
+      "category": "Call to Action"
+    },
+    {
+      "name": "4 CTA Block",
+      "relevant": false,
+      "category": "Call to Action"
+    },
+    {
+      "name": "Empty",
+      "relevant": false,
+      "category": "Layout Grids"
+    },
+    {
+      "name": "Empty - 50/50",
+      "relevant": true,
+      "category": "Layout Grids"
+    },
+    {
+      "name": "Empty - 33/66",
+      "relevant": false,
+      "category": "Layout Grids"
+    },
+    {
+      "name": "Empty - 66/33",
+      "relevant": false,
+      "category": "Layout Grids"
+    },
+    {
+      "name": "Empty - 33/33/33",
+      "relevant": false,
+      "category": "Layout Grids"
+    },
+    {
+      "name": "Empty - 25/25/25/25",
+      "relevant": false,
+      "category": "Layout Grids"
+    },
+    {
+      "name": "Empty - 20/20/20/20/20",
+      "relevant": false,
+      "category": "Layout Grids"
+    },
+    {
+      "name": "Lead Form",
+      "relevant": true,
+      "category": "Forms & Leads"
+    },
+    {
+      "name": "Fuel Type CTA",
+      "relevant": false,
+      "category": "Call to Action"
+    },
+    {
+      "name": "Staff Headline",
+      "relevant": false,
+      "category": "Staff & About"
+    },
+    {
+      "name": "Car Buying Headline",
+      "relevant": false,
+      "category": "Content & Layout"
+    },
+    {
+      "name": "Specials Campaign Hero Collage 1",
+      "relevant": false,
+      "category": "Specials"
+    },
+    {
+      "name": "Specials Campaign Hero Collage 2",
+      "relevant": false,
+      "category": "Specials"
+    },
+    {
+      "name": "Specials Campaign Hero Collage 3",
+      "relevant": false,
+      "category": "Specials"
+    },
+    {
+      "name": "Hero Facet Search 4 Icon CTAs",
+      "relevant": false,
+      "category": "Hero & Search"
+    },
+    {
+      "name": "Hero 4 Icon CTAs Mobile",
+      "relevant": false,
+      "category": "Hero & Search"
+    },
+    {
+      "name": "Hero Four Videos With CTAs",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "Hero Large Vehicle with CTAs",
+      "relevant": false,
+      "category": "Hero & Vehicle"
+    },
+    {
+      "name": "Hero Page Title with CTAs",
+      "relevant": false,
+      "category": "Hero & Titles"
+    },
+    {
+      "name": "Hero Search 4 Icon CTAs",
+      "relevant": false,
+      "category": "Hero & Search"
+    },
+    {
+      "name": "Hero Semi-Transparent Centered",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "Hero Semi-Transparent Left Aligned",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "3 CTA Hero",
+      "relevant": false,
+      "category": "Hero & Call to Action"
+    },
+    {
+      "name": "Hero Three Videos With CTAs",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "IFrame Content",
+      "relevant": false,
+      "category": "Embeds"
+    },
+    {
+      "name": "Inventory Search Results",
+      "relevant": true,
+      "category": "Inventory"
+    },
+    {
+      "name": "Contact and Map",
+      "relevant": true,
+      "category": "Contact & Location"
+    },
+    {
+      "name": "Model Selector Carousel Display Style",
+      "relevant": false,
+      "category": "Showroom"
+    },
+    {
+      "name": "Model Selector Grid Display Style",
+      "relevant": false,
+      "category": "Showroom"
+    },
+    {
+      "name": "Model Selector Large Vehicle Display Style",
+      "relevant": false,
+      "category": "Showroom"
+    },
+    {
+      "name": "Offset Vehicle Hero",
+      "relevant": false,
+      "category": "Hero & Vehicle"
+    },
+    {
+      "name": "Quick Specs",
+      "relevant": false,
+      "category": "Vehicle Detail"
+    },
+    {
+      "name": "Raw HTML Content",
+      "relevant": true,
+      "category": "Embeds & HTML"
+    },
+    {
+      "name": "Recommended Vehicles",
+      "relevant": false,
+      "category": "Inventory"
+    },
+    {
+      "name": "Facet Search",
+      "relevant": false,
+      "category": "Inventory Search"
+    },
+    {
+      "name": "Free Text Search",
+      "relevant": false,
+      "category": "Inventory Search"
+    },
+    {
+      "name": "Single Media Gallery",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "Specials Campaign Banner",
+      "relevant": false,
+      "category": "Specials"
+    },
+    {
+      "name": "Specials Campaign Coupon",
+      "relevant": false,
+      "category": "Specials"
+    },
+    {
+      "name": "Specials Campaign Slideshow",
+      "relevant": false,
+      "category": "Specials"
+    },
+    {
+      "name": "Split Hero",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "Staff Listing",
+      "relevant": false,
+      "category": "Staff & About"
+    },
+    {
+      "name": "Tabbed Mini Hero",
+      "relevant": false,
+      "category": "Hero & Media"
+    },
+    {
+      "name": "Vehicle Badges",
+      "relevant": false,
+      "category": "Vehicle Detail"
+    },
+    {
+      "name": "Vehicle Lead Form",
+      "relevant": false,
+      "category": "Forms & Leads"
+    },
+    {
+      "name": "Vehicle Location",
+      "relevant": false,
+      "category": "Contact & Location"
+    },
+    {
+      "name": "Why Buy",
+      "relevant": false,
+      "category": "Content & Layout"
+    }
+  ],
+  "widgets_catalog": [
+    {
+      "name": "Navigation",
+      "category": "Navigation",
+      "description": "Displays website navigation"
+    },
+    {
+      "name": "COMPOSER_WS_NAVIGATION_DRAWER",
+      "category": "Navigation",
+      "description": "Drawer style navigation widget"
+    },
+    {
+      "name": "COMPOSER_WS_NAVIGATION_DRAWER_VERBIAGE",
+      "category": "Navigation",
+      "description": "Drawer verbiage text widget"
+    },
+    {
+      "name": "Accordion Content",
+      "category": "Content",
+      "description": "Display title and content in collapsed/expandable sections"
+    },
+    {
+      "name": "Campaigns",
+      "category": "Promotions",
+      "description": "Displays promotional campaigns"
+    },
+    {
+      "name": "Contact Form",
+      "category": "Forms",
+      "description": "General contact information capture form"
+    },
+    {
+      "name": "Contact Information",
+      "category": "Info",
+      "description": "Displays dealership contact info and phone numbers"
+    },
+    {
+      "name": "Content CTA",
+      "category": "Content",
+      "description": "Renders imagery, content and CTA buttons"
+    },
+    {
+      "name": "Content",
+      "category": "Content",
+      "description": "WYSIWYG content block"
+    },
+    {
+      "name": "Dealer Services",
+      "category": "Services",
+      "description": "List of services offered at the dealership"
+    },
+    {
+      "name": "Hours",
+      "category": "Info",
+      "description": "Dealership department operating hours"
+    },
+    {
+      "name": "Image",
+      "category": "Media",
+      "description": "Space for inserting an image"
+    },
+    {
+      "name": "Media Viewer Gallery",
+      "category": "Media",
+      "description": "Gallery style media viewer for images/videos"
+    },
+    {
+      "name": "Post Listing (Blog)",
+      "category": "Blog",
+      "description": "Listing of recent blog posts"
+    },
+    {
+      "name": "Post Detail (Blog)",
+      "category": "Blog",
+      "description": "Blog detail view container"
+    },
+    {
+      "name": "Date Listing (Blog)",
+      "category": "Blog",
+      "description": "Chronological blog archive"
+    },
+    {
+      "name": "Feed Subscribe (Blog)",
+      "category": "Blog",
+      "description": "RSS feed subscription widget"
+    },
+    {
+      "name": "Tag Listing (Blog)",
+      "category": "Blog",
+      "description": "Post count listing per tag"
+    },
+    {
+      "name": "Tag Cloud (Blog)",
+      "category": "Blog",
+      "description": "Tag cloud widget"
+    },
+    {
+      "name": "Category Listing (Blog)",
+      "category": "Blog",
+      "description": "Blog categories listing"
+    },
+    {
+      "name": "Search (Blog)",
+      "category": "Blog",
+      "description": "Free form blog search widget"
+    },
+    {
+      "name": "Contact Form (Blog)",
+      "category": "Blog",
+      "description": "Basic blog contact form"
+    },
+    {
+      "name": "Email a Friend Form (Blog)",
+      "category": "Blog",
+      "description": "Share blog page via email"
+    },
+    {
+      "name": "Tabs",
+      "category": "Content",
+      "description": "Provides ability to tab specific widgets"
+    },
+    {
+      "name": "Hero Content Widget",
+      "category": "Hero",
+      "description": "Content widget with background image options"
+    },
+    {
+      "name": "Raw HTML Content",
+      "category": "Developer",
+      "description": "Raw HTML/JS code container"
+    },
+    {
+      "name": "Content Cards",
+      "category": "Content",
+      "description": "Grid of content cards with image, text, and button"
+    },
+    {
+      "name": "IFrame",
+      "category": "Embeds",
+      "description": "HTML iframe embed widget"
+    },
+    {
+      "name": "Countdown Clock",
+      "category": "Promotions",
+      "description": "Displays promotional countdown timer"
+    },
+    {
+      "name": "Dealer Reviews",
+      "category": "Reputation",
+      "description": "Displays Google, Facebook, and DealerRater reviews"
+    },
+    {
+      "name": "Tabbed Media Content",
+      "category": "Media",
+      "description": "Tabs with content over image"
+    },
+    {
+      "name": "Tabbed Text Content",
+      "category": "Content",
+      "description": "Tabs with text content and CTAs"
+    },
+    {
+      "name": "Disclaimer",
+      "category": "Legal",
+      "description": "Dynamically pulled disclaimer text"
+    },
+    {
+      "name": "Finance Application",
+      "category": "Forms",
+      "description": "Short online finance application form"
+    },
+    {
+      "name": "Request More Info Form",
+      "category": "Forms",
+      "description": "Vehicle information request form"
+    },
+    {
+      "name": "Year Make Model Trim Form",
+      "category": "Forms",
+      "description": "Vehicle specs enquiry form"
+    },
+    {
+      "name": "Email a Friend Form",
+      "category": "Share",
+      "description": "Vehicle sharing form"
+    },
+    {
+      "name": "Make an Offer Form",
+      "category": "Forms",
+      "description": "Submits price offer on vehicle"
+    },
+    {
+      "name": "Schedule Form",
+      "category": "Forms",
+      "description": "Vehicle showing scheduler form"
+    },
+    {
+      "name": "Employment Listing",
+      "category": "Careers",
+      "description": "Dealership job listings widget"
+    },
+    {
+      "name": "Parts Form",
+      "category": "Forms",
+      "description": "Auto parts request form"
+    },
+    {
+      "name": "Quick Quote",
+      "category": "Forms",
+      "description": "Fast quote lead generator form"
+    },
+    {
+      "name": "Service Form",
+      "category": "Forms",
+      "description": "Service appointment request form"
+    },
+    {
+      "name": "Service Form Intro",
+      "category": "Forms",
+      "description": "Service lead intro widget"
+    },
+    {
+      "name": "Finance Form",
+      "category": "Forms",
+      "description": "Simple purchase timeframe contact form"
+    },
+    {
+      "name": "Inventory Trade-in Form",
+      "category": "Forms",
+      "description": "Trade-in appraisal form"
+    },
+    {
+      "name": "Xtime Scheduler",
+      "category": "Service",
+      "description": "Xtime service scheduling integration"
+    },
+    {
+      "name": "CCPA Privacy Form",
+      "category": "Legal",
+      "description": "Consumer privacy request form"
+    },
+    {
+      "name": "Slideshow",
+      "category": "Media",
+      "description": "Image slideshow widget"
+    },
+    {
+      "name": "Slideshow Background",
+      "category": "Media",
+      "description": "Background image slideshow"
+    },
+    {
+      "name": "Vehicle Image",
+      "category": "Media",
+      "description": "Franchise vehicle model image display"
+    },
+    {
+      "name": "Incentives Form",
+      "category": "Promotions",
+      "description": "Rebate/incentive inquiry form"
+    },
+    {
+      "name": "Incentives Listing",
+      "category": "Promotions",
+      "description": "Manufacturer incentives list"
+    },
+    {
+      "name": "Confirm",
+      "category": "Forms",
+      "description": "Form submission confirmation page widget"
+    },
+    {
+      "name": "Velocity",
+      "category": "Developer",
+      "description": "Custom Apache Velocity server-side code block"
+    },
+    {
+      "name": "Third Party API Placement",
+      "category": "Developer",
+      "description": "Integration placeholder tag"
+    },
+    {
+      "name": "ws-tagging",
+      "category": "System",
+      "description": "Composer tagging portlet"
+    },
+    {
+      "name": "ws-tracking",
+      "category": "System",
+      "description": "Composer tracking portlet"
+    },
+    {
+      "name": "Featured Inventory",
+      "category": "Inventory",
+      "description": "Featured inventory items showcase"
+    },
+    {
+      "name": "Inventory Detail Callout",
+      "category": "Inventory",
+      "description": "Highlighted vehicle specs callout"
+    },
+    {
+      "name": "Highlighted Features",
+      "category": "Inventory",
+      "description": "Icon list of key vehicle features"
+    },
+    {
+      "name": "Displays Packages and Options",
+      "category": "Inventory",
+      "description": "Factory options and package details"
+    },
+    {
+      "name": "Quick Specs",
+      "category": "Inventory",
+      "description": "Quick vehicle specifications list"
+    },
+    {
+      "name": "Dealer Notes",
+      "category": "Inventory",
+      "description": "Custom dealer vehicle notes"
+    },
+    {
+      "name": "Detailed Specifications",
+      "category": "Inventory",
+      "description": "Full technical vehicle specifications"
+    },
+    {
+      "name": "Kelley Blue Book Reviews",
+      "category": "Reviews",
+      "description": "KBB model rating and reviews"
+    },
+    {
+      "name": "Recommended Vehicles",
+      "category": "Inventory",
+      "description": "User preference vehicle recommendations"
+    },
+    {
+      "name": "Showroom Default",
+      "category": "Showroom",
+      "description": "Franchise vehicle lineup showcase"
+    },
+    {
+      "name": "Inventory Detail Mini",
+      "category": "Inventory",
+      "description": "Vehicle summary card"
+    },
+    {
+      "name": "Links",
+      "category": "Navigation",
+      "description": "Custom buttons and links generator"
+    },
+    {
+      "name": "Links Share",
+      "category": "Share",
+      "description": "Social/email page sharing links"
+    },
+    {
+      "name": "Locale",
+      "category": "Localization",
+      "description": "Language toggle switcher"
+    },
+    {
+      "name": "Share",
+      "category": "Share",
+      "description": "Social media share buttons"
+    },
+    {
+      "name": "Print",
+      "category": "Utility",
+      "description": "Page print trigger button"
+    },
+    {
+      "name": "Navigation List",
+      "category": "Navigation",
+      "description": "Custom list of links"
+    },
+    {
+      "name": "Button Block",
+      "category": "Navigation",
+      "description": "Group of custom image/text link buttons"
+    },
+    {
+      "name": "Contact Actions",
+      "category": "Contact",
+      "description": "Mobile tap-to-call and directions block"
+    },
+    {
+      "name": "Button Block Responsive",
+      "category": "Navigation",
+      "description": "Mobile-optimized responsive button block"
+    },
+    {
+      "name": "Directions Form Results",
+      "category": "Map",
+      "description": "Google map route search results"
+    },
+    {
+      "name": "Directions Form",
+      "category": "Map",
+      "description": "Route directions search input form"
+    },
+    {
+      "name": "Dynamic Google Map",
+      "category": "Map",
+      "description": "Interactive Google Map container"
+    },
+    {
+      "name": "Group Location Navigation",
+      "category": "Location",
+      "description": "Links to multi-store group locations"
+    },
+    {
+      "name": "Locations proximity",
+      "category": "Location",
+      "description": "Group store map with proximity pins"
+    },
+    {
+      "name": "Model Selector",
+      "category": "Showroom",
+      "description": "Franchise vehicle model selector lineup"
+    },
+    {
+      "name": "Payment Calculator",
+      "category": "Finance",
+      "description": "Monthly auto loan payment calculator"
+    },
+    {
+      "name": "Payment Calculator Chart",
+      "category": "Finance",
+      "description": "Payment loan amortization chart"
+    },
+    {
+      "name": "Inventory Count Display",
+      "category": "Inventory",
+      "description": "Vehicle count statistics badge"
+    },
+    {
+      "name": "FacetBrowse Search",
+      "category": "Inventory Search",
+      "description": "Filterable inventory search form"
+    },
+    {
+      "name": "Site Text Search",
+      "category": "Search",
+      "description": "Global website search input widget"
+    },
+    {
+      "name": "Facebook Page Plugin",
+      "category": "Social",
+      "description": "Facebook page embed widget"
+    },
+    {
+      "name": "RSS Default",
+      "category": "Blog",
+      "description": "RSS feed widget"
+    },
+    {
+      "name": "Twitter Feed",
+      "category": "Social",
+      "description": "Twitter feed feed widget"
+    },
+    {
+      "name": "Calculated Summary",
+      "category": "Finance",
+      "description": "Payment calculator calculation breakdown"
+    },
+    {
+      "name": "Video Gallery",
+      "category": "Media",
+      "description": "Aggregated video player gallery"
+    },
+    {
+      "name": "Single HTML5 Video",
+      "category": "Media",
+      "description": "Native HTML5 video container"
+    },
+    {
+      "name": "YouTube Player",
+      "category": "Media",
+      "description": "Embedded YouTube video player"
+    },
+    {
+      "name": "Locations",
+      "category": "Location",
+      "description": "Dealership open/closed status and distance info"
+    },
+    {
+      "name": "Group Logos",
+      "category": "Branding",
+      "description": "OEM brand logo navigation bar"
+    },
+    {
+      "name": "Page Title",
+      "category": "Header & Titles",
+      "description": "Page heading and title container widget"
+    }
+  ],
+  "analyzed_pages": {
+    "https://billmarshfordfd.cms.dealer.com/new-ford/expedition-newtown-pa.htm?_ddcpreview=dc63f5bc159741dd96a3dee3cd67c7ff&_toggleBasePageCache=false": {
+      "analyzed_at": "2026-09-06T22:33:39.284288",
+      "summary": {
+        "total_sections": 10,
+        "total_widgets": 18,
+        "sections": [
+          {
+            "section_id": "section-1",
+            "name": "Title.2 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "title-container-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "page-title1",
+                    "name": "Content Page Title",
+                    "widget_type": "content-page-title",
+                    "type": "content",
+                    "classes": "ddc-content content-page-title bg-transparent"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "name": "Empty One.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "sm-padded-container-1",
+                "containers": [
+                  {
+                    "name": "empty-one-row-1",
+                    "containers": [
+                      {
+                        "name": "empty-one-1",
+                        "containers": [
+                          {
+                            "name": "aspect-ratio-box-inner-wrapper",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "aspect-ratio-box-inner-wrapper",
+                            "containers": [
+                              {
+                                "name": "d-flex",
+                                "containers": [],
+                                "widgets": []
+                              }
+                            ],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "specials1",
+                            "name": "Specials",
+                            "widget_type": "ws-specials",
+                            "type": "default",
+                            "classes": "ddc-content ws-specials"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "name": "Empty One.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "sm-padded-container-1-1",
+                "containers": [
+                  {
+                    "name": "empty-one-row-1-1",
+                    "containers": [
+                      {
+                        "name": "empty-one-1-1",
+                        "containers": [
+                          {
+                            "name": "inner",
+                            "containers": [
+                              {
+                                "name": "inner2",
+                                "containers": [],
+                                "widgets": []
+                              }
+                            ],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content6",
+                            "name": "Content Raw",
+                            "widget_type": "content-raw",
+                            "type": "content",
+                            "classes": "mod content-raw"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "name": "Inventory Search Results.1 1",
+            "total_widgets": 7,
+            "containers": [
+              {
+                "name": "inventory-search-results-page-primary-banner-1",
+                "containers": [
+                  {
+                    "name": "inventory-search-results-page-primary-banner-inner-1",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "placeholder1",
+                        "name": "Tps Placeholder",
+                        "widget_type": "ws-tps-placeholder",
+                        "type": "default",
+                        "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                      }
+                    ]
+                  }
+                ],
+                "widgets": []
+              },
+              {
+                "name": "inventory-search-results-page-filters-sort-1",
+                "containers": [
+                  {
+                    "name": "inventory-search-results-page-filters-sort-inner-1",
+                    "containers": [
+                      {
+                        "name": "free-text-search-form",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": [
+                      {
+                        "id": "inventory-search1",
+                        "name": "Inv Text Search",
+                        "widget_type": "ws-inv-text-search",
+                        "type": "content",
+                        "classes": "ddc-content ws-inv-text-search mx-0 mt-0"
+                      },
+                      {
+                        "id": "inventory-filters1",
+                        "name": "Inv Filters",
+                        "widget_type": "ws-inv-filters",
+                        "type": "inventory",
+                        "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                      }
+                    ]
+                  }
+                ],
+                "widgets": []
+              },
+              {
+                "name": "inventory-search-results-combined-1",
+                "containers": [
+                  {
+                    "name": "inventory-search-results-combined-inner-1",
+                    "containers": [
+                      {
+                        "name": "inventory-search-results-facets-1",
+                        "containers": [],
+                        "widgets": [
+                          {
+                            "id": "inventory-facets1",
+                            "name": "Inv Facets",
+                            "widget_type": "ws-inv-facets",
+                            "type": "inventory",
+                            "classes": "ddc-content ws-inv-facets"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "inventory-search-results-listing-1",
+                        "containers": [
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "inventory-results1",
+                            "name": "Inv Listing",
+                            "widget_type": "ws-inv-listing",
+                            "type": "inventory",
+                            "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                          },
+                          {
+                            "id": "inventory-paging1",
+                            "name": "Inv Paging",
+                            "widget_type": "ws-inv-paging",
+                            "type": "inventory",
+                            "classes": "ddc-content ws-inv-paging"
+                          },
+                          {
+                            "id": "disclaimer2",
+                            "name": "Content Disclaimer",
+                            "widget_type": "content-disclaimer",
+                            "type": "content",
+                            "classes": "text-muted pt-5 border-top ddc-content"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-5",
+            "name": "Content Centered.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-1",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content2",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-6",
+            "name": "Content Background Image Left.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content3",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-7",
+            "name": "Content Centered.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-1-1",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content5",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-8",
+            "name": "Content Background Image Right.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-2",
+                "containers": [
+                  {
+                    "name": "content-background-right-1",
+                    "containers": [
+                      {
+                        "name": "content-left-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content4",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "background-image-right-1",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-9",
+            "name": "Content Centered.1 1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-1-1-1",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content7",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-10",
+            "name": "Map Hours.2 1",
+            "total_widgets": 3,
+            "containers": [
+              {
+                "name": "map-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "map1",
+                    "name": "Map Dynamic",
+                    "widget_type": "map-dynamic",
+                    "type": "default",
+                    "classes": "map-dynamic ddc-content"
+                  }
+                ]
+              },
+              {
+                "name": "contact-hours-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "contact2",
+                    "name": "Contact Info",
+                    "widget_type": "contact-info",
+                    "type": "form",
+                    "classes": "ddc-content text-center contact-info"
+                  },
+                  {
+                    "id": "hours1",
+                    "name": "Hours",
+                    "widget_type": "ws-hours",
+                    "type": "default",
+                    "classes": "ddc-content ws-hours"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "https://www.toyotaofsomerset.com/new-toyotay/suvs-somerset-ky.htm": {
+      "analyzed_at": "2026-09-07T09:50:19.245982",
+      "summary": {
+        "total_sections": 11,
+        "total_widgets": 26,
+        "sections": [
+          {
+            "section_id": "section-1",
+            "name": "Title.2 1",
+            "total_widgets": 3,
+            "containers": [
+              {
+                "name": "title-container-1",
+                "containers": [
+                  {
+                    "name": "inner",
+                    "containers": [
+                      {
+                        "name": "inner2",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "page-title1",
+                    "name": "Content Page Title",
+                    "widget_type": "content-page-title",
+                    "type": "content",
+                    "classes": "ddc-content content-page-title bg-transparent"
+                  },
+                  {
+                    "id": "content3",
+                    "name": "Content Raw",
+                    "widget_type": "content-raw",
+                    "type": "content",
+                    "classes": "mod content-raw"
+                  },
+                  {
+                    "id": "links1",
+                    "name": "Links List",
+                    "widget_type": "links-list",
+                    "type": "navigation",
+                    "classes": "links-list ddc-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "name": "Inventory Search Results.1 1",
+            "total_widgets": 7,
+            "containers": [
+              {
+                "name": "inventory-search-results-page-primary-banner-1",
+                "containers": [
+                  {
+                    "name": "inventory-search-results-page-primary-banner-inner-1",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "placeholder1",
+                        "name": "Tps Placeholder",
+                        "widget_type": "ws-tps-placeholder",
+                        "type": "default",
+                        "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                      }
+                    ]
+                  }
+                ],
+                "widgets": []
+              },
+              {
+                "name": "inventory-search-results-page-filters-sort-1",
+                "containers": [
+                  {
+                    "name": "inventory-search-results-page-filters-sort-inner-1",
+                    "containers": [
+                      {
+                        "name": "free-text-search-form",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": [
+                      {
+                        "id": "inventory-search1",
+                        "name": "Inv Text Search",
+                        "widget_type": "ws-inv-text-search",
+                        "type": "content",
+                        "classes": "ddc-content ws-inv-text-search mx-0 mt-0"
+                      },
+                      {
+                        "id": "inventory-filters1",
+                        "name": "Inv Filters",
+                        "widget_type": "ws-inv-filters",
+                        "type": "inventory",
+                        "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                      }
+                    ]
+                  }
+                ],
+                "widgets": []
+              },
+              {
+                "name": "inventory-search-results-combined-1",
+                "containers": [
+                  {
+                    "name": "inventory-search-results-combined-inner-1",
+                    "containers": [
+                      {
+                        "name": "inventory-search-results-facets-1",
+                        "containers": [],
+                        "widgets": [
+                          {
+                            "id": "inventory-facets1",
+                            "name": "Inv Facets",
+                            "widget_type": "ws-inv-facets",
+                            "type": "inventory",
+                            "classes": "ddc-content ws-inv-facets"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "inventory-search-results-listing-1",
+                        "containers": [
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "inventory-results1",
+                            "name": "Inv Listing",
+                            "widget_type": "ws-inv-listing",
+                            "type": "inventory",
+                            "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                          },
+                          {
+                            "id": "inventory-paging1",
+                            "name": "Inv Paging",
+                            "widget_type": "ws-inv-paging",
+                            "type": "inventory",
+                            "classes": "ddc-content ws-inv-paging"
+                          },
+                          {
+                            "id": "disclaimer2",
+                            "name": "Content Disclaimer",
+                            "widget_type": "content-disclaimer",
+                            "type": "content",
+                            "classes": "text-muted pt-5 border-top ddc-content"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "name": "Content Centered.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-1",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content2",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default text-inverse"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "name": "Content Background Image Left.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content4",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-5",
+            "name": "Content Fifty Fifty.1 1",
+            "total_widgets": 2,
+            "containers": [
+              {
+                "name": "content-container-1",
+                "containers": [
+                  {
+                    "name": "content-fifty-fifty-1",
+                    "containers": [
+                      {
+                        "name": "content-left-15-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content6",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "content-right-14-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content7",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-6",
+            "name": "Empty Fifty Fifty.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-container-2",
+                "containers": [
+                  {
+                    "name": "empty-fifty-fifty-row-1",
+                    "containers": [
+                      {
+                        "name": "empty-first-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content8",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "ddc-content content-default text-inverse"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "empty-second-1",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-7",
+            "name": "Content Centered.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-1-1",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content9",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-8",
+            "name": "Form Centered.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "form-centered-container-1",
+                "containers": [
+                  {
+                    "name": "recaptcha-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "contact1",
+                    "name": "Contact Form",
+                    "widget_type": "contact-form",
+                    "type": "form",
+                    "classes": "contact-form ddc-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-9",
+            "name": "Map Hours.2 1",
+            "total_widgets": 3,
+            "containers": [
+              {
+                "name": "map-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "map1",
+                    "name": "Map Dynamic",
+                    "widget_type": "map-dynamic",
+                    "type": "default",
+                    "classes": "map-dynamic ddc-content"
+                  }
+                ]
+              },
+              {
+                "name": "contact-hours-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "contact2",
+                    "name": "Contact Info",
+                    "widget_type": "contact-info",
+                    "type": "form",
+                    "classes": "ddc-content text-center contact-info"
+                  },
+                  {
+                    "id": "hours1",
+                    "name": "Hours",
+                    "widget_type": "ws-hours",
+                    "type": "default",
+                    "classes": "ddc-content ws-hours"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-10",
+            "name": "Footer Links Responsive Links Wrapper 1",
+            "total_widgets": 4,
+            "containers": [
+              {
+                "name": "footer-links-responsive-links-container-1",
+                "containers": [
+                  {
+                    "name": "footer-links-responsive-column-links-1",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "template-footer-links1",
+                        "name": "Links List",
+                        "widget_type": "links-list",
+                        "type": "navigation",
+                        "classes": "links-list ddc-content"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "footer-links-responsive-column-links-2",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "template-footer-links2",
+                        "name": "Links List",
+                        "widget_type": "links-list",
+                        "type": "navigation",
+                        "classes": "links-list ddc-content"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "footer-links-responsive-column-links-3",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "template-footer-links3",
+                        "name": "Links List",
+                        "widget_type": "links-list",
+                        "type": "navigation",
+                        "classes": "links-list ddc-content"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "footer-links-responsive-column-links-4",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "template-footer-links4",
+                        "name": "Links List",
+                        "widget_type": "links-list",
+                        "type": "navigation",
+                        "classes": "links-list ddc-content"
+                      }
+                    ]
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-11",
+            "name": "Footer Links Responsive Ddc Logo And Third Party Wrapper 1",
+            "total_widgets": 2,
+            "containers": [
+              {
+                "name": "footer-links-responsive-ddc-logo-and-third-party-container-1",
+                "containers": [
+                  {
+                    "name": "footer-links-responsive-third-party-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "template-links5",
+                    "name": "Links List",
+                    "widget_type": "links-list",
+                    "type": "navigation",
+                    "classes": "links-list ddc-content m-sm-0 mr-sm-4"
+                  },
+                  {
+                    "id": "template-ddc-logo1",
+                    "name": "Ddc Logo",
+                    "widget_type": "ws-ddc-logo",
+                    "type": "default",
+                    "classes": "ddc-content ws-ddc-logo m-sm-0"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "https://www.bakerchevroletofcadillac.com/used-inventory/index.htm?_ddcpreview=430bc1bf8d324939b87551bfed51ba2b&_toggleBasePageCache=false": {
+      "analyzed_at": "2026-09-07T10:34:12.738424",
+      "summary": {
+        "total_sections": 12,
+        "total_widgets": 18,
+        "sections": [
+          {
+            "section_id": "section-1",
+            "name": "Srp Wrapper Page Title Content",
+            "total_widgets": 0,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-title-content-inner",
+                "containers": [],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "name": "Srp Wrapper Page Title Banner",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-title-banner-inner",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "placeholder1",
+                    "name": "Tps Placeholder",
+                    "widget_type": "ws-tps-placeholder",
+                    "type": "default",
+                    "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "name": "Srp Wrapper Page Title",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-title-inner",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "inventory-page-title1",
+                    "name": "Inv Page Title",
+                    "widget_type": "ws-inv-page-title",
+                    "type": "content",
+                    "classes": "ddc-content ws-inv-page-title spacing-reset"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "name": "Srp Wrapper Page Filters Sort",
+            "total_widgets": 2,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-filters-sort-inner",
+                "containers": [
+                  {
+                    "name": "free-text-search-form",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "inventory-search1",
+                    "name": "Inv Text Search",
+                    "widget_type": "ws-inv-text-search",
+                    "type": "content",
+                    "classes": "ddc-content ws-inv-text-search mx-0 mt-0"
+                  },
+                  {
+                    "id": "inventory-filters1",
+                    "name": "Inv Filters",
+                    "widget_type": "ws-inv-filters",
+                    "type": "inventory",
+                    "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-5",
+            "name": "Srp Wrapper Combined",
+            "total_widgets": 5,
+            "containers": [
+              {
+                "name": "srp-wrapper-combined-inner",
+                "containers": [
+                  {
+                    "name": "srp-wrapper-facets",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "inventory-facets1",
+                        "name": "Inv Facets",
+                        "widget_type": "ws-inv-facets",
+                        "type": "inventory",
+                        "classes": "ddc-content ws-inv-facets"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "srp-wrapper-listing",
+                    "containers": [
+                      {
+                        "name": "vehicle-card-media-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-details-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-media-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-details-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-media-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-details-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-media-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-details-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-media-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-details-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-media-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "vehicle-card-details-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "media-modal-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "text-content-container",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "text-content-container",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": [
+                      {
+                        "id": "inventory-results1",
+                        "name": "Inv Listing",
+                        "widget_type": "ws-inv-listing",
+                        "type": "inventory",
+                        "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                      },
+                      {
+                        "id": "inventory-paging1",
+                        "name": "Inv Paging",
+                        "widget_type": "ws-inv-paging",
+                        "type": "inventory",
+                        "classes": "ddc-content ws-inv-paging"
+                      },
+                      {
+                        "id": "content1",
+                        "name": "Content Default",
+                        "widget_type": "content-default",
+                        "type": "content",
+                        "classes": "ddc-content content-default"
+                      },
+                      {
+                        "id": "disclaimer2",
+                        "name": "Content Disclaimer",
+                        "widget_type": "content-disclaimer",
+                        "type": "content",
+                        "classes": "text-muted pt-5 border-top ddc-content"
+                      }
+                    ]
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-6",
+            "name": "Content Centered.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-1",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content5",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-7",
+            "name": "Content Background Image Left.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content6",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-8",
+            "name": "Content Background Image Right.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-2",
+                "containers": [
+                  {
+                    "name": "content-background-right-1",
+                    "containers": [
+                      {
+                        "name": "content-left-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content7",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "background-image-right-1",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-9",
+            "name": "Content Background Image Left.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content9",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-10",
+            "name": "Content Centered.1 2",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-2",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content8",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-11",
+            "name": "Form Centered.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "form-centered-container-1",
+                "containers": [
+                  {
+                    "name": "recaptcha-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "contact1",
+                    "name": "Contact Form",
+                    "widget_type": "contact-form",
+                    "type": "form",
+                    "classes": "contact-form ddc-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-12",
+            "name": "Map Hours.2 1",
+            "total_widgets": 3,
+            "containers": [
+              {
+                "name": "map-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "map1",
+                    "name": "Map Dynamic",
+                    "widget_type": "map-dynamic",
+                    "type": "default",
+                    "classes": "map-dynamic ddc-content"
+                  }
+                ]
+              },
+              {
+                "name": "contact-hours-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "contact2",
+                    "name": "Contact Info",
+                    "widget_type": "contact-info",
+                    "type": "form",
+                    "classes": "ddc-content text-center contact-info"
+                  },
+                  {
+                    "id": "hours1",
+                    "name": "Hours",
+                    "widget_type": "ws-hours",
+                    "type": "default",
+                    "classes": "ddc-content ws-hours"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

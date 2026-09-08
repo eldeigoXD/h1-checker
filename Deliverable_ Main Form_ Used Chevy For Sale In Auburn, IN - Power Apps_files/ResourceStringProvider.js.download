@@ -1,0 +1,2 @@
+var ClientUtility;!function(e){var t=function(){function e(){}return e.getResourceString=function(t){var i=Xrm.Utility.getResourceString(e.WebResourceName,t);return void 0===i||null===i?t:i},e}();t.WebResourceName="CRM/Localization/Languages/CRM",e.ResourceStringProvider=t}(ClientUtility||(ClientUtility={}));
+//# sourceMappingURL=G:\Agents\BA8333\_wap\627\s\target\retail\AnyCPU\CrmClientCommon\MinifiedWebResources\Localization\ResourceStringProvider.js.map

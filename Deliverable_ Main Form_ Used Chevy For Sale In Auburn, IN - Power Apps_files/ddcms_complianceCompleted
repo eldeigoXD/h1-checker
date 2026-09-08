@@ -1,0 +1,73 @@
+function complianceCompleted(PrimaryControl) {
+    const formContext = PrimaryControl;
+    const complianceCompletedDate = formContext.getAttribute("ddcms_compliancecompleteddate").getValue();
+    console.log("Compliance Completed Date: " + complianceCompletedDate);
+
+    if (!complianceCompletedDate) {
+        formContext.getAttribute("ddcms_compliancecompleteddate").setValue(new Date());
+        formContext.data.save().then(function () {
+            console.log("Compliance Completed Date updated successfully.");
+            formContext.ui.setFormNotification(
+                "Compliance Completed Date has been added. This record will no longer appear in My Active Compliance Submissions. The Business Process Flow stage will be automatically updated to reflect this change.",
+                "INFO",
+                "complianceCompletedSuccess"
+            );
+        }).catch(function (error) {
+            console.error("Error saving Compliance Completed Date:", error.message);
+            formContext.ui.setFormNotification(
+                "An error occurred while saving the Compliance Completed Date: " + error.message,
+                "ERROR",
+                "complianceCompletedError"
+            );
+        });
+    } else {
+        console.log("Compliance Completed Date already set: " + complianceCompletedDate);
+    }
+}
+
+function complianceCompletedVisible(PrimaryControl) {
+    if (!PrimaryControl || typeof PrimaryControl.getAttribute !== "function") {
+        console.warn("PrimaryControl not ready.");
+        return false;
+    }
+    const formContext = PrimaryControl;
+    const recordId = formContext.data.entity.getId().replace(/[{}]/g, "").toLowerCase();
+    const complianceCompletedDate = formContext.getAttribute("ddcms_compliancecompleteddate").getValue();
+    const submissionOwnerId = formContext.getAttribute("ddcms_complianceowner")?.getValue()?.[0]?.id?.toLowerCase().replace(/[{}]/g, "") || null;
+    const currentUserId = Xrm.Utility.getGlobalContext().userSettings.userId.replace(/[{}]/g, "").toLowerCase();
+    let isVisible = false;
+
+    console.log("recordId:", recordId);
+    console.log("complianceCompletedDate:", complianceCompletedDate);
+    console.log("submissionOwnerId:", submissionOwnerId);
+    console.log("currentUserId:", currentUserId);
+    console.log("IDs match:", currentUserId === submissionOwnerId);
+
+    if (complianceCompletedDate || currentUserId !== submissionOwnerId) {
+        console.log("Early exit hit. Date:", complianceCompletedDate, "| IDs match:", currentUserId === submissionOwnerId);
+        return false;
+    }
+
+    console.log("Reached API call");
+    return Xrm.WebApi.retrieveMultipleRecords(
+        "ddcms_compliancesubmissions",
+        `?$select=ddcms_compliancesubmissionsid,statecode,statuscode&$filter=_ddcms_deliverable_value eq ${recordId}`
+    ).then(function (result) {
+        console.log("API result:", result);
+        const entities = result.entities;
+        const hasActiveSubmissions = entities.some(function (e) {
+            return e.statecode === 0;
+        });
+        const hasRequiredInactiveSubmission = entities.some(function (e) {
+            return e.statecode === 1 && e.statuscode === 120730002;
+        });
+        console.log("hasActiveSubmissions:", hasActiveSubmissions);
+        console.log("hasRequiredInactiveSubmission:", hasRequiredInactiveSubmission);
+
+        isVisible = !hasActiveSubmissions && hasRequiredInactiveSubmission;
+        console.log(isVisible);
+        return isVisible;
+    }, function (error) {
+        console.error("Error retrieving Compliance Submissions:", error.message);
+    });
+}

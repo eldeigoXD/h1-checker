@@ -36,6 +36,197 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('Timeout: Home PC did not respond within 3 minutes. Please verify start_remote_worker.bat is running on your Home PC.');
     }
 
+    // Helper to poll PDF relay jobs when deployed on Vercel Cloud
+    async function pollRelayPdfJob(jobId) {
+        const startTime = Date.now();
+        const timeoutMs = 120000; // 2 minutes timeout for PDF generation
+        const pdfBtn = document.getElementById('download-pdf-btn');
+
+        while (Date.now() - startTime < timeoutMs) {
+            const elapsedSec = Math.round((Date.now() - startTime) / 1000);
+            if (pdfBtn) {
+                pdfBtn.innerHTML = `<div class="loader" style="width:14px; height:14px;"></div> Generating on PC... (${elapsedSec}s)`;
+            }
+
+            await new Promise(res => setTimeout(res, 2000));
+
+            try {
+                const res = await fetch(`/api/jobs/status?job_id=${encodeURIComponent(jobId)}`);
+                const jobData = await res.json();
+
+                if (jobData.status === 'completed' && jobData.result) {
+                    return jobData.result;
+                }
+                if (jobData.status === 'failed') {
+                    throw new Error(jobData.error || 'PDF generation failed on Home PC.');
+                }
+            } catch (e) {
+                if (e.message && !e.message.includes('fetch') && !e.message.includes('HTTP')) {
+                    throw e;
+                }
+            }
+        }
+        throw new Error('Timeout: Home PC worker did not complete PDF generation within 2 minutes. Please verify start_remote_worker.bat is running on your PC.');
+    }
+
+    // Helper to poll Dynamics relay jobs when deployed on Vercel Cloud
+    async function pollDynamicsRelayJob(jobId) {
+        const startTime = Date.now();
+        const timeoutMs = 120000;
+        const statusMsgEl = document.getElementById('dynamics-status-msg');
+
+        while (Date.now() - startTime < timeoutMs) {
+            const elapsedSec = Math.round((Date.now() - startTime) / 1000);
+            if (statusMsgEl) {
+                statusMsgEl.textContent = `⏳ Home PC scraping Dynamics CRM... (${elapsedSec}s)`;
+            }
+
+            await new Promise(res => setTimeout(res, 2500));
+
+            try {
+                const res = await fetch(`/api/jobs/status?job_id=${encodeURIComponent(jobId)}`);
+                const jobData = await res.json();
+
+                if (jobData.status === 'completed' && jobData.result) {
+                    return jobData.result;
+                }
+                if (jobData.status === 'failed') {
+                    throw new Error(jobData.error || 'Dynamics extraction failed on Home PC.');
+                }
+            } catch (e) {
+                if (e.message && !e.message.includes('fetch') && !e.message.includes('HTTP')) {
+                    throw e;
+                }
+            }
+        }
+        throw new Error('Timeout: Home PC did not respond within 2 minutes. Make sure start_remote_worker.bat is running on your Home PC.');
+    }
+
+    // Dynamics CRM Import Handler
+    const importDynamicsBtn = document.getElementById('import-dynamics-btn');
+    const dynamicsUrlInput = document.getElementById('dynamics-url-input');
+    const dynamicsStatusMsg = document.getElementById('dynamics-status-msg');
+
+    if (importDynamicsBtn && dynamicsUrlInput) {
+        importDynamicsBtn.addEventListener('click', async () => {
+            const dynUrl = (dynamicsUrlInput.value || '').trim();
+            if (!dynUrl) {
+                showDynamicsStatus('Please paste a valid Dynamics CRM URL.', 'error');
+                return;
+            }
+
+            if (!dynUrl.includes('crm.dynamics.com') && !dynUrl.includes('main.aspx')) {
+                showDynamicsStatus('URL must be a Microsoft Dynamics CRM link.', 'error');
+                return;
+            }
+
+            importDynamicsBtn.disabled = true;
+            const dynBtnText = importDynamicsBtn.querySelector('.btn-text');
+            const dynLoader = importDynamicsBtn.querySelector('.loader');
+            if (dynBtnText) dynBtnText.textContent = 'Extracting...';
+            if (dynLoader) dynLoader.style.display = 'inline-block';
+            showDynamicsStatus('Connecting to Dynamics CRM session on Home PC...', 'info');
+
+            try {
+                const response = await fetch('/api/extract-dynamics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: dynUrl })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                let data = await response.json();
+
+                if (data.is_relay && data.job_id) {
+                    data = await pollDynamicsRelayJob(data.job_id);
+                }
+
+                if (data && (data.deliverable_id || data.title || data.completed_copy || data.completed_page_url)) {
+                    const caseNumberInput = document.getElementById('case-number-input');
+                    const urlInput = document.getElementById('url-input');
+                    const expectedTitleInput = document.getElementById('expected-title-input');
+                    const expectedContentInput = document.getElementById('expected-content-input');
+                    const specialInstructionsInput = document.getElementById('special-instructions-input');
+                    const customRulesInput = document.getElementById('custom-rules-input');
+
+                    const seoPanelBody = document.querySelector('#seo-inputs-section .seo-panel-body');
+                    const toggleIcon = document.querySelector('#toggle-seo-inputs .toggle-icon');
+                    if (seoPanelBody && (seoPanelBody.style.display === 'none' || !seoPanelBody.style.display)) {
+                        seoPanelBody.style.display = 'block';
+                        if (toggleIcon) toggleIcon.textContent = '▲';
+                    }
+
+                    let filledCount = 0;
+
+                    if (data.deliverable_id && caseNumberInput) {
+                        caseNumberInput.value = data.deliverable_id;
+                        flashField(caseNumberInput);
+                        filledCount++;
+                    }
+
+                    if (data.completed_page_url && urlInput) {
+                        urlInput.value = data.completed_page_url;
+                        flashField(urlInput);
+                        filledCount++;
+                    }
+
+                    if (data.title && expectedTitleInput) {
+                        expectedTitleInput.value = data.title;
+                        flashField(expectedTitleInput);
+                        filledCount++;
+                    }
+
+                    if (data.completed_copy && expectedContentInput) {
+                        expectedContentInput.value = data.completed_copy;
+                        flashField(expectedContentInput);
+                        filledCount++;
+                    }
+
+                    if (data.ctas_and_links && specialInstructionsInput) {
+                        specialInstructionsInput.value = data.ctas_and_links;
+                        flashField(specialInstructionsInput);
+                        filledCount++;
+                    }
+
+                    if (data.special_instructions && customRulesInput) {
+                        customRulesInput.value = data.special_instructions;
+                        flashField(customRulesInput);
+                        filledCount++;
+                    }
+
+                    showDynamicsStatus(`✅ Successfully imported ${filledCount} fields from Dynamics CRM! Form is ready for scan.`, 'success');
+                } else {
+                    showDynamicsStatus('⚠️ Extraction completed, but no deliverable fields were found in the CRM page.', 'error');
+                }
+            } catch (err) {
+                console.error('Dynamics import error:', err);
+                showDynamicsStatus(`❌ Error: ${err.message}`, 'error');
+            } finally {
+                importDynamicsBtn.disabled = false;
+                if (dynBtnText) dynBtnText.textContent = '⚡ Auto-Fill Form';
+                if (dynLoader) dynLoader.style.display = 'none';
+            }
+        });
+    }
+
+    function showDynamicsStatus(msg, type) {
+        if (!dynamicsStatusMsg) return;
+        dynamicsStatusMsg.textContent = msg;
+        dynamicsStatusMsg.className = `dynamics-status ${type}`;
+        dynamicsStatusMsg.style.display = 'block';
+    }
+
+    function flashField(element) {
+        if (!element) return;
+        element.classList.remove('field-autofilled');
+        void element.offsetWidth;
+        element.classList.add('field-autofilled');
+    }
+
     const form = document.getElementById('url-form');
 
     const input = document.getElementById('url-input');
@@ -1074,6 +1265,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (linksCard) linksCard.style.display = 'none';
         }
 
+        // Sections and Widgets
+        if (data.sections_and_widgets) {
+            renderSectionsAndWidgets(data.sections_and_widgets);
+        }
+
         // Bug Report
         renderBugReport(data);
 
@@ -1289,6 +1485,110 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Toggle for Sections & Widgets Card
+    const toggleSectionsWidgetsBtn = document.getElementById('toggle-sections-widgets');
+    const sectionsWidgetsContent = document.getElementById('sections-widgets-content');
+    if (toggleSectionsWidgetsBtn && sectionsWidgetsContent) {
+        toggleSectionsWidgetsBtn.addEventListener('click', () => {
+            const isHidden = sectionsWidgetsContent.style.display === 'none';
+            sectionsWidgetsContent.style.display = isHidden ? 'block' : 'none';
+            const icon = toggleSectionsWidgetsBtn.querySelector('.toggle-icon');
+            if (icon) icon.textContent = isHidden ? '▲' : '▼';
+        });
+    }
+
+    function getWidgetIcon(wType) {
+        switch (wType) {
+            case 'image': return '🖼️';
+            case 'content': return '📄';
+            case 'navigation': return '🧭';
+            case 'form': return '📋';
+            case 'inventory': return '🚗';
+            default: return '📦';
+        }
+    }
+
+    function renderContainerNodeHtml(node) {
+        let widgetsHtml = '';
+        if (node.widgets && node.widgets.length > 0) {
+            widgetsHtml = node.widgets.map(w => `
+                <div class="tree-widget-item">
+                    <span class="tree-widget-name">${getWidgetIcon(w.type)} ${escapeHTML(w.name)}</span>
+                    <span class="tree-widget-id">${escapeHTML(w.id || w.widget_type)}</span>
+                </div>
+            `).join('');
+        }
+
+        let childContainersHtml = '';
+        if (node.containers && node.containers.length > 0) {
+            childContainersHtml = node.containers.map(c => renderContainerNodeHtml(c)).join('');
+        }
+
+        if (!widgetsHtml && !childContainersHtml) {
+            widgetsHtml = `<div class="tree-widget-item" style="color: var(--text-muted); font-style: italic;">Empty container</div>`;
+        }
+
+        return `
+            <div class="tree-container-node" style="margin-bottom: 0.4rem;">
+                <div class="tree-container-header" onclick="event.stopPropagation(); const body = this.nextElementSibling; const isH = body.style.display === 'none'; body.style.display = isH ? 'block' : 'none'; this.querySelector('.tree-c-arrow').textContent = isH ? '▼' : '►';" style="display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0.6rem; background: rgba(255,255,255,0.03); border-radius: 4px; cursor: pointer; user-select: none;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #a5d6ff; font-family: monospace; display: flex; align-items: center; gap: 0.4rem;">
+                        <span class="tree-c-arrow" style="font-size: 0.7rem;">▼</span> <span>📂 ${escapeHTML(node.name)}</span>
+                    </div>
+                </div>
+                <div class="tree-container-body" style="display: block; padding-left: 0.8rem; border-left: 1.5px solid rgba(124, 77, 255, 0.3); margin-top: 0.3rem;">
+                    ${widgetsHtml}
+                    ${childContainersHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderSectionsAndWidgets(swData) {
+        const card = document.getElementById('sections-widgets-card');
+        const badge = document.getElementById('sections-widgets-badge');
+        const container = document.getElementById('sections-tree-container');
+
+        if (!card || !container) return;
+
+        if (!swData || !swData.sections || swData.sections.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+
+        card.style.display = 'block';
+        if (badge) {
+            badge.textContent = `${swData.total_sections || swData.sections.length} Sections | ${swData.total_widgets || 0} Widgets`;
+        }
+
+        container.innerHTML = '';
+
+        swData.sections.forEach((sec) => {
+            const secItem = document.createElement('div');
+            secItem.className = 'tree-section-item';
+
+            let containersHtml = '';
+            if (sec.containers && sec.containers.length > 0) {
+                containersHtml = sec.containers.map(c => renderContainerNodeHtml(c)).join('');
+            } else {
+                containersHtml = `<div style="color: var(--text-muted); font-style: italic; padding: 0.5rem;">No containers</div>`;
+            }
+
+            secItem.innerHTML = `
+                <div class="tree-section-header" onclick="const w = this.nextElementSibling; const isH = w.style.display === 'none'; w.style.display = isH ? 'block' : 'none'; this.querySelector('.tree-arrow').textContent = isH ? '▼' : '►';">
+                    <div class="tree-section-title">
+                        <span class="tree-arrow">▼</span> <strong>${escapeHTML(sec.name)}</strong>
+                    </div>
+                    <span class="tree-section-badge">${sec.total_widgets || 0} Widget${sec.total_widgets === 1 ? '' : 's'}</span>
+                </div>
+                <div class="tree-subsections-wrapper" style="display: block; padding: 0.6rem 0.8rem 0.8rem 0.8rem;">
+                    ${containersHtml}
+                </div>
+            `;
+
+            container.appendChild(secItem);
+        });
+    }
+
 
     // PDF Download
     const pdfBtn = document.getElementById('download-pdf-btn');
@@ -1313,11 +1613,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if (!resp.ok) throw new Error('PDF generation failed');
 
-                const blob = await resp.blob();
+                const contentType = resp.headers.get('content-type') || '';
+                let blob;
+                let downloadFilename = caseNum ? `${caseNum}.pdf` : 'Bug-Report.pdf';
+
+                if (contentType.includes('application/json')) {
+                    const data = await resp.json();
+                    if (data.is_relay && data.job_id) {
+                        const jobResult = await pollRelayPdfJob(data.job_id);
+                        if (jobResult && jobResult.pdf_base64) {
+                            if (jobResult.filename) downloadFilename = jobResult.filename;
+                            const byteCharacters = atob(jobResult.pdf_base64);
+                            const byteNumbers = new Array(byteCharacters.length);
+                            for (let i = 0; i < byteCharacters.length; i++) {
+                                byteNumbers[i] = byteCharacters.charCodeAt(i);
+                            }
+                            const byteArray = new Uint8Array(byteNumbers);
+                            blob = new Blob([byteArray], { type: 'application/pdf' });
+                        } else {
+                            throw new Error('No PDF payload returned from Home PC worker.');
+                        }
+                    } else {
+                        throw new Error('Unexpected JSON response from server.');
+                    }
+                } else {
+                    blob = await resp.blob();
+                }
+
                 const blobUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = blobUrl;
-                a.download = caseNum ? `${caseNum}.pdf` : 'Bug-Report.pdf';
+                a.download = downloadFilename;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();

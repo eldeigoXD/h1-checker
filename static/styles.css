@@ -1109,3 +1109,236 @@ h2 .source-badge {
     word-break: break-all;
 }
 
+/* ---- Sections & Widgets Tree View ---- */
+.sections-tree-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.tree-section-item {
+    background: rgba(18, 18, 28, 0.7);
+    border: 1px solid rgba(124, 77, 255, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.tree-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(124, 77, 255, 0.08);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.tree-section-header:hover {
+    background: rgba(124, 77, 255, 0.15);
+}
+
+.tree-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+}
+
+.tree-section-badge {
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: #b388ff;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+}
+
+.tree-subsections-wrapper {
+    padding: 0.5rem 1rem 0.8rem 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tree-subsection-item {
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 2px solid rgba(124, 77, 255, 0.4);
+    padding: 0.5rem 0.8rem;
+    border-radius: 0 6px 6px 0;
+}
+
+.tree-subsection-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #a5d6ff;
+    font-family: monospace;
+    margin-bottom: 0.3rem;
+}
+
+.tree-widgets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.2rem;
+    padding-left: 0.5rem;
+}
+
+.tree-widget-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.tree-widget-name {
+    color: #ffd54f;
+    font-weight: 500;
+}
+
+.tree-widget-id {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    word-break: break-all;
+}
+
+/* Dynamics 365 Deliverable Auto-Fill Styling */
+.dynamics-import-card {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.dynamics-import-card:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+}
+
+.dynamics-import-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.dynamics-icon {
+    font-size: 1.1rem;
+}
+
+.dynamics-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #93c5fd;
+    letter-spacing: 0.02em;
+}
+
+.dynamics-badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-weight: 500;
+}
+
+.dynamics-import-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.dynamics-import-input-group input {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    color: #f8fafc;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.dynamics-import-input-group input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.dynamics-import-btn {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.65rem 1.2rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.dynamics-import-btn:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.dynamics-import-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.dynamics-status {
+    margin-top: 0.6rem;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+}
+
+.dynamics-status.info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.dynamics-status.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.dynamics-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+@keyframes autoFillFlash {
+    0% { background-color: rgba(52, 211, 153, 0.35); border-color: #34d399; }
+    50% { background-color: rgba(52, 211, 153, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.field-autofilled {
+    animation: autoFillFlash 2s ease-out;
+}
+
+

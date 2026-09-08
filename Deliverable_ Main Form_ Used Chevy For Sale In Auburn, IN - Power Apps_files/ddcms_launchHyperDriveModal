@@ -1,0 +1,177 @@
+/*
+    Copy business rules overview: 
+    enable edit fields: checks if is copy outsourced = true
+        if yes outsource Id and copy to edit fields are visible
+        if no they are not visible
+
+    show outsource copy options:
+
+*/
+
+//hyperDrive Menu Visibility b996dbc2-dbe7-ef11-be21-000d3a8f4215 copywriting or ef3df4b6-60b7-ef11-b8e9-000d3a5986ef leadership
+function hyperDriveMenuVisible(PrimaryControl) {
+    const formContext = PrimaryControl;
+    isVisible = false;
+    const userRoles = Xrm.Utility.getGlobalContext().userSettings.roles.getAll();
+    const userId = Xrm.Utility.getGlobalContext().userSettings.userId.toLowerCase().replace(/[{}]/g, "");
+    const copywritingOwner = formContext.getAttribute("ddcms_copywritingowner")?.getValue()?.[0]?.id?.toLowerCase().replace(/[{}]/g, "") || null
+
+    userRoles.forEach(function (role) {
+        let allowedRoles = [
+            "b996dbc2-dbe7-ef11-be21-000d3a8f4215", //copywriting
+            "ef3df4b6-60b7-ef11-b8e9-000d3a5986ef" //leadership
+        ];
+        let roleId = role.id.replace(/{|}/g, "").toLowerCase();
+        if (allowedRoles.includes(roleId)) {
+            if(roleId === "b996dbc2-dbe7-ef11-be21-000d3a8f4215") {//check if assigned copywriter
+                if(userId === copywritingOwner) {
+                    isVisible = true;
+                } else {
+                    isVisible = false;
+                }
+            } else {
+                isVisible = true;
+            }
+            
+        }
+    });
+    return isVisible;
+}
+
+//launch NEW
+function launchHyperDriveModal(PrimaryControl) {
+    const formContext = PrimaryControl;
+    const outsourceId = formContext.getAttribute("ddcms_copywritingoutsourceid").getValue();
+    const isCopyoutsourced = formContext.getAttribute("ddcms_iscopyoutsourced");
+
+    if(isCopyoutsourced.getValue() === false) {
+        isCopyoutsourced.setValue(true);
+    };
+
+    let entityName = formContext.data.entity.getEntityName();
+    let recordId = formContext.data.entity.getId();
+
+    let pageInput = {
+        pageType: "custom",
+        name: "ddcms_hyperdrivegeneration_b8b2f", // ✅ This is your custom page's internal name
+        entityName: entityName,
+        recordId: recordId
+    };
+
+    let navigationOptions = {
+        target: 2,
+        width: 1600,
+        height: 900,
+        position: 1
+    };
+
+    if (outsourceId) {
+        //prompt user that this will start a NEW instance of the modal power app - user can select "Yes" to proceed or "No" to cancel
+        const userConfirmed = window.confirm("This will start a NEW HyperDrive generation and it appears you may have already started one. Do you wish to proceed?");
+        if (!userConfirmed) {
+            return;
+        }
+    };
+
+    Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(
+        function () {
+            console.log("Dialog closed");
+            Xrm.Utility.openEntityForm(entityName, recordId);
+        },
+        function (error) {
+            console.error("Error opening dialog: ", error.message);
+        }
+    );
+}
+
+//launch EXISTING
+function launchExistingHyperDriveModal(PrimaryControl) {
+    const formContext = PrimaryControl;
+
+    const externalId = formContext.getAttribute("ddcms_copywritingoutsourceid").getValue();
+    let destination;
+
+    if (externalId) {
+        destination = externalId;
+    } else {
+        destination = "https://app.prod.seogen.coxautoai.com/";
+    }
+
+    window.open(destination, "_blank");
+}
+
+//determines if app can show existingHyperDrive option
+function existingHyperDriveVisibility(PrimaryControl) {
+    const formContext = PrimaryControl;
+    let isVisible = false;
+    const externalId = formContext.getAttribute("ddcms_copywritingoutsourceid").getValue();
+
+    if (externalId) {
+        isVisible = true;
+    };
+
+    return isVisible;
+}
+
+//launch app directly
+function launchHyperDriveApp() {
+    window.open("https://app.prod.seogen.coxautoai.com/", "_blank");
+}
+
+//launch dynamically new if no id or existing if id
+function launchDynamicHyperDrive(PrimaryControl) {
+    const formContext = PrimaryControl;
+    const externalId = formContext.getAttribute("ddcms_copywritingoutsourceid").getValue();
+    const isCopyoutsourced = formContext.getAttribute("ddcms_iscopyoutsourced");
+
+    if(isCopyoutsourced.getValue() === false) {
+        isCopyoutsourced.setValue(true);
+    };
+
+    if (externalId) {//launch existing
+        window.open(externalId, "_blank");
+    } else {//launch new
+        let entityName = formContext.data.entity.getEntityName();
+        let recordId = formContext.data.entity.getId();
+
+        let pageInput = {
+            pageType: "custom",
+            name: "ddcms_hyperdrivegeneration_b8b2f", // ✅ This is your custom page's internal name
+            entityName: entityName,
+            recordId: recordId
+
+        };
+
+        let navigationOptions = {
+            target: 2,
+            width: 1600,
+            height: 900,
+            position: 1
+        };
+
+        let outsourceId = formContext.getAttribute("ddcms_copywritingoutsourceid").getValue();
+
+        if (outsourceId) {
+            //prompt user that this will start a NEW instance of the modal power app - user can select "Yes" to proceed or "No" to cancel
+            const userConfirmed = window.confirm("This will start a NEW HyperDrive generation and it appears you may have already started one. Do you wish to proceed?");
+            if (!userConfirmed) {
+                return;
+            }
+        }
+
+        Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(
+            function () {
+                console.log("Dialog closed");
+                Xrm.Utility.openEntityForm(entityName, recordId);
+            },
+            function (error) {
+                console.error("Error opening dialog: ", error.message);
+            }
+        );
+    }
+}
+
+function alwaysEnable() {
+    const isVisible = true;
+    return isVisible;
+}

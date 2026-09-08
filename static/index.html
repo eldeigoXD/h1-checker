@@ -20,13 +20,29 @@
             <button id="history-btn" class="outline-btn" style="position: absolute; right: 0; top: 0; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">📜 History</button>
         </header>
 
-        <main>
+            <!-- Dynamics 365 Auto-Fill Bar -->
+            <div class="dynamics-import-card">
+                <div class="dynamics-import-header">
+                    <span class="dynamics-icon">📥</span>
+                    <span class="dynamics-title">Dynamics 365 Deliverable Auto-Fill</span>
+                    <span class="dynamics-badge">SSO Authenticated</span>
+                </div>
+                <div class="dynamics-import-input-group">
+                    <input type="url" id="dynamics-url-input" placeholder="Paste Dynamics Deliverable URL (https://orgba6d8fe6.crm.dynamics.com/main.aspx...)" />
+                    <button type="button" id="import-dynamics-btn" class="dynamics-import-btn">
+                        <span class="btn-text">⚡ Auto-Fill Form</span>
+                        <span class="loader" style="display: none;"></span>
+                    </button>
+                </div>
+                <div id="dynamics-status-msg" class="dynamics-status" style="display: none;"></div>
+            </div>
+
             <form id="url-form">
                 <!-- Seamless URL Input Bar -->
                 <div class="search-bar">
                     <div class="case-input-wrapper">
                         <span class="case-icon">📁</span>
-                        <input type="text" id="case-number-input" placeholder="Case # (e.g. D-123)" maxlength="15">
+                        <input type="text" id="case-number-input" placeholder="Case # (e.g. D-123)" maxlength="50">
                     </div>
                     <input type="url" id="url-input" placeholder="Enter the URL to review... (e.g. google.com)"
                         style="border-radius: 0;" required>
@@ -381,6 +397,20 @@
                         <!-- Category panels -->
                         <div id="page-audit-categories" style="display: flex; flex-direction: column; gap: 0.6rem;">
                         </div>
+                    </div>
+                </div>
+
+                <!-- Sections and Widgets Card -->
+                <div id="sections-widgets-card" class="stats-card" style="display: none; border-left: 4px solid #7c4dff;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" id="toggle-sections-widgets">
+                            <span style="font-size: 1.2rem;">🧱</span> Sections & Widgets <span class="toggle-icon" style="font-size: 0.9rem; color: var(--text-muted);">▼</span>
+                        </h2>
+                        <span id="sections-widgets-badge" class="badge" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; background: rgba(124, 77, 255, 0.2); color: #b388ff; border: 1px solid rgba(124, 77, 255, 0.4);">0 Sections | 0 Widgets</span>
+                    </div>
+                    <div id="sections-widgets-content" style="display: none; margin-top: 1rem;">
+                        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">Detected DDC Composer page section structure, layout containers, and embedded portlet widgets.</p>
+                        <div id="sections-tree-container" class="sections-tree-container"></div>
                     </div>
                 </div>
 

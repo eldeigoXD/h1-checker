@@ -3009,9 +3009,200 @@ def api_save_correction():
     
     try:
         record = inventory_learner.save_correction(url, filter_url, source='manual_correction')
-        return jsonify({'status': 'ok', 'record': record})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+def extract_sections_and_widgets(soup, url: str = ""):
+    """Extract DDC Composer Sections, Subsections/Containers, and Widgets recursively from DOM."""
+    import json, re, datetime
+
+    top_sections = []
+    raw_sections = soup.find_all(lambda el: el.name in ['section'] or 
+                                 (el.name == 'div' and ('page-section' in el.get('class', []) or 
+                                                       el.has_attr('data-section-name') or 
+                                                       (el.has_attr('data-name') and any(k in el.get('data-name', '') for k in ['container', 'section', 'wrapper', 'hero', 'content', 'title', 'inner'])))))
+    
+    if not raw_sections:
+        raw_sections = soup.find_all('div', class_=re.compile(r'container|section|ddc-content'))
+
+    for s in raw_sections:
+        is_child = False
+        for parent in top_sections:
+            if s in parent.find_all():
+                is_child = True
+                break
+        if not is_child:
+            top_sections.append(s)
+
+    def parse_widgets_in_element(element):
+        """Extract immediate widgets inside an element."""
+        widget_nodes = element.find_all(lambda w: w.has_attr('data-widget-name') or 
+                                                 w.has_attr('data-widget-id') or 
+                                                 ('ddc-content' in w.get('class', [])) or
+                                                 w.has_attr('data-portlet-name'))
+        unique_widgets = []
+        for w in widget_nodes:
+            is_inner = False
+            for existing_w in unique_widgets:
+                if w in existing_w.find_all():
+                    is_inner = True
+                    break
+            if not is_inner:
+                unique_widgets.append(w)
+
+        widgets_list = []
+        for w in unique_widgets:
+            w_name = w.get('data-widget-name') or w.get('data-portlet-name') or ''
+            w_id = w.get('data-widget-id') or w.get('id') or ''
+            w_classes = w.get('class', [])
+            
+            if not w_name and w_classes:
+                filtered_cls = [cls for cls in w_classes if cls != 'ddc-content']
+                w_name = filtered_cls[0] if filtered_cls else 'Widget'
+
+            formatted_w_name = w_name.replace('ws-', '').replace('-', ' ').title()
+            
+            w_type = 'default'
+            w_name_low = w_name.lower() + ' ' + (w_id or '').lower()
+            if any(k in w_name_low for k in ['img', 'image', 'gallery', 'media', 'photo']):
+                w_type = 'image'
+            elif any(k in w_name_low for k in ['content', 'text', 'wysiwyg', 'title', 'heading', 'paragraph']):
+                w_type = 'content'
+            elif any(k in w_name_low for k in ['nav', 'menu', 'links', 'drawer']):
+                w_type = 'navigation'
+            elif any(k in w_name_low for k in ['form', 'quote', 'lead', 'contact']):
+                w_type = 'form'
+            elif any(k in w_name_low for k in ['inv', 'vehicle', 'car', 'listing', 'card']):
+                w_type = 'inventory'
+
+            widgets_list.append({
+                "id": w_id or f"widget-{len(widgets_list)+1}",
+                "name": formatted_w_name,
+                "widget_type": w_name,
+                "type": w_type,
+                "classes": ' '.join(w_classes[:4])
+            })
+        return widgets_list
+
+    def parse_container_node(element):
+        """Recursively parse container children and immediate widgets."""
+        c_name = element.get('data-name') or (element.get('class')[0] if element.get('class') else 'container')
+        
+        child_containers = element.find_all(lambda c: c != element and (c.has_attr('data-name') or 
+                                            any(k in ' '.join(c.get('class', [])) for k in ['container', 'content-background', 'content-left', 'content-right', 'column', 'wrapper', 'inner'])))
+        
+        top_child_containers = []
+        for cc in child_containers:
+            is_grandchild = False
+            for p in child_containers:
+                if cc != p and cc in p.find_all():
+                    is_grandchild = True
+                    break
+            if not is_grandchild:
+                top_child_containers.append(cc)
+
+        sub_nodes = []
+        for cc in top_child_containers:
+            sub_nodes.append(parse_container_node(cc))
+
+        widgets = []
+        if not sub_nodes:
+            widgets = parse_widgets_in_element(element)
+        else:
+            all_widgets = parse_widgets_in_element(element)
+            child_widget_ids = set()
+            for sn in sub_nodes:
+                def get_w_ids(n):
+                    ids = [w['id'] for w in n.get('widgets', [])]
+                    for sc in n.get('containers', []):
+                        ids.extend(get_w_ids(sc))
+                    return ids
+                child_widget_ids.update(get_w_ids(sn))
+            widgets = [w for w in all_widgets if w['id'] not in child_widget_ids]
+
+        return {
+            "name": c_name,
+            "containers": sub_nodes,
+            "widgets": widgets
+        }
+
+    sections_tree = []
+    total_widgets_count = 0
+
+    for idx, sec in enumerate(top_sections, start=1):
+        sec_name = sec.get('data-section-name') or sec.get('data-name') or ''
+        
+        if not sec_name:
+            inner_w = sec.find(attrs={'data-widget-name': True})
+            if inner_w:
+                sec_name = inner_w.get('data-widget-name').replace('ws-', '').replace('-', ' ').title()
+            else:
+                sec_name = f"Section {idx}"
+        else:
+            sec_name = sec_name.replace('-', ' ').replace('_', ' ').title()
+
+        top_child_containers = sec.find_all(lambda c: c != sec and (c.has_attr('data-name') or 
+                                            any(k in ' '.join(c.get('class', [])) for k in ['container', 'wrapper', 'inner'])))
+        
+        direct_containers = []
+        for cc in top_child_containers:
+            is_sub = False
+            for p in top_child_containers:
+                if cc != p and cc in p.find_all():
+                    is_sub = True
+                    break
+            if not is_sub:
+                direct_containers.append(cc)
+
+        if not direct_containers:
+            direct_containers = [sec]
+
+        containers_tree = []
+        for c in direct_containers:
+            containers_tree.append(parse_container_node(c))
+
+        def count_w(n):
+            c_cnt = len(n.get('widgets', []))
+            for sub_c in n.get('containers', []):
+                c_cnt += count_w(sub_c)
+            return c_cnt
+
+        sec_widgets_count = sum(count_w(n) for n in containers_tree)
+        total_widgets_count += sec_widgets_count
+
+        sections_tree.append({
+            "section_id": f"section-{idx}",
+            "name": sec_name,
+            "total_widgets": sec_widgets_count,
+            "containers": containers_tree
+        })
+
+    result_data = {
+        "total_sections": len(sections_tree),
+        "total_widgets": total_widgets_count,
+        "sections": sections_tree
+    }
+
+    try:
+        catalog_path = os.path.join(os.path.dirname(__file__), 'sections_widgets_catalog.json')
+        if os.path.exists(catalog_path):
+            with open(catalog_path, 'r', encoding='utf-8') as f:
+                cat_db = json.load(f)
+            
+            if "analyzed_pages" not in cat_db:
+                cat_db["analyzed_pages"] = {}
+            
+            if url:
+                cat_db["analyzed_pages"][url] = {
+                    "analyzed_at": datetime.datetime.now().isoformat(),
+                    "summary": result_data
+                }
+                with open(catalog_path, 'w', encoding='utf-8') as f:
+                    json.dump(cat_db, f, indent=2)
+    except Exception as err:
+        print(f"[WARN] Catalog persistence error: {err}")
+
+    return result_data
 
 @app.route('/api/extract-h1', methods=['GET', 'POST'])
 def extract_h1():
@@ -3067,6 +3258,13 @@ def extract_h1():
         except Exception as _e:
             print(f"Page audit error: {_e}")
             page_audit = {'score': None, 'total_checks': 0, 'passes': 0, 'warns': 0, 'fails': 0, 'categories': {}}
+        
+        # Sections and Widgets Audit
+        try:
+            sections_and_widgets = extract_sections_and_widgets(soup, url)
+        except Exception as _e:
+            print(f"Sections & Widgets extraction error: {_e}")
+            sections_and_widgets = {'total_sections': 0, 'total_widgets': 0, 'sections': []}
         
         # 1. H1 Processing
         h1_tags_raw = soup.find_all('h1')
@@ -4142,6 +4340,7 @@ def extract_h1():
             'cta_evaluations': locals().get('cta_evaluations', []),
             'custom_layout_evaluations': locals().get('custom_layout_evaluations', []),
             'bugs': bugs,
+            'sections_and_widgets': sections_and_widgets,
             'url': url,
             'case_id': case_id
         })
@@ -4217,12 +4416,158 @@ def capture_bug_screenshots(bugs, url):
                         bug['screenshot_path'] = fpath
                 except Exception as e:
                     pass
-    except Exception as e:
-        print("Screenshot error:", str(e))
     finally:
         if driver:
             try: driver.quit()
             except: pass
+
+
+def get_authenticated_chrome_driver():
+    """
+    Tries to connect to an existing Chrome browser on remote debugging port 9222 first.
+    If not running, launches a new Chrome instance with the local user's Chrome User Data profile.
+    If user profile is locked/in-use, launches Chrome with a fallback profile dir or plain driver.
+    """
+    options = Options()
+    
+    # Strategy 1: Try attaching to existing Chrome debug port 9222
+    try:
+        debug_options = Options()
+        debug_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+        driver = webdriver.Chrome(options=debug_options)
+        print("[DYNAMICS IMPORTER] Successfully attached to existing Chrome on port 9222!")
+        return driver, False # False means don't quit driver when done if attached
+    except Exception:
+        print("[DYNAMICS IMPORTER] Port 9222 not active. Launching standalone authenticated Chrome...")
+
+    # Strategy 2: Launch Chrome with User Data Directory
+    user_data_dir = os.path.join(os.environ.get('LOCALAPPDATA', 'C:\\Users\\Diego PC\\AppData\\Local'), 'Google', 'Chrome', 'User Data')
+    options.add_argument(f"--user-data-dir={user_data_dir}")
+    options.add_argument("--profile-directory=Default")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+
+    try:
+        driver = webdriver.Chrome(options=options)
+        return driver, True # True means quit driver when done
+    except Exception as e:
+        print(f"[DYNAMICS IMPORTER] Profile in use or locked: {e}. Trying secondary driver...")
+        fallback_options = Options()
+        fallback_options.add_argument("--disable-blink-features=AutomationControlled")
+        driver = webdriver.Chrome(options=fallback_options)
+        return driver, True
+
+def extract_dynamics_deliverable(url):
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    
+    driver = None
+    should_quit = True
+    try:
+        driver, should_quit = get_authenticated_chrome_driver()
+        driver.get(url)
+        
+        # Wait up to 25 seconds for the Dynamics 365 form to load
+        wait = WebDriverWait(driver, 25)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-id*="name"], [data-id*="completedcopy"], body')))
+        
+        # Give UCI React app a few seconds to finish rendering fields
+        time.sleep(5)
+        
+        # Scroll down to ensure lazy-loaded fields/tab controls are in DOM
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2);")
+        time.sleep(2)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(2)
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(1)
+
+        # Extraction logic with JavaScript execution in Chrome
+        extracted = driver.execute_script("""
+            function getFieldText(dataIdSubstrings) {
+                for (let sub of dataIdSubstrings) {
+                    let elems = document.querySelectorAll(`[data-id*="${sub}"]`);
+                    for (let el of elems) {
+                        let text = el.innerText || el.textContent || '';
+                        if (text.trim()) return text.trim();
+                        let input = el.querySelector('input, textarea, [contenteditable="true"]');
+                        if (input && (input.value || input.innerText)) {
+                            return (input.value || input.innerText).trim();
+                        }
+                    }
+                }
+                return '';
+            }
+
+            let deliverableId = getFieldText(['deliverablenumber.fieldControl', 'deliverableid.fieldControl', 'ticketnumber.fieldControl', 'deliverableid', 'deliverable_number', 'deliverable_id', 'ticketnumber', 'deliverable']);
+            if (!deliverableId) {
+                let urlParams = new URLSearchParams(window.location.search);
+                let rawId = urlParams.get('id') || '';
+                if (rawId) {
+                    deliverableId = rawId.split('-')[0].toUpperCase();
+                }
+            }
+
+            let title = getFieldText(['name.fieldControl', 'ddcms_name', 'name']);
+            let completedCopy = getFieldText(['completedcopy.fieldControl', 'completedcopy']);
+            let completedPageUrl = getFieldText(['completedpageurl.fieldControl', 'completedpageurl']);
+            let links = getFieldText(['links.fieldControl', 'links']);
+            let ctas = getFieldText(['callstoaction.fieldControl', 'callstoaction']);
+            let details = getFieldText(['details.fieldControl', 'details']);
+
+            let matchUrl = completedPageUrl.match(/https?:\/\/[^\s\)\'\"]+/i);
+            if (matchUrl) {
+                completedPageUrl = matchUrl[0];
+            }
+
+            let combinedCtasLinks = [];
+            if (ctas) combinedCtasLinks.push(ctas);
+            if (links) combinedCtasLinks.push(links);
+
+            return {
+                deliverable_id: deliverableId,
+                title: title,
+                completed_copy: completedCopy,
+                completed_page_url: completedPageUrl,
+                ctas_and_links: combinedCtasLinks.join('\\n'),
+                special_instructions: details
+            };
+        """)
+
+        return {
+            "success": True,
+            "data": extracted
+        }
+    except Exception as e:
+        print(f"[DYNAMICS IMPORTER ERROR] {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+    finally:
+        if driver and should_quit:
+            try:
+                driver.quit()
+            except Exception:
+                pass
+
+@app.route('/api/extract-dynamics', methods=['POST'])
+def extract_dynamics():
+    data = request.json or {}
+    url = data.get('url', '').strip()
+    if not url:
+        return jsonify({"error": "No Dynamics CRM URL provided"}), 400
+    
+    if "crm.dynamics.com" not in url and "main.aspx" not in url:
+        return jsonify({"error": "Invalid Dynamics CRM URL format"}), 400
+
+    result = extract_dynamics_deliverable(url)
+    if result.get("success"):
+        return jsonify(result["data"])
+    else:
+        return jsonify({"error": result.get("error", "Failed to extract Dynamics CRM data")}), 500
 
 
 @app.route('/api/generate-pdf', methods=['POST'])

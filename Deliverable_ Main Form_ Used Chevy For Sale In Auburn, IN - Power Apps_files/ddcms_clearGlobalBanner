@@ -1,0 +1,27 @@
+function clearBanners() {
+    console.log("checking for notification banners!");
+    const sessionBannerCheck = sessionStorage.getItem("clearBanner") || null;
+    console.log(sessionBannerCheck);
+    if (sessionBannerCheck === "true") {
+        setTimeout(function () {
+            const clearGuids = JSON.parse(sessionStorage.getItem("bannerGuids") || "[]");
+            console.log(clearGuids);
+
+            clearGuids.forEach(guid => {
+                console.log(guid);
+                Xrm.App.clearGlobalNotification(guid).then(function () {
+                    console.log("Notification cleared.");
+                    sessionStorage.removeItem("clearBanner"); 
+                    sessionStorage.removeItem("bannerGuids"); 
+                })
+                .catch(function (error) {
+                    console.error("Error clearing notification:", error.message);
+                });
+            });
+        }, 6000);
+    } else {
+        console.log("No Notification Banners found!");
+    }
+
+    return false; // Hide the command
+}

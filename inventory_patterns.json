@@ -283,7 +283,8 @@
     "/used-inventory/toyota-for-sale-raleigh-nc.htm": "https://www.murphymotorco.com/used-inventory/index.htm?make=Toyota",
     "/used-inventory/volkswagen-for-sale-raleigh-nc.htm": "https://www.murphymotorco.com/used-inventory/index.htm?make=Volkswagen",
     "/used-inventory/trucks-for-sale-raleigh-nc.htm": "https://www.murphymotorco.com/used-inventory/index.htm?normalBodyStyle=Truck",
-    "/used-inventory/suvs-for-sale-raleigh-nc.htm": "https://www.murphymotorco.com/used-inventory/index.htm?normalBodyStyle=SUV"
+    "/used-inventory/suvs-for-sale-raleigh-nc.htm": "https://www.murphymotorco.com/used-inventory/index.htm?normalBodyStyle=SUV",
+    "/used-inventory/nissan-for-sale-raleigh-nc.htm": "/used-inventory/index.htm?make=Nissan"
   },
   "www.faulknersubarueaston.com": {
     "/new-inventory/index.htm": "https://www.faulknersubarueaston.com/new-inventory/index.htm"
@@ -560,7 +561,8 @@
     "/new-inventory/pilot-suv-santa-maria.htm": "/new-inventory/index.htm?model=Pilot"
   },
   "billmarshfordfd.cms.dealer.com": {
-    "/new-ford/bronco-sport-newtown-pa.htm": "/new-inventory/index.htm?model=Bronco+Sport&make=Ford"
+    "/new-ford/bronco-sport-newtown-pa.htm": "/new-inventory/index.htm?model=Bronco+Sport&make=Ford",
+    "/new-ford/expedition-newtown-pa.htm": "/new-inventory/index.htm?model=Expedition&make=Ford"
   },
   "www.deanmccrarykia.com": {
     "/new-inventory/index.htm": "https://www.deanmccrarykia.com/new-inventory/index.htm"
@@ -1288,5 +1290,17 @@
   },
   "www.boydchevrolet.com": {
     "/bargain-inventory/index.htm": "https://www.boydchevrolet.com/used-inventory/index.htm?internetPrice=1-20000"
+  },
+  "www.hixsontoyota.com": {
+    "/new-inventory/toyota-grand-highlander-for-sale-leesville-la.htm": "/new-inventory/index.htm?model=Grand%20Highlander&make=Toyota"
+  },
+  "www.lewisgmc.com": {
+    "/used-inventory/chevy-dodge-city-ks.htm": "/used-inventory/index.htm?make=Chevrolet"
+  },
+  "www.calavanconnect.com": {
+    "/new/kia-sportage.htm": "/new-inventory/index.htm?model=Sportage&make=Kia"
+  },
+  "www.toyotaofsomerset.com": {
+    "/new-toyotay/suvs-somerset-ky.htm": "/new-inventory/index.htm?normalBodyStyle=SUV"
   }
 }
