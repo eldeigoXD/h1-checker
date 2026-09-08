@@ -4485,7 +4485,7 @@ def extract_dynamics_deliverable(url):
         time.sleep(1)
 
         # Extraction logic with JavaScript execution in Chrome
-        extracted = driver.execute_script("""
+        extracted = driver.execute_script(r"""
             function getFieldText(dataIdSubstrings) {
                 for (let sub of dataIdSubstrings) {
                     let elems = document.querySelectorAll(`[data-id*="${sub}"]`);
