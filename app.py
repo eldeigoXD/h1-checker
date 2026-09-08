@@ -4521,12 +4521,24 @@ def extract_dynamics_deliverable(url):
                 }
             }
 
+            var DYNAMICS_ICON_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\u202A-\u202E\u2500-\u25FF\u2600-\u27BF\uE000-\uF8FF\uFFF0-\uFFFF]/g;
+
+            function cleanFieldText(val) {
+                if (!val) return '';
+                return val.replace(DYNAMICS_ICON_REGEX, '').trim();
+            }
+
             function cleanCtaLabel(val) {
                 if (!val) return '';
-                let cleaned = val.replace(/[\u25A0-\u25FF\u200B-\u200D\uFEFF\uFFFD\uF000-\uFFFF]/g, '').trim();
-                let lines = cleaned.split('\n')
-                    .map(l => l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim())
-                    .filter(l => l && !/^(calls\s*to\s*action|links)$/i.test(l));
+                let cleaned = val.replace(DYNAMICS_ICON_REGEX, ' ').trim();
+                let lines = cleaned.split(/[\r\n]+/)
+                    .map(l => {
+                        let trimmed = l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim();
+                        trimmed = trimmed.replace(/\b(calls\s*to\s*action|links|ctas(\s*and\s*links)?)\b/gi, '').trim();
+                        trimmed = trimmed.replace(/^[:\-\s\t]+|[:\-\s\t]+$/g, '').trim();
+                        return trimmed;
+                    })
+                    .filter(l => l && /[a-zA-Z0-9]/.test(l));
                 return lines.join('\n');
             }
 

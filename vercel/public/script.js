@@ -103,6 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateFormWithDynamicsData(data) {
+        if (!data) return;
+
         const caseNumberInput = document.getElementById('case-number-input');
         const urlInput = document.getElementById('url-input');
         const expectedTitleInput = document.getElementById('expected-title-input');
@@ -119,40 +121,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let filledCount = 0;
 
-        if (data.deliverable_id && caseNumberInput) {
-            caseNumberInput.value = data.deliverable_id;
+        const DYNAMICS_ICON_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\u202A-\u202E\u2500-\u25FF\u2600-\u27BF\uE000-\uF8FF\uFFF0-\uFFFF]/g;
+
+        function cleanFieldText(val) {
+            if (!val) return '';
+            return val.replace(DYNAMICS_ICON_REGEX, '').trim();
+        }
+
+        function cleanCtaPayload(val) {
+            if (!val) return '';
+            let cleaned = val.replace(DYNAMICS_ICON_REGEX, ' ').trim();
+            let lines = cleaned.split(/[\r\n]+/)
+                .map(l => {
+                    let trimmed = l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim();
+                    trimmed = trimmed.replace(/\b(calls\s*to\s*action|links|ctas(\s*and\s*links)?)\b/gi, '').trim();
+                    trimmed = trimmed.replace(/^[:\-\s\t]+|[:\-\s\t]+$/g, '').trim();
+                    return trimmed;
+                })
+                .filter(l => l && /[a-zA-Z0-9]/.test(l));
+            return lines.join('\n');
+        }
+
+        const cleanedId = cleanFieldText(data.deliverable_id);
+        if (cleanedId && caseNumberInput) {
+            caseNumberInput.value = cleanedId;
             flashField(caseNumberInput);
             filledCount++;
         }
 
-        if (data.completed_page_url && urlInput) {
-            urlInput.value = data.completed_page_url;
+        const cleanedUrl = cleanFieldText(data.completed_page_url);
+        if (cleanedUrl && urlInput) {
+            urlInput.value = cleanedUrl;
             flashField(urlInput);
             filledCount++;
         }
 
-        if (data.title && expectedTitleInput) {
-            expectedTitleInput.value = data.title;
+        const cleanedTitle = cleanFieldText(data.title);
+        if (cleanedTitle && expectedTitleInput) {
+            expectedTitleInput.value = cleanedTitle;
             flashField(expectedTitleInput);
             filledCount++;
         }
 
-        if (data.completed_copy && expectedContentInput) {
-            expectedContentInput.value = data.completed_copy;
+        const cleanedCopy = cleanFieldText(data.completed_copy);
+        if (cleanedCopy && expectedContentInput) {
+            expectedContentInput.value = cleanedCopy;
             flashField(expectedContentInput);
             filledCount++;
         }
 
-        function cleanTextPayload(val) {
-            if (!val) return '';
-            let cleaned = val.replace(/[\u0000-\u001F\u007F-\u009F\u2000-\u206F\u2500-\u25FF\uEF00-\uFFFF\uF000-\uFFFF\uFEFF\uFFFD]/g, '').trim();
-            let lines = cleaned.split('\n')
-                .map(l => l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim())
-                .filter(l => l && /[a-zA-Z0-9]/.test(l) && !/^(calls\s*to\s*action|links)$/i.test(l));
-            return lines.join('\n');
-        }
-
-        const cleanedCtas = cleanTextPayload(data.ctas_and_links || '');
+        const cleanedCtas = cleanCtaPayload(data.ctas_and_links || '');
         if (specialInstructionsInput) {
             specialInstructionsInput.value = cleanedCtas;
             if (cleanedCtas) {
@@ -161,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const cleanedDetails = cleanTextPayload(data.special_instructions || '');
+        const cleanedDetails = cleanFieldText(data.special_instructions || '');
         if (customRulesInput) {
             customRulesInput.value = cleanedDetails;
             if (cleanedDetails) {
