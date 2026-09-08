@@ -4547,17 +4547,24 @@ def extract_dynamics_deliverable(url):
             let completedPageUrl = getFieldText(['completedpageurl.fieldControl', 'completedpageurl']);
             let rawLinks = cleanCtaLabel(getFieldText(['links.fieldControl', 'links']));
             let rawCtas = cleanCtaLabel(getFieldText(['callstoaction.fieldControl', 'callstoaction']));
-            let details = cleanFieldText(getFieldText([
-                'ddcms_copywritingdetails.fieldControl',
-                'ddcms_copywritingdetails',
-                'copywritingdetails.fieldControl',
-                'copywritingdetails',
-                'ddcms_details.fieldControl',
-                'ddcms_details',
-                'details.fieldControl',
-                'details',
-                'specialinstructions'
-            ]));
+            function getDetailsFieldText() {
+                let selectors = ['ddcms_details.fieldControl', 'ddcms_details', 'details.fieldControl', 'details', 'specialinstructions'];
+                for (let sub of selectors) {
+                    let elems = document.querySelectorAll(`[data-id*="${sub}"]`);
+                    for (let el of elems) {
+                        let dataId = (el.getAttribute('data-id') || '').toLowerCase();
+                        if (dataId.includes('copywriting')) continue;
+                        let txt = el.innerText || el.textContent || '';
+                        let input = el.querySelector('input, textarea, [contenteditable="true"]');
+                        let val = (input && (input.value || input.innerText)) || txt;
+                        if (val && val.trim() && val.trim().toLowerCase() !== 'details') {
+                            return val.trim();
+                        }
+                    }
+                }
+                return '';
+            }
+            let details = cleanFieldText(getDetailsFieldText());
 
             let matchUrl = completedPageUrl.match(/https?:\/\/[^\s\)\'\"]+/i);
             if (matchUrl) {
