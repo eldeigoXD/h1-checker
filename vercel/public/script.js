@@ -143,16 +143,31 @@ document.addEventListener('DOMContentLoaded', () => {
             filledCount++;
         }
 
-        if (data.ctas_and_links && specialInstructionsInput) {
-            specialInstructionsInput.value = data.ctas_and_links;
-            flashField(specialInstructionsInput);
-            filledCount++;
+        function cleanTextPayload(val) {
+            if (!val) return '';
+            let cleaned = val.replace(/[\u0000-\u001F\u007F-\u009F\u2000-\u206F\u2500-\u25FF\uEF00-\uFFFF\uF000-\uFFFF\uFEFF\uFFFD]/g, '').trim();
+            let lines = cleaned.split('\n')
+                .map(l => l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim())
+                .filter(l => l && /[a-zA-Z0-9]/.test(l) && !/^(calls\s*to\s*action|links)$/i.test(l));
+            return lines.join('\n');
         }
 
-        if (data.special_instructions && customRulesInput) {
-            customRulesInput.value = data.special_instructions;
-            flashField(customRulesInput);
-            filledCount++;
+        const cleanedCtas = cleanTextPayload(data.ctas_and_links || '');
+        if (specialInstructionsInput) {
+            specialInstructionsInput.value = cleanedCtas;
+            if (cleanedCtas) {
+                flashField(specialInstructionsInput);
+                filledCount++;
+            }
+        }
+
+        const cleanedDetails = cleanTextPayload(data.special_instructions || '');
+        if (customRulesInput) {
+            customRulesInput.value = cleanedDetails;
+            if (cleanedDetails) {
+                flashField(customRulesInput);
+                filledCount++;
+            }
         }
 
         showDynamicsStatus(`✅ Successfully imported ${filledCount} fields from Dynamics CRM! Form is ready for scan.`, 'success');
