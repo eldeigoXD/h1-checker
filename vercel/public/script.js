@@ -102,6 +102,62 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('Timeout: Home PC did not respond within 2 minutes. Make sure start_remote_worker.bat is running on your Home PC.');
     }
 
+    function populateFormWithDynamicsData(data) {
+        const caseNumberInput = document.getElementById('case-number-input');
+        const urlInput = document.getElementById('url-input');
+        const expectedTitleInput = document.getElementById('expected-title-input');
+        const expectedContentInput = document.getElementById('expected-content-input');
+        const specialInstructionsInput = document.getElementById('special-instructions-input');
+        const customRulesInput = document.getElementById('custom-rules-input');
+
+        const seoPanelBody = document.querySelector('#seo-inputs-section .seo-panel-body');
+        const toggleIcon = document.querySelector('#toggle-seo-inputs .toggle-icon');
+        if (seoPanelBody && (seoPanelBody.style.display === 'none' || !seoPanelBody.style.display)) {
+            seoPanelBody.style.display = 'block';
+            if (toggleIcon) toggleIcon.textContent = '▲';
+        }
+
+        let filledCount = 0;
+
+        if (data.deliverable_id && caseNumberInput) {
+            caseNumberInput.value = data.deliverable_id;
+            flashField(caseNumberInput);
+            filledCount++;
+        }
+
+        if (data.completed_page_url && urlInput) {
+            urlInput.value = data.completed_page_url;
+            flashField(urlInput);
+            filledCount++;
+        }
+
+        if (data.title && expectedTitleInput) {
+            expectedTitleInput.value = data.title;
+            flashField(expectedTitleInput);
+            filledCount++;
+        }
+
+        if (data.completed_copy && expectedContentInput) {
+            expectedContentInput.value = data.completed_copy;
+            flashField(expectedContentInput);
+            filledCount++;
+        }
+
+        if (data.ctas_and_links && specialInstructionsInput) {
+            specialInstructionsInput.value = data.ctas_and_links;
+            flashField(specialInstructionsInput);
+            filledCount++;
+        }
+
+        if (data.special_instructions && customRulesInput) {
+            customRulesInput.value = data.special_instructions;
+            flashField(customRulesInput);
+            filledCount++;
+        }
+
+        showDynamicsStatus(`✅ Successfully imported ${filledCount} fields from Dynamics CRM! Form is ready for scan.`, 'success');
+    }
+
     // Dynamics CRM Import Handler
     const importDynamicsBtn = document.getElementById('import-dynamics-btn');
     const dynamicsUrlInput = document.getElementById('dynamics-url-input');
@@ -110,101 +166,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if (importDynamicsBtn && dynamicsUrlInput) {
         importDynamicsBtn.addEventListener('click', async () => {
             const dynUrl = (dynamicsUrlInput.value || '').trim();
-            if (!dynUrl) {
-                showDynamicsStatus('Please paste a valid Dynamics CRM URL.', 'error');
-                return;
-            }
-
-            if (!dynUrl.includes('crm.dynamics.com') && !dynUrl.includes('main.aspx')) {
-                showDynamicsStatus('URL must be a Microsoft Dynamics CRM link.', 'error');
-                return;
-            }
 
             importDynamicsBtn.disabled = true;
             const dynBtnText = importDynamicsBtn.querySelector('.btn-text');
             const dynLoader = importDynamicsBtn.querySelector('.loader');
-            if (dynBtnText) dynBtnText.textContent = 'Extracting...';
+            if (dynBtnText) dynBtnText.textContent = 'Loading...';
             if (dynLoader) dynLoader.style.display = 'inline-block';
-            showDynamicsStatus('Connecting to Dynamics CRM session on Home PC...', 'info');
 
             try {
-                const response = await fetch('/api/extract-dynamics', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: dynUrl })
-                });
+                let data = null;
 
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.error || `HTTP error! status: ${response.status}`);
-                }
+                if (!dynUrl) {
+                    showDynamicsStatus('Fetching latest 1-Click Bookmarklet import...', 'info');
+                    const res = await fetch('/api/get-latest-dynamics');
+                    const resData = await res.json();
+                    if (resData.success && resData.data) {
+                        data = resData.data;
+                    } else {
+                        throw new Error('Please paste a Dynamics CRM URL or use the 1-Click Bookmarklet.');
+                    }
+                } else {
+                    if (!dynUrl.includes('crm.dynamics.com') && !dynUrl.includes('main.aspx')) {
+                        throw new Error('URL must be a Microsoft Dynamics CRM link.');
+                    }
+                    showDynamicsStatus('Connecting to Dynamics CRM session...', 'info');
+                    const response = await fetch('/api/extract-dynamics', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: dynUrl })
+                    });
 
-                let data = await response.json();
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+                    }
 
-                if (data.is_relay && data.job_id) {
-                    data = await pollDynamicsRelayJob(data.job_id);
+                    data = await response.json();
+
+                    if (data.is_relay && data.job_id) {
+                        data = await pollDynamicsRelayJob(data.job_id);
+                    }
                 }
 
                 if (data && (data.deliverable_id || data.title || data.completed_copy || data.completed_page_url)) {
-                    const caseNumberInput = document.getElementById('case-number-input');
-                    const urlInput = document.getElementById('url-input');
-                    const expectedTitleInput = document.getElementById('expected-title-input');
-                    const expectedContentInput = document.getElementById('expected-content-input');
-                    const specialInstructionsInput = document.getElementById('special-instructions-input');
-                    const customRulesInput = document.getElementById('custom-rules-input');
-
-                    const seoPanelBody = document.querySelector('#seo-inputs-section .seo-panel-body');
-                    const toggleIcon = document.querySelector('#toggle-seo-inputs .toggle-icon');
-                    if (seoPanelBody && (seoPanelBody.style.display === 'none' || !seoPanelBody.style.display)) {
-                        seoPanelBody.style.display = 'block';
-                        if (toggleIcon) toggleIcon.textContent = '▲';
-                    }
-
-                    let filledCount = 0;
-
-                    if (data.deliverable_id && caseNumberInput) {
-                        caseNumberInput.value = data.deliverable_id;
-                        flashField(caseNumberInput);
-                        filledCount++;
-                    }
-
-                    if (data.completed_page_url && urlInput) {
-                        urlInput.value = data.completed_page_url;
-                        flashField(urlInput);
-                        filledCount++;
-                    }
-
-                    if (data.title && expectedTitleInput) {
-                        expectedTitleInput.value = data.title;
-                        flashField(expectedTitleInput);
-                        filledCount++;
-                    }
-
-                    if (data.completed_copy && expectedContentInput) {
-                        expectedContentInput.value = data.completed_copy;
-                        flashField(expectedContentInput);
-                        filledCount++;
-                    }
-
-                    if (data.ctas_and_links && specialInstructionsInput) {
-                        specialInstructionsInput.value = data.ctas_and_links;
-                        flashField(specialInstructionsInput);
-                        filledCount++;
-                    }
-
-                    if (data.special_instructions && customRulesInput) {
-                        customRulesInput.value = data.special_instructions;
-                        flashField(customRulesInput);
-                        filledCount++;
-                    }
-
-                    showDynamicsStatus(`✅ Successfully imported ${filledCount} fields from Dynamics CRM! Form is ready for scan.`, 'success');
+                    populateFormWithDynamicsData(data);
                 } else {
-                    showDynamicsStatus('⚠️ Extraction completed, but no deliverable fields were found in the CRM page.', 'error');
+                    showDynamicsStatus('⚠️ Extraction completed, but no deliverable fields were found.', 'error');
                 }
             } catch (err) {
                 console.error('Dynamics import error:', err);
-                showDynamicsStatus(`❌ Error: ${err.message}`, 'error');
+                showDynamicsStatus(`❌ ${err.message}`, 'error');
             } finally {
                 importDynamicsBtn.disabled = false;
                 if (dynBtnText) dynBtnText.textContent = '⚡ Auto-Fill Form';
@@ -212,6 +223,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    async function checkLatestDynamicsImportOnLoad() {
+        try {
+            const res = await fetch('/api/get-latest-dynamics');
+            const resData = await res.json();
+            if (resData.success && resData.data) {
+                const data = resData.data;
+                const ageMs = Date.now() - (data.updatedAt || 0);
+                if (ageMs < 30 * 60 * 1000) {
+                    populateFormWithDynamicsData(data);
+                }
+            }
+        } catch (e) {}
+    }
+    checkLatestDynamicsImportOnLoad();
 
     function showDynamicsStatus(msg, type) {
         if (!dynamicsStatusMsg) return;

@@ -4571,6 +4571,24 @@ def extract_dynamics_deliverable(url):
             except Exception:
                 pass
 
+LATEST_DYNAMICS_STORE = {}
+
+@app.route('/api/save-extracted-dynamics', methods=['POST'])
+def save_extracted_dynamics():
+    global LATEST_DYNAMICS_STORE
+    data = request.json or {}
+    LATEST_DYNAMICS_STORE = {
+        **data,
+        "updatedAt": int(time.time() * 1000)
+    }
+    return jsonify({"success": True, "message": "Extracted deliverable saved successfully"})
+
+@app.route('/api/get-latest-dynamics', methods=['GET'])
+def get_latest_dynamics():
+    if not LATEST_DYNAMICS_STORE:
+        return jsonify({"success": False, "message": "No deliverable extracted yet"})
+    return jsonify({"success": True, "data": LATEST_DYNAMICS_STORE})
+
 @app.route('/api/extract-dynamics', methods=['POST'])
 def extract_dynamics():
     data = request.json or {}

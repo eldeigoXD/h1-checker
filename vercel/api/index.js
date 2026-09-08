@@ -13,6 +13,8 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+let latestExtractedDeliverable = null;
+
 module.exports = async (req, res) => {
   // Enable CORS for all remote clients
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -36,6 +38,22 @@ module.exports = async (req, res) => {
   let body = {};
   if (req.body) {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  }
+
+  // 0. Bookmarklet Extracted Deliverable Store Endpoints
+  if (pathname === '/api/save-extracted-dynamics') {
+    latestExtractedDeliverable = {
+      ...body,
+      updatedAt: Date.now()
+    };
+    return res.status(200).json({ success: true, message: 'Extracted deliverable saved successfully' });
+  }
+
+  if (pathname === '/api/get-latest-dynamics') {
+    if (!latestExtractedDeliverable) {
+      return res.status(200).json({ success: false, message: 'No deliverable extracted yet' });
+    }
+    return res.status(200).json({ success: true, data: latestExtractedDeliverable });
   }
 
   // 1. Worker Endpoints (Used by your Home PC local_worker.py)
