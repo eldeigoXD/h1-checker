@@ -4521,11 +4521,17 @@ def extract_dynamics_deliverable(url):
                 }
             }
 
+            function cleanCtaLabel(val) {
+                if (!val) return '';
+                let lines = val.split('\n').map(l => l.trim()).filter(l => l && !/^(calls\s*to\s*action|links)$/i.test(l));
+                return lines.join('\n');
+            }
+
             let title = getFieldText(['name.fieldControl', 'ddcms_name', 'name']);
             let completedCopy = getFieldText(['completedcopy.fieldControl', 'completedcopy']);
             let completedPageUrl = getFieldText(['completedpageurl.fieldControl', 'completedpageurl']);
-            let links = getFieldText(['links.fieldControl', 'links']);
-            let ctas = getFieldText(['callstoaction.fieldControl', 'callstoaction']);
+            let rawLinks = cleanCtaLabel(getFieldText(['links.fieldControl', 'links']));
+            let rawCtas = cleanCtaLabel(getFieldText(['callstoaction.fieldControl', 'callstoaction']));
             let details = getFieldText(['details.fieldControl', 'details']);
 
             let matchUrl = completedPageUrl.match(/https?:\/\/[^\s\)\'\"]+/i);
@@ -4534,8 +4540,8 @@ def extract_dynamics_deliverable(url):
             }
 
             let combinedCtasLinks = [];
-            if (ctas) combinedCtasLinks.push(ctas);
-            if (links) combinedCtasLinks.push(links);
+            if (rawCtas) combinedCtasLinks.push(rawCtas);
+            if (rawLinks) combinedCtasLinks.push(rawLinks);
 
             return {
                 deliverable_id: deliverableId,
