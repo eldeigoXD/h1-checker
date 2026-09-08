@@ -15,6 +15,15 @@ setInterval(() => {
 
 let latestExtractedDeliverable = null;
 
+let initialHistory = [];
+try {
+  initialHistory = require('./initial_history.json');
+} catch (e) {
+  initialHistory = [];
+}
+
+let historyDb = [...initialHistory];
+
 module.exports = async (req, res) => {
   // Enable CORS for all remote clients
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -54,6 +63,55 @@ module.exports = async (req, res) => {
       return res.status(200).json({ success: false, message: 'No deliverable extracted yet' });
     }
     return res.status(200).json({ success: true, data: latestExtractedDeliverable });
+  }
+
+  // 0.5. Persistent Audit History Endpoints
+  if (pathname === '/api/history' && req.method === 'GET') {
+    const caseId = url.searchParams.get('id');
+    if (caseId) {
+      const item = historyDb.find(h => h.id === caseId || h.url === caseId);
+      if (item) {
+        return res.status(200).json({ success: true, data: item });
+      }
+      return res.status(404).json({ success: false, error: 'Case not found' });
+    }
+    return res.status(200).json(historyDb);
+  }
+
+  if ((pathname === '/api/save-history' || (pathname === '/api/history' && req.method === 'POST')) && req.method === 'POST') {
+    const record = body;
+    if (record && (record.id || record.url)) {
+      let pathVal = record.path || '';
+      if (!pathVal && record.url) {
+        try { pathVal = new URL(record.url).pathname; } catch(e) {}
+      }
+
+      const historyEntry = {
+        id: record.id || record.case_id || `D-${Date.now()}`,
+        title: record.title || record.page_title || 'Scanned Page',
+        url: record.url || record.completed_page_url || '',
+        path: pathVal,
+        timestamp: record.timestamp || Math.floor(Date.now() / 1000),
+        has_bugs: Array.isArray(record.bugs) ? record.bugs.length > 0 : Boolean(record.has_bugs),
+        bug_count: Array.isArray(record.bugs) ? record.bugs.length : (record.bug_count || 0),
+        bugs: record.bugs || [],
+        full_result: record.full_result || record
+      };
+
+      const existingIdx = historyDb.findIndex(h => (historyEntry.id && h.id === historyEntry.id) || (historyEntry.url && h.url === historyEntry.url));
+      if (existingIdx >= 0) {
+        historyDb[existingIdx] = historyEntry;
+      } else {
+        historyDb.unshift(historyEntry);
+      }
+
+      if (historyDb.length > 250) {
+        historyDb = historyDb.slice(0, 250);
+      }
+
+      return res.status(200).json({ success: true, message: 'History record saved successfully' });
+    }
+    return res.status(400).json({ success: false, error: 'Invalid history record payload' });
   }
 
   // 1. Worker Endpoints (Used by your Home PC local_worker.py)

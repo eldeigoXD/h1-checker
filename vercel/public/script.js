@@ -422,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderResults(data);
+            saveScanToHistory(data);
 
 
         } catch (error) {
@@ -1848,6 +1849,48 @@ window.saveInventoryCorrection = function() {
     });
 };
 
+async function saveScanToHistory(data) {
+    if (!data || !data.success) return;
+    try {
+        const caseNum = (document.getElementById('case-number-input')?.value || data.case_id || '').trim();
+        const rawUrl = (document.getElementById('url-input')?.value || data.url || '').trim();
+        let pathStr = '';
+        if (rawUrl) {
+            try { pathStr = new URL(rawUrl, window.location.origin).pathname; } catch(e) { pathStr = rawUrl; }
+        }
+
+        const payload = {
+            id: caseNum || `D-${Date.now().toString().slice(-6)}`,
+            title: data.page_title || (document.getElementById('expected-title-input')?.value || '').trim() || 'Scanned Page',
+            url: rawUrl,
+            path: pathStr,
+            timestamp: Math.floor(Date.now() / 1000),
+            has_bugs: Array.isArray(data.bugs) && data.bugs.length > 0,
+            bug_count: Array.isArray(data.bugs) ? data.bugs.length : 0,
+            bugs: data.bugs || [],
+            full_result: data
+        };
+
+        await fetch('/api/save-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch(e) {
+        console.error('Failed to auto-save scan to history:', e);
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // ==========================================
 // HISTORY MODAL LOGIC
 // ==========================================
@@ -1863,7 +1906,7 @@ let allHistoryData = [];
 if (historyBtn && historyModal && closeHistoryBtn) {
     historyBtn.addEventListener('click', async () => {
         historyModal.style.display = 'flex';
-        historyList.innerHTML = '<li style="text-align:center; color:var(--text-muted);">Loading history...</li>';
+        historyList.innerHTML = '<li style="text-align:center; color:var(--text-muted); padding: 1.5rem;">Loading history...</li>';
         
         try {
             const res = await fetch('/api/history');
@@ -1872,20 +1915,20 @@ if (historyBtn && historyModal && closeHistoryBtn) {
             renderHistory(allHistoryData);
         } catch (e) {
             console.error(e);
-            historyList.innerHTML = '<li style="text-align:center; color:#ff7b72;">Failed to load history.</li>';
+            historyList.innerHTML = '<li style="text-align:center; color:#ff7b72; padding: 1.5rem;">Failed to load history.</li>';
         }
     });
 
     closeHistoryBtn.addEventListener('click', () => {
         historyModal.style.display = 'none';
-        historySearch.value = '';
+        if (historySearch) historySearch.value = '';
     });
 
     // Close on overlay click
     historyModal.addEventListener('click', (e) => {
         if (e.target === historyModal) {
             historyModal.style.display = 'none';
-            historySearch.value = '';
+            if (historySearch) historySearch.value = '';
         }
     });
 
@@ -1897,7 +1940,8 @@ if (historyBtn && historyModal && closeHistoryBtn) {
                 const idMatch = item.id && item.id.toLowerCase().includes(query);
                 const titleMatch = item.title && item.title.toLowerCase().includes(query);
                 const pathMatch = item.path && item.path.toLowerCase().includes(query);
-                return idMatch || titleMatch || pathMatch;
+                const bugMatch = item.bugs && JSON.stringify(item.bugs).toLowerCase().includes(query);
+                return idMatch || titleMatch || pathMatch || bugMatch;
             });
             renderHistory(filtered);
         });
@@ -1907,7 +1951,7 @@ if (historyBtn && historyModal && closeHistoryBtn) {
 function renderHistory(items) {
     if (!historyList) return;
     if (!items || items.length === 0) {
-        historyList.innerHTML = '<li style="text-align:center; color:var(--text-muted);">No matching history records found.</li>';
+        historyList.innerHTML = '<li style="text-align:center; color:var(--text-muted); padding: 1.5rem;">No matching history records found.</li>';
         return;
     }
 
@@ -1915,34 +1959,84 @@ function renderHistory(items) {
     items.forEach(item => {
         const li = document.createElement('li');
         li.className = 'history-item';
-        
-        // Format timestamp
+        li.style.cursor = 'pointer';
+
         let timeStr = '';
         if (item.timestamp) {
             const d = new Date(item.timestamp * 1000);
-            timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
+        const bugCount = item.bug_count !== undefined ? item.bug_count : (Array.isArray(item.bugs) ? item.bugs.length : null);
+        const hasBugs = item.has_bugs !== undefined ? item.has_bugs : (bugCount && bugCount > 0);
+
+        let badgeHtml = '';
+        if (bugCount === 0 || hasBugs === false) {
+            badgeHtml = `<span class="history-badge pass">✅ 0 Bugs (PASS)</span>`;
+        } else if (bugCount > 0 || hasBugs === true) {
+            badgeHtml = `<span class="history-badge fail">❌ ${bugCount || 1} Bug${bugCount === 1 ? '' : 's'} (FAIL)</span>`;
+        } else {
+            badgeHtml = `<span class="history-badge info">ℹ️ Audited</span>`;
+        }
+
+        const titleTxt = item.title || item.path || 'Scanned Page';
+        const pathTxt = item.path || item.url || '';
+        const idTxt = item.id || 'N/A';
+
         li.innerHTML = `
-            <span class="history-title">${item.title || 'Unknown Title'}</span>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <span class="history-id">${item.id || 'N/A'}</span>
-                    <span style="font-size:0.75rem; color:var(--text-muted);">${timeStr}</span>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 0.4rem; gap: 0.5rem;">
+                <span class="history-title" style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; word-break: break-word;">${escapeHtml(titleTxt)}</span>
+                ${badgeHtml}
             </div>
-            <span class="history-path">${item.path || ''}</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap; gap: 0.4rem;">
+                <div>
+                    <strong style="color: #a78bfa; margin-right: 0.5rem;">📁 ${escapeHtml(idTxt)}</strong>
+                    <span>${escapeHtml(pathTxt)}</span>
+                </div>
+                <span>${timeStr}</span>
+            </div>
         `;
-        
-        // Optional: click to auto-fill case ID and Title
-        li.addEventListener('click', () => {
-            const caseInput = document.getElementById('case-number-input');
-            const titleInput = document.getElementById('expected-title-input');
-            
-            if(caseInput && item.id) caseInput.value = item.id;
-            if(titleInput && item.title) titleInput.value = item.title;
-            
-            historyModal.style.display = 'none';
+
+        li.addEventListener('click', async () => {
+            if (historyModal) historyModal.style.display = 'none';
+            if (historySearch) historySearch.value = '';
+
+            const caseNumberInput = document.getElementById('case-number-input');
+            const urlInput = document.getElementById('url-input');
+
+            if (item.id && caseNumberInput) caseNumberInput.value = item.id;
+            if (item.url && urlInput) urlInput.value = item.url;
+            else if (item.path && urlInput && !urlInput.value) urlInput.value = item.path;
+
+            if (item.full_result && typeof item.full_result === 'object') {
+                renderResults(item.full_result);
+                const resultsArea = document.getElementById('results-area');
+                if (resultsArea) {
+                    resultsArea.style.display = 'block';
+                    resultsArea.scrollIntoView({ behavior: 'smooth' });
+                }
+            } else {
+                try {
+                    const res = await fetch(`/api/history?id=${encodeURIComponent(item.id || item.url)}`);
+                    const resData = await res.json();
+                    if (resData.success && resData.data && resData.data.full_result) {
+                        renderResults(resData.data.full_result);
+                        const resultsArea = document.getElementById('results-area');
+                        if (resultsArea) {
+                            resultsArea.style.display = 'block';
+                            resultsArea.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    } else if (urlInput && urlInput.value) {
+                        const submitBtn = document.getElementById('submit-btn');
+                        if (submitBtn) submitBtn.click();
+                    }
+                } catch(e) {
+                    if (urlInput && urlInput.value) {
+                        const submitBtn = document.getElementById('submit-btn');
+                        if (submitBtn) submitBtn.click();
+                    }
+                }
+            }
         });
 
         historyList.appendChild(li);
