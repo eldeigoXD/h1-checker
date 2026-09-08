@@ -1,0 +1,17 @@
+﻿{
+  "broken_anchors": [],
+  "broken_links": [],
+  "coherence_explanation": "La coherencia sem\u00e1ntica es perfecta. El dominio 'www.newcitynissan.com' establece claramente que es un concesionario Nissan. El path de la URL '/new-nissan/new-rogue-suv-honolulu.htm' especifica de manera expl\u00edcita que la p\u00e1gina trata sobre un 'Nissan' 'nuevo', el modelo 'Rogue SUV' y la ubicaci\u00f3n 'Honolulu'. El contenido extra\u00eddo confirma y ampl\u00eda esta informaci\u00f3n, enfoc\u00e1ndose completamente en el 'New Nissan Rogue' (incluso mencionando el modelo 2025) y su venta en 'New City Nissan' en 'Honolulu'. No hay indicios de promoci\u00f3n de marcas rivales ni de veh\u00edculos usados, lo que cumple a la perfecci\u00f3n con la marca del dominio y el prop\u00f3sito de la URL y el contenido.",
+  "coherence_score": 100,
+  "count": 2,
+  "h1_error_msg": "Hay 2 etiquetas H1, pero sus textos internos no coinciden ('New Nissan Rogue | For Sale in...' vs 'For Sale at New City Nissan...').",
+  "h1_snippets": [
+    "<h1 class=\"sr-only\">New Nissan Rogue | For Sale in Honolulu</h1>",
+    "<h1>For Sale at New City Nissan</h1>"
+  ],
+  "h1_valid": false,
+  "success": true,
+  "total_links_analyzed": 3,
+  "url": "https://www.newcitynissan.com/new-nissan/new-rogue-suv-honolulu.htm"
+}
+

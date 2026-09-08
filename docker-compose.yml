@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  h1-checker:
+    build: .
+    container_name: h1-checker
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist JSON databases so data survives container restarts
+      - ./inventory_patterns.json:/app/inventory_patterns.json
+      - ./inventory_memory.json:/app/inventory_memory.json
+      - ./cta_patterns.json:/app/cta_patterns.json
+      - ./audit_history.json:/app/audit_history.json
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  # Optional: Ollama for local LLM semantic checks
+  # Uncomment if you want the AI semantic layer to work on the new PC
+  # ollama:
+  #   image: ollama/ollama
+  #   container_name: ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   restart: unless-stopped
+
+# volumes:
+#   ollama_data:

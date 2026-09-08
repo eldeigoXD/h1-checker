@@ -1,0 +1,23 @@
+.rteAttachmentDialogCssClass .previewContainer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-bottom-style: groove;
+    border-bottom-width: 1px;
+}
+
+.rteAttachmentDialogCssClass .iframeContainer {
+    display: flex;
+    align-items: center;
+    height: 50vh;
+}
+
+.rteAttachmentDialogCssClass .fileNameTitle {
+    text-align: center;
+    color: rgb(51, 51, 51);
+}
+
+.rteAttachmentDialogCssClass .ms-Button--default:hover {
+    background-color: #0078d4;
+    color: white;
+}

@@ -1,0 +1,95 @@
+function unclaimDeliverable(PrimaryControl) {
+    const formContext = PrimaryControl;
+    const userId = Xrm.Utility.getGlobalContext().userSettings.userId.toLowerCase();
+
+    // Define roles and their corresponding completed date fields
+    const roles = [
+        {
+            ownerField: "ddcms_copywritingowner",
+            completedDateField: "ddcms_copycompleteddate"
+        },
+        {
+            ownerField: "ddcms_designowner",
+            completedDateField: "ddcms_designcompleteddate"
+        },
+        {
+            ownerField: "ddcms_pagebuildowner",
+            completedDateField: "ddcms_pagebuildcompleteddate"
+        },
+        {
+            ownerField: "ddcms_designpostingowner",
+            completedDateField: "ddcms_designpostingdate"
+        }
+    ];
+
+    // Filter roles where the current user is the owner and the task is not completed
+    const unclaimedRoles = roles.filter(role => {
+        const owner = formContext.getAttribute(role.ownerField)?.getValue();
+        const completedDate = formContext.getAttribute(role.completedDateField)?.getValue();
+
+        const isOwner = owner && owner[0]?.id?.toLowerCase() === userId;
+        const isCompleted = completedDate !== null;
+
+        return isOwner && !isCompleted;
+    });
+
+    console.log(unclaimedRoles);
+
+    unclaimedRoles.forEach(role => {
+        // Example: Clear the owner field to "unclaim"
+        formContext.getAttribute(role.ownerField).setValue(null);
+
+        // Optionally, add a note or log action
+        console.log(`Unclaimed role: ${role.ownerField}`);
+    });
+
+    // Optionally save the form if needed
+    formContext.data.entity.save();
+}
+
+function unclaimDeliverableVisible(PrimaryControl) {
+    const formContext = PrimaryControl;
+    const userId = Xrm.Utility.getGlobalContext().userSettings.userId.toLowerCase();
+    let isVisible = false;
+
+    // Define roles and their corresponding completed date fields
+    const roles = [
+        {
+            ownerField: "ddcms_copywritingowner",
+            completedDateField: "ddcms_copycompleteddate"
+        },
+        {
+            ownerField: "ddcms_designowner",
+            completedDateField: "ddcms_designcompleteddate"
+        },
+        {
+            ownerField: "ddcms_pagebuildowner",
+            completedDateField: "ddcms_pagebuildcompleteddate"
+        },
+        {
+            ownerField: "ddcms_designpostingowner",
+            completedDateField: "ddcms_designpostingdate"
+        }
+    ];
+
+    // Filter roles where the current user is the owner and the task is not completed
+    const unclaimedRoles = roles.filter(role => {
+        const owner = formContext.getAttribute(role.ownerField)?.getValue();
+        const completedDate = formContext.getAttribute(role.completedDateField)?.getValue();
+
+        const isOwner = owner && owner[0]?.id?.toLowerCase() === userId;
+        const isCompleted = completedDate !== null;
+
+        return isOwner && !isCompleted;
+    });
+
+    console.log(unclaimedRoles);
+
+    unclaimedRoles.forEach(role => {
+        // Example: Clear the owner field to "unclaim"
+        isVisible = true;
+    });
+
+    // Optionally save the form if needed
+    return isVisible;
+}

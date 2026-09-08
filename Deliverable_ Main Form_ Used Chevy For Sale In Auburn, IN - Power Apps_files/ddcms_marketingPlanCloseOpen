@@ -1,0 +1,479 @@
+// === Helper Functions ===
+
+// Get cleaned record ID
+function getRecordId(formContext) {
+    return formContext.data.entity.getId().replace(/[{}]/g, "");
+}
+
+// Get cleaned current user ID
+function getCurrentUserId() {
+    return Xrm.Utility.getGlobalContext().userSettings.userId.replace(/[{}]/g, "").toLowerCase();
+}
+
+// Retrieve count of outstanding deliverables
+async function getOutstandingDeliverables(entityLogicalName, recordId) {
+    const entitiesToCheck = [
+        {
+            logicalName: "ddcms_dealermarketingplan",
+            readableName: "Marketing Plan",
+            requiredParent: "account",
+            parentLookupField: "_ddcms_account_value",
+            label: "Outstanding Marketing Plans Found"
+        },
+        {
+            logicalName: "ddcms_marketingcampaign",
+            readableName: "Campaign",
+            requiredParent: "ddcms_dealermarketingplan",
+            parentLookupField: "_ddcms_marketingplan_value",
+            label: "Outstanding Campaigns Found"
+        },
+        {
+            logicalName: "ddcms_campaigndeliverable",
+            readableName: "Deliberable",
+            requiredParent: "ddcms_marketingcampaign",
+            parentLookupField: "_ddcms_campaign_value",
+            label: "Outstanding Deliverables Found"
+        },
+        {
+            logicalName: "ddcms_deliverablereworks",
+            readableName: "Rework",
+            requiredParent: "ddcms_campaigndeliverable",
+            parentLookupField: "_ddcms_deliverabletoreworks_value",
+            label: "Outstanding Reworks Found"
+
+        }
+    ];
+
+    const childEntity = entitiesToCheck.find(e => e.requiredParent === entityLogicalName);
+    if (!childEntity) return { label: "No child entity", count: 0 };
+
+    const filter = `?$filter=${childEntity.parentLookupField} eq ${recordId} and statecode eq 0`;
+    const result = await Xrm.WebApi.retrieveMultipleRecords(childEntity.logicalName, filter);
+    return {
+        label: childEntity.label,
+        count: result.entities.length,
+        logicalName: childEntity.logicalName,
+        readableName: childEntity.readableName
+    };
+}
+
+// Build notification content based on state and status
+function buildNotification(stateCode, statusCode, entityReadableName) {
+    let title = "", body = "";
+
+    if (stateCode === 0) {//reopening
+        title = entityReadableName + " reopened.";
+        body = entityReadableName + " has reopened and can be worked on again.";
+    } else if (statusCode === 2) {//completed
+        title = entityReadableName + " Completed";
+        body = entityReadableName + " has been marked as Completed. It will be removed from all Active Status Tracking Views & Dashboards.";
+    } else {//cancelled
+        title = entityReadableName + " Cancelled";
+        body = entityReadableName + " has been marked as Cancelled. It will be removed from all Active Status Tracking Views & Dashboards.";
+    }
+
+    return { title, body };
+}
+
+// Send app notification
+function sendNotification(userId, title, body) {
+    const request = new Example.SendAppNotificationRequest(
+        title,
+        `/systemusers(${userId})`,
+        body,
+        200000000,
+        100000001,
+        200000000,
+        10,
+        null,
+        null
+    );
+
+    return Xrm.WebApi.online.execute(request)
+        .then(response => response.ok ? response.json() : Promise.reject(response))
+        .then(data => console.log("Notification ID:", data.NotificationId))
+        .catch(error => console.error("Notification Error:", error.message));
+}
+
+// Update marketing plan record and navigate/refresh
+function updateRecordCall(formContext, recordId, entity, stateCode, statusCode, entityLogicalName,userId) {
+
+    if (statusCode === 2 && formContext.getAttribute("ddcms_completeddatetime").getValue() === null && (entityLogicalName === "ddcms_dealermarketingplan" || entityLogicalName === "ddcms_marketingcampaign")) {//completed and no completed date
+        entity["ddcms_completeddatetime"] = new Date();
+        entity["ddcms_CompletedBy@odata.bind"] = `/systemusers(${userId})`;
+
+        if(entityLogicalName === "ddcms_marketingcampaign") {
+            const campaignType = formContext.getAttribute("ddcms_campaigntype").getValue();
+            if(campaignType === 120730001) {//if campaign is SEO, also set completed date for SEO contributor
+                entity["ddcms_seocompleteddate"] = new Date();
+                entity["ddcms_seostatus"] = 120730004;//SEO Completed
+            }
+        }
+    }
+
+    return Xrm.WebApi.updateRecord(entityLogicalName, recordId, entity).then(() => {
+        const pageInput = {
+            pageType: "entitylist",
+            entityName: entityLogicalName
+        };
+
+        if (stateCode === 1) {
+            Xrm.Navigation.navigateTo(pageInput);
+        } else {
+            formContext.data.refresh(true);
+        }
+    });
+}
+
+// === identify entity ===
+
+function identifyEntity(entityLogicalName) {
+    switch(entityLogicalName) {
+        case "ddcms_dealermarketingplan":
+            return "Marketing Plan";
+        case "ddcms_marketingcampaign": 
+            return "Campaign";
+        case "ddcms_campaigndeliverable":
+            return "Deliverable";
+    }
+}
+
+// === identify logical name ===
+
+function identifyLogicalName(formContext) {
+    return formContext.data.entity.getEntityName();
+}
+
+// === Cancellation State Check (Deliverable) === 
+
+async function checkStage(formContext, process) {
+    //define process
+    const currentStage = process.getActiveStage();
+    const currentStageId = currentStage.getId();
+    let userFieldToCheck,stageUserName,stageUserId,stageUserFieldName;
+    let stageUserFound = false;
+
+    switch (currentStageId) {
+        //depending on stage, evaluate appropriate owner. If Owner found, prompt the user that they will need to reach out to them tp ensure external work on this Deliverable is stopped to ensure a gracefu cancellation
+        case "783bf073-c863-40df-82a8-cb30ddb28505": //create campaign brief (proof required) -- check C&C Owner 
+            break;  
+        case "0531e638-5426-4292-8dac-cdf2d84e85f0": //create campaign brief -- check C&C Owner
+            break;  
+        case "278f1971-8bc1-4083-9bdb-b7d18bad6b41": //create copy -- check Copywriting Owner
+            userFieldToCheck = `ddcms_copywritingowner`;
+            stageUserFieldName = `Copywriting Owner`;
+            break;
+        case "56e1f7c8-6682-4193-9ae4-d8e690962c15": //Page Build with Copy -- check page build owner
+            userFieldToCheck = `ddcms_pagebuildowner`;
+            stageUserFieldName = `Page Build Owner`;
+            break;
+        case "8af0da36-4af5-4331-a927-c3aacb6233de": //create design assets -- check design owner
+            userFieldToCheck = `ddcms_designowner`;
+            stageUserFieldName = `Design Owner`;
+            break;
+        case "7b31af9b-5520-479d-92cf-9b46cc0bafb9": //page build without copy -- check page build owner
+            userFieldToCheck = `ddcms_pagebuildowner`;
+            stageUserFieldName = `Page Build Owner`;
+            break;
+        case "3bb2b1a3-f917-4d7f-99c0-3082042ecdef": //design proof creation -- check design owner
+            userFieldToCheck = `ddcms_designowner`;
+            stageUserFieldName = `Design Owner`;
+            break;
+        case "e4b072c4-db89-4f40-9190-b15274ee6df5": //proof review -- check C&C owner
+            break;  
+        case "441db87c-9e6d-464d-a952-ffee61e6ef3e": //create approved design assets -- check design owner
+            userFieldToCheck = `ddcms_designowner`;
+            stageUserFieldName = `Design Owner`;
+            break;
+        case "0c9f4b1e-246e-4456-a7d0-66d061364f88": //complete website request -- no check
+            break;  
+        case "411c7005-c4e2-4618-b16f-e53a08649ddc": //contributor review -- no check
+            break;
+        case "70084cdd-4cb7-4992-b754-60926e709217": //qa -- no check
+            break;
+        case "4c4d5cc8-2ded-4307-81ba-b6eaf95e0ab1": //post approved design assets -- check deisgn posting owner
+            userFieldToCheck = `ddcms_designpostingowner`;
+            stageUserFieldName = `Design Posting Owner`;
+            break;
+        case "31423d94-8f54-41d3-8e2d-352f9664fa59": //post reactive design assets -- check design posting owner
+            userFieldToCheck = `ddcms_designpostingowner`;
+            stageUserFieldName = `Design Posting Owner`;
+            break;
+        case "61fd078c-561d-4b40-9bb3-aad2b080bba0": //final approval -- no check
+            break;
+        default: 
+            break;
+    }
+
+    if(userFieldToCheck && userFieldToCheck.length > 0) {//check if the user field contains a value
+        const stageUserValue = formContext.getAttribute(userFieldToCheck).getValue() || null;
+        if(stageUserValue && stageUserValue?.[0]?.id?.toLowerCase().replace(/[{}]/g, "").length > 0) {
+            stageUserFound = true;
+            stageUserName = stageUserValue?.[0]?.name;
+            stageUserId = stageUserValue?.id?.toLowerCase().replace(/[{}]/g, "");
+        }
+    }
+
+    return {
+        stageUserFound,
+        stageUserName,
+        stageUserId,
+        stageUserFieldName
+    };
+}
+
+// === Abandon Business Process Flow for Deliberable ===
+
+async function updateBusinessProcessFlow(process, stateCode) {
+    let bpfEntity = {};
+    const bpfId = process.getInstanceId();
+
+    if(stateCode === 1) {//statCode is inactive, abandon process
+        bpfEntity[`statecode`] = 1;
+        bpfEntity[`statuscode`] = 3;   
+    } else {//stateCode is active, revive process
+        bpfEntity[`statecode`] = 0;
+        bpfEntity[`statuscode`] = 1; 
+    }
+
+    return Xrm.WebApi.updateRecord(`ddcms_crmdeliverabletracking`, bpfId, bpfEntity);
+}
+
+// === Main Function ===
+
+async function changeRecordStatus(PrimaryControl, stateCode, statusCode) {
+    const formContext = PrimaryControl;
+    const entityLogicalName = identifyLogicalName(formContext);
+    const process = formContext.data.process;
+
+    const entityReadableName = identifyEntity(entityLogicalName);
+    const recordId = getRecordId(formContext).replace(/[{}]/g, "").toLowerCase();
+    const userId = getCurrentUserId();
+    const { title, body } = buildNotification(stateCode, statusCode, entityReadableName);
+
+    let entity = {
+        statecode: stateCode,
+        statuscode: statusCode
+    };
+
+    async function proceedUpdate() {
+        if(entityLogicalName === `ddcms_campaigndeliverable`) {
+            await updateBusinessProcessFlow(process, stateCode);
+        };
+        
+        await updateRecordCall(formContext, recordId, entity, stateCode, statusCode, entityLogicalName,userId);
+        await sendNotification(userId, title, body);
+    }
+
+    //check what kind of prompt needs to be built: Outstanding Records, Stage User Gated, Combined, or None
+    if (stateCode === 1) {
+        const outstandingChildRecords = await getOutstandingDeliverables(entityLogicalName, recordId);
+        const hasOutstanding = outstandingChildRecords.count > 0;
+
+        let userStageCheck;
+
+        if(entityLogicalName === "ddcms_campaigndeliverable") {
+            userStageCheck = await checkStage(formContext, process);
+        } else {
+            userStageCheck = {
+                stageUserFound: false,
+                stageUserName: null,
+                stageUserId: null,
+                stageUserFieldName: null
+            }
+        }
+
+        if (hasOutstanding && userStageCheck.stageUserFound === false) {//Outstanding Records Only
+            const modalText = `There are outstanding ${outstandingChildRecords.readableName} records for this ${entityReadableName}. \n\n  ${outstandingChildRecords.label}: ${outstandingChildRecords.count} \n\n`
+            const modalTitle = `${entityReadableName} Closure Warning`;
+            const modalSubtitle = `Outstanding Work Found`;
+
+            Xrm.Navigation.openConfirmDialog({ title: modalTitle, subtitle: modalSubtitle, text: modalText }).then(function (success) {
+                if (success.confirmed) {
+                    proceedUpdate();
+                }
+            });
+        } else if(hasOutstanding && userStageCheck.stageUserFound === true) {//combo Outstanding & stage user gated
+            const modalText = `There are outstanding ${outstandingChildRecords.readableName} records for this ${entityReadableName}. \n\n  ${outstandingChildRecords.label}: ${outstandingChildRecords.count} \n\n Please make sure to connect with ${userStageCheck.stageUserName} to ensure any current work being perfromed is halted to prevent resolution conflicts.`
+            const modalTitle = `${entityReadableName} Closure Warning`;
+            const modalSubtitle = `Outstanding Work Found & ${userStageCheck.stageUserName} May be Working on this Deliverable`;
+
+            Xrm.Navigation.openConfirmDialog({ title: modalTitle, subtitle: modalSubtitle, text: modalText }).then(function (success) {
+                if (success.confirmed) {
+                    proceedUpdate();
+                }
+            });
+        } else if(!hasOutstanding && userStageCheck.stageUserFound === true) {//stage gated only
+            const modalText = `This Deliverable is in a Stage where active work is being performed. \n\n Please make sure to connect with ${userStageCheck.stageUserName} to ensure any current work being perfromed is halted to prevent resolution conflicts.`
+            const modalTitle = `${entityReadableName} Closure Warning`;
+            const modalSubtitle = `${userStageCheck.stageUserName} May be Working on this Deliverable`;
+
+            Xrm.Navigation.openConfirmDialog({ title: modalTitle, subtitle: modalSubtitle, text: modalText }).then(function (success) {
+                if (success.confirmed) {
+                    proceedUpdate();
+                }
+            });
+        } else {//no prompt
+            await proceedUpdate();
+        }
+    } else {//reopening, no prompt
+        await proceedUpdate();
+    }
+}
+
+//evaluate if the user is the creator of the child record or the owner ofthe parent record
+async function changeStatusVisible(PrimaryControl, expectedState) {
+    const formContext = PrimaryControl;
+    const entityLogicalName = await identifyLogicalName(formContext);
+    const entitiesToCheck = [
+        {
+            logicalName: "account",
+            readableName: "Account",
+            requiredParent: "account",
+            parentLookupField: "account"
+        },
+        {
+            logicalName: "ddcms_dealermarketingplan",
+            readableName: "Marketing Plan",
+            requiredParent: "account",
+            parentLookupField: "ddcms_account"
+        },
+        {
+            logicalName: "ddcms_marketingcampaign",
+            readableName: "Campaign",
+            requiredParent: "ddcms_dealermarketingplan",
+            parentLookupField: "ddcms_marketingplan"
+        },
+        {
+            logicalName: "ddcms_campaigndeliverable",
+            readableName: "Deliberable",
+            requiredParent: "ddcms_marketingcampaign",
+            parentLookupField: "ddcms_campaign"
+        },
+        {
+            logicalName: "ddcms_deliverablereworks",
+            readableName: "Rework",
+            requiredParent: "ddcms_campaigndeliverable",
+            parentLookupField: "ddcms_deliverabletoreworks"
+        }
+    ];
+    
+    const currentEntity = entitiesToCheck.find(e => e.logicalName === entityLogicalName);
+    const parentEntity = entitiesToCheck.find(e => e.logicalName === currentEntity?.requiredParent);
+    const parentLookupId = formContext.getAttribute(currentEntity.parentLookupField).getValue()?.[0]?.id?.toLowerCase().replace(/[{}]/g, "") || null;
+
+    const recordId = getRecordId(formContext).replace(/[{}]/g, "").toLowerCase();
+    const userId = getCurrentUserId();
+
+    let parentCreatedBy, parentCreatedById, recordCreatedById;
+    if(parentLookupId) {
+        parentCreatedBy = await Xrm.WebApi.retrieveRecord(parentEntity.logicalName, parentLookupId, "?$select=_ownerid_value");
+        parentCreatedById = parentCreatedBy._ownerid_value;
+        recordCreatedById = formContext.getAttribute("createdby").getValue()?.[0]?.id?.toLowerCase().replace(/[{}]/g, "");
+    }
+    
+    let isVisible = false;
+
+    console.log(currentEntity.logicalName);
+    if(currentEntity.logicalName === "ddcms_marketingcampaign") {
+        const campaignType = formContext.getAttribute("ddcms_campaigntype").getValue();
+        console.log(campaignType);
+        if(campaignType === 120730001) {//if campaign is SEO, also allow SEO contributor to have access to change status
+            const seoContributor = formContext.getAttribute("ddcms_seocontributor").getValue()?.[0]?.id?.toLowerCase().replace(/[{}]/g, "") || null;
+            console.log(`${userId}|${seoContributor}`);
+            if(seoContributor === userId) {
+                isVisible = true;
+            }
+        }
+    }
+
+    const userRoles = Xrm.Utility.getGlobalContext().userSettings.roles.getAll();
+    
+
+    if (formContext.getAttribute("statecode").getValue() === expectedState) {
+        const allowedRoles = [
+            "ac551c72-dbe7-ef11-be21-000d3a8f4215", //operations
+            "ef3df4b6-60b7-ef11-b8e9-000d3a5986ef" //leadership
+        ];
+
+        userRoles.forEach(function (role) {
+            let roleId = role.id.replace(/{|}/g, "").toLowerCase();
+            if (allowedRoles.includes(roleId)) {//evaluate security-role based closure permission (universal across all records)
+                isVisible = true;
+            }
+        });
+
+        if(recordCreatedById === userId || parentCreatedById === userId) {
+            isVisible = true;
+        }
+    }
+    return isVisible;
+}
+
+var Example = window.Example || {};
+Example.SendAppNotificationRequest = function (
+    title,
+    recipient,
+    body,
+    priority,
+    iconType,
+    toastType,
+    expiry,
+    overrideContent,
+    actions) {
+    this.Title = title;
+    this.Recipient = recipient;
+    this.Body = body;
+    this.Priority = priority;
+    this.IconType = iconType;
+    this.ToastType = toastType;
+    this.Expiry = expiry;
+    this.OverrideContent = overrideContent;
+    this.Actions = actions;
+};
+
+Example.SendAppNotificationRequest.prototype.getMetadata = function () {
+    return {
+        boundParameter: null,
+        parameterTypes: {
+            "Title": {
+                "typeName": "Edm.String",
+                "structuralProperty": 1
+            },
+            "Recipient": {
+                "typeName": "mscrm.systemuser",
+                "structuralProperty": 5
+            },
+            "Body": {
+                "typeName": "Edm.String",
+                "structuralProperty": 1
+            },
+            "Priority": {
+                "typeName": "Edm.Int",
+                "structuralProperty": 1
+            },
+            "IconType": {
+                "typeName": "Edm.Int",
+                "structuralProperty": 1
+            },
+            "ToastType": {
+                "typeName": "Edm.Int",
+                "structuralProperty": 1
+            },
+            "Expiry": {
+                "typeName": "Edm.Int",
+                "structuralProperty": 1
+            },
+            "OverrideContent": {
+                "typeName": "mscrm.expando",
+                "structuralProperty": 5
+            },
+            "Actions": {
+                "typeName": "mscrm.expando",
+                "structuralProperty": 5
+            },
+        },
+        operationType: 0,
+        operationName: "SendAppNotification",
+    };
+};

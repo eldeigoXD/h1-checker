@@ -1,0 +1,101 @@
+{
+  "www.fairwaytyler.com|/bargain-inventory/index.htm": {
+    "filter_url": "https://www.fairwaytyler.com/used-inventory/index.htm?internetPrice=1-25000",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-09T15:11:20+00:00",
+    "confirmation_count": 1,
+    "confidence": 0.92,
+    "url": "https://www.fairwaytyler.com/bargain-inventory/index.htm?_ddcpreview=756622dacf2043c7be1ebc2155c075a6&_toggleBasePageCache=false"
+  },
+  "www.andersonfordgrandisland.com|/ford-f-150-vs-chevy-silverado-1500.htm": {
+    "filter_url": "/new-inventory/index.htm?model=F-150",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-09T20:24:56+00:00",
+    "confirmation_count": 1,
+    "confidence": 0.92,
+    "url": "https://www.andersonfordgrandisland.com/ford-f-150-vs-chevy-silverado-1500.htm"
+  },
+  "haroldincfordfd.cms.dealer.com|/new-ford/trucks-angola-in.htm": {
+    "filter_url": "https://haroldincfordfd.cms.dealer.com/used-inventory/index.htm?normalBodyStyle=Truck&make=Ford",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-11T14:30:12+00:00",
+    "confirmation_count": 4,
+    "confidence": 0.84,
+    "url": "https://haroldincfordfd.cms.dealer.com/new-ford/trucks-angola-in.htm",
+    "last_confirmed": "2026-06-11T14:32:46+00:00",
+    "last_outcome": "mismatch"
+  },
+  "morehartmurphyautogm.cms.dealer.com|/used-inventory/trucks-durango-co.htm": {
+    "filter_url": "https://morehartmurphyautogm.cms.dealer.com/used-inventory/index.htm?normalBodyStyle=Truck",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-11T20:50:52+00:00",
+    "confirmation_count": 3,
+    "confidence": 0.82,
+    "url": "https://morehartmurphyautogm.cms.dealer.com/used-inventory/trucks-durango-co.htm",
+    "last_confirmed": "2026-06-11T21:11:18+00:00",
+    "last_outcome": "mismatch"
+  },
+  "upstatecdjcllc.cms.dealer.com|/used-ram/3500-attica-ny.htm": {
+    "filter_url": "https://upstatecdjcllc.cms.dealer.com/used-inventory/index.htm?make=Ram&model=3500",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-11T21:45:33+00:00",
+    "confirmation_count": 4,
+    "confidence": 0.91,
+    "url": "https://upstatecdjcllc.cms.dealer.com/used-ram/3500-attica-ny.htm",
+    "last_confirmed": "2026-06-11T22:06:17+00:00",
+    "last_outcome": "match"
+  },
+  "jaguarnashvillenashvillejag.cms.dealer.com|/research/all-electric.htm": {
+    "filter_url": "/all-inventory/index.htm?normalFuelType=Electric&make=Jaguar",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-12T19:00:37+00:00",
+    "confirmation_count": 1,
+    "confidence": 0.92,
+    "url": "https://jaguarnashvillenashvillejag.cms.dealer.com/research/all-electric.htm"
+  },
+  "www.isringhausenbmw.com|/research/bmw-x1-for-sale.htm": {
+    "filter_url": "/new-inventory/index.htm?make=BMW&model=X1",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-19T16:15:55+00:00",
+    "confirmation_count": 2,
+    "confidence": 0.87,
+    "url": "https://www.isringhausenbmw.com/research/bmw-x1-for-sale.htm",
+    "last_confirmed": "2026-06-19T16:16:27+00:00",
+    "last_outcome": "mismatch"
+  },
+  "www.dowbuickgmc.com|/new/trucks-mineola-tx.htm": {
+    "filter_url": "https://www.dowbuickgmc.com/new-inventory/index.htm?make=GMC&normalBodyStyle=Truck",
+    "source": "manual_correction",
+    "corrected_at": "2026-06-29T20:54:02+00:00",
+    "confirmation_count": 1,
+    "confidence": 0.92,
+    "url": "https://www.dowbuickgmc.com/new/trucks-mineola-tx.htm?_ddcpreview=1918945997db48148b93ac4eb4611677&_toggleBasePageCache=false"
+  },
+  "www.larryhillischryslerdodgejeep.com|/new-ram/poplar-bluff-mo.htm": {
+    "filter_url": "https://www.larryhillischryslerdodgejeep.com/new-inventory/index.htm?make=Ram",
+    "source": "manual_correction",
+    "corrected_at": "2026-08-23T14:20:00+00:00",
+    "confirmation_count": 2,
+    "confidence": 0.9,
+    "url": "https://www.larryhillischryslerdodgejeep.com/new-ram/poplar-bluff-mo.htm",
+    "last_confirmed": "2026-08-23T18:23:19+00:00",
+    "last_outcome": "mismatch"
+  },
+  "www.baldhilldodgechrysler.net|/new-inventory/trucks-warwick-ri.htm": {
+    "filter_url": "https://www.baldhilldodgechrysler.net/new-inventory/index.htm?bodyStyle=Pickup&make=Ram",
+    "source": "manual_correction",
+    "corrected_at": "2026-08-23T14:34:00+00:00",
+    "confirmation_count": 2,
+    "confidence": 0.9,
+    "url": "https://www.baldhilldodgechrysler.net/new-inventory/trucks-warwick-ri.htm",
+    "last_confirmed": "2026-08-23T18:36:32+00:00",
+    "last_outcome": "mismatch"
+  },
+  "www.baldhilldodgechrysler.net|/used-inventory/trucks-warwick-ri.htm": {
+    "filter_url": "https://www.baldhilldodgechrysler.net/used-inventory/index.htm?bodyStyle=Truck%20Crew%20Cab&bodyStyle=Truck%20CrewMax&bodyStyle=Truck%20SuperCrew",
+    "source": "manual_correction",
+    "corrected_at": "2026-08-23T14:34:00+00:00",
+    "confidence": 0.95,
+    "url": "https://www.baldhilldodgechrysler.net/used-inventory/trucks-warwick-ri.htm"
+  }
+}
