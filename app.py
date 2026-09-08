@@ -4547,7 +4547,17 @@ def extract_dynamics_deliverable(url):
             let completedPageUrl = getFieldText(['completedpageurl.fieldControl', 'completedpageurl']);
             let rawLinks = cleanCtaLabel(getFieldText(['links.fieldControl', 'links']));
             let rawCtas = cleanCtaLabel(getFieldText(['callstoaction.fieldControl', 'callstoaction']));
-            let details = cleanCtaLabel(getFieldText(['details.fieldControl', 'details']));
+            let details = cleanFieldText(getFieldText([
+                'ddcms_copywritingdetails.fieldControl',
+                'ddcms_copywritingdetails',
+                'copywritingdetails.fieldControl',
+                'copywritingdetails',
+                'ddcms_details.fieldControl',
+                'ddcms_details',
+                'details.fieldControl',
+                'details',
+                'specialinstructions'
+            ]));
 
             let matchUrl = completedPageUrl.match(/https?:\/\/[^\s\)\'\"]+/i);
             if (matchUrl) {
