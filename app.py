@@ -1979,8 +1979,9 @@ def consolidate_inventory_bugs(bugs: list, inventory_info: dict, custom_rules: s
     # Check if inventory status is mismatch/error
     has_inv_mismatch = (inv_status in ['mismatch', 'error']) or (page_count is not None and filter_count is not None and str(page_count) != str(filter_count))
 
-    if not inv_bug_indices and not has_inv_mismatch:
-        return bugs
+    if not has_inv_mismatch:
+        # If inventory vehicle counts match, do NOT generate any inventory mismatch bug!
+        return [b for idx, b in enumerate(bugs) if idx not in inv_bug_indices]
 
     # Determine Severity (Critical vs Failed)
     is_critical = False
