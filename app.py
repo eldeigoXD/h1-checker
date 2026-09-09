@@ -124,6 +124,50 @@ def save_audit_history(case_id, title, path):
         print(f"Error saving audit history: {e}")
 
 
+HOMEPAGE_REGEX = re.compile(
+    r'\b(?:dealer\s*)?home\s*pages?\b|\bhome\s*pages?\b|\bhomepage\b|\bdealer\s*home\b|\bmain\s*page\b|\b(?:link\s+(?:to\s+)?|internal\s+(?:to\s+)?|to\s+|^)home$\b',
+    re.IGNORECASE
+)
+
+def _is_cta_target_part(part):
+    p = part.strip()
+    if not p: return False
+    p_low = p.lower()
+    if any(p.startswith(prefix) for prefix in ['/', 'http://', 'https://', '#']) or bool(re.search(r'/(?:[a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\.htm', p)):
+        return True
+    if re.search(r'\((?:.*?to\s+)?(?:/|http|#).*?\)', p):
+        return True
+    if HOMEPAGE_REGEX.search(p_low):
+        return True
+    return False
+
+def split_compound_line(line):
+    line = line.strip()
+    if not line: return []
+    
+    chunks = [c.strip() for c in re.split(r'[\n,]', line) if c.strip()]
+    final_parts = []
+    
+    for chunk in chunks:
+        # Space separated URLs/paths
+        if ' ' in chunk and (chunk.startswith('/') or chunk.startswith('http')):
+            sub_elements = chunk.split()
+            if all(el.startswith('/') or el.startswith('http') or el.startswith('#') for el in sub_elements):
+                final_parts.extend(sub_elements)
+                continue
+                
+        conj_pattern = r'\s+(?:and/or|and|&|\+|or)\s+'
+        sub_elements = [s.strip() for s in re.split(conj_pattern, chunk) if s.strip()]
+        
+        if len(sub_elements) > 1:
+            valid_targets = [s for s in sub_elements if _is_cta_target_part(s)]
+            if len(valid_targets) >= 2:
+                final_parts.extend(sub_elements)
+                continue
+        final_parts.append(chunk)
+        
+    return final_parts
+
 def parse_cta_instructions(instructions):
     """
     Parses 'Special Layout Instructions' into a list of required CTAs.
@@ -132,28 +176,22 @@ def parse_cta_instructions(instructions):
     - "(View Inventory to #inventory)" -> text: "View Inventory", url: "#inventory"
     - "https://www.mikeandersondodge.net/new-inventory/index.htm" -> url: "..."
     - "/new-inventory/index.htm" -> url: "..."
+    - "homepage" / "dealer homepage" / "home" -> url: "/index.htm"
+    - "/financing/application.htm and homepage" -> split into 2 separate CTAs
     - "New Inventory" -> text: "New Inventory"
     """
     if not instructions: return []
-    parsed = []
-    
-    # Split by newlines or commas
-    initial_parts = [p.strip() for p in re.split(r'[\n,]', instructions) if p.strip()]
     
     parts = []
-    for p in initial_parts:
-        # Special case: If a line is just a list of URLs/paths separated by spaces
-        # e.g. "/path1 /path2 http://link3"
-        if ' ' in p and (p.startswith('/') or p.startswith('http')):
-            sub_elements = p.split()
-            # If every element looks like a URL/Path, split them
-            if all(el.startswith('/') or el.startswith('http') or el.startswith('#') for el in sub_elements):
-                parts.extend(sub_elements)
-                continue
-        parts.append(p)
+    for line in instructions.splitlines():
+        parts.extend(split_compound_line(line))
     
+    parsed = []
     for part in parts:
         cta = {'text': None, 'url': None, 'original': part}
+        part_low = part.lower().strip()
+        
+        has_url = any(part.startswith(prefix) for prefix in ['/', 'http://', 'https://', '#']) or bool(re.search(r'/(?:[a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\.htm', part))
         
         # Format 1: Text (URL) -> e.g. "New Intory (/new-inventory/index.htm)"
         m1 = re.match(r'^(.*?) \((.*?)\)$', part)
@@ -201,13 +239,17 @@ def parse_cta_instructions(instructions):
             parsed.append(cta)
             continue
 
+        # Homepage Keyword check (when no explicit /path.htm URL is present)
+        if not has_url and HOMEPAGE_REGEX.search(part_low):
+            cta['url'] = '/index.htm'
+            cta['text'] = part
+            parsed.append(cta)
+            continue
             
         # Format 5: Just Text
         # Ignore parts that look like descriptive instruction sentences rather than explicit CTA button labels
-        p_low = part.lower().strip()
-        # Words indicating this is a layout/content rule sentence, not a CTA label:
         rule_keywords = ['update', 'photos', 'add faq', 'faqs', 'include lead form', 'accordion', 'bottom of the page', 'ownership in', 'page content']
-        if any(kw in p_low for kw in rule_keywords) and not ('http' in p_low or '/' in p_low or '#' in p_low):
+        if any(kw in part_low for kw in rule_keywords) and not ('http' in part_low or '/' in part_low or '#' in part_low):
             continue
 
         cta['text'] = part
