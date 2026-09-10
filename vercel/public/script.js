@@ -1,3 +1,16 @@
+// Global State & Helpers accessible across all modules/modals
+window.lastScanData = null;
+window.escapeHtml = function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+};
+window.escapeHTML = window.escapeHtml;
+
 document.addEventListener('DOMContentLoaded', () => {
     // Helper to poll background relay jobs when deployed on Vercel Cloud
     async function pollRelayJob(jobId) {
@@ -455,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderResults(data) {
         lastScanData = data;
+        window.lastScanData = data;
         resultUrl.textContent = data.url;
         h1Count.textContent = data.count;
 
@@ -1719,13 +1733,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function escapeHTML(str) {
-        return str
+        if (str === null || str === undefined) return '';
+        return String(str)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
+    window.renderResults = renderResults;
 });
 
 // Global functions for copy buttons
@@ -2008,8 +2024,9 @@ function renderHistory(items) {
             if (item.url && urlInput) urlInput.value = item.url;
             else if (item.path && urlInput && !urlInput.value) urlInput.value = item.path;
 
-            if (item.full_result && typeof item.full_result === 'object') {
-                renderResults(item.full_result);
+            const fnRender = window.renderResults;
+            if (item.full_result && typeof item.full_result === 'object' && fnRender) {
+                fnRender(item.full_result);
                 const resultsArea = document.getElementById('results-area');
                 if (resultsArea) {
                     resultsArea.style.display = 'block';
@@ -2019,8 +2036,8 @@ function renderHistory(items) {
                 try {
                     const res = await fetch(`/api/history?id=${encodeURIComponent(item.id || item.url)}`);
                     const resData = await res.json();
-                    if (resData.success && resData.data && resData.data.full_result) {
-                        renderResults(resData.data.full_result);
+                    if (resData.success && resData.data && resData.data.full_result && fnRender) {
+                        fnRender(resData.data.full_result);
                         const resultsArea = document.getElementById('results-area');
                         if (resultsArea) {
                             resultsArea.style.display = 'block';
@@ -2165,32 +2182,39 @@ async function fetchImageBankAssets() {
             const catColor = catBadgeColors[asset.category] || '#78909c';
 
             card.innerHTML = `
-                <div style="position: relative; width: 100%; height: 150px; background: #0c0c12; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <img src="${escapeHTML(asset.image_url)}" alt="${escapeHTML(asset.alt_text || 'Vehicle Asset')}" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
+                <div style="position: relative; width: 100%; height: 160px; background: #0c0c12; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <a href="${escapeHtml(asset.image_url)}" target="_blank" title="Click para ver en resolución completa" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                        <img src="${escapeHtml(asset.image_url)}" alt="${escapeHtml(asset.alt_text || 'Vehicle Asset')}" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
+                    </a>
                     
                     <span style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.75); color: #4fc3f7; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 1px solid rgba(79,195,247,0.4);">
                         🔥 ${asset.use_count} ${asset.use_count === 1 ? 'use' : 'uses'}
                     </span>
 
                     <span style="position: absolute; top: 6px; left: 6px; background: ${catColor}; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
-                        ${escapeHTML(asset.category)}
+                        ${escapeHtml(asset.category)}
                     </span>
                 </div>
 
                 <div style="padding: 0.7rem; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between;">
                     <div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 0.3rem;">
-                            <span>${escapeHTML(asset.make || 'Unknown')} ${escapeHTML(asset.model || '')}</span>
-                            <span style="color: #aaa; font-size: 0.75rem; text-transform: capitalize;">${escapeHTML(asset.condition || 'General')}</span>
+                            <span>${escapeHtml(asset.make || 'Unknown')} ${escapeHtml(asset.model || '')}</span>
+                            <span style="color: #aaa; font-size: 0.75rem; text-transform: capitalize;">${escapeHtml(asset.condition || 'General')}</span>
                         </div>
-                        <p style="font-size: 0.75rem; color: #bbb; margin: 0 0 0.5rem 0; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHTML(asset.alt_text || asset.section_title || asset.surrounding_text || '')}">
-                            ${escapeHTML(asset.alt_text || asset.section_title || asset.surrounding_text || 'No text snippet')}
+                        <p style="font-size: 0.75rem; color: #bbb; margin: 0 0 0.5rem 0; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(asset.alt_text || asset.section_title || asset.surrounding_text || '')}">
+                            ${escapeHtml(asset.alt_text || asset.section_title || asset.surrounding_text || 'No text snippet')}
                         </p>
                     </div>
 
-                    <button class="copy-img-btn secondary-btn" style="font-size: 0.75rem; width: 100%; padding: 0.3rem;" data-url="${escapeHTML(asset.image_url)}">
-                        📋 Copy Image URL
-                    </button>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.4rem; margin-top: 0.4rem;">
+                        <button class="copy-img-btn secondary-btn" style="font-size: 0.75rem; padding: 0.35rem;" data-url="${escapeHtml(asset.image_url)}">
+                            📋 Copiar Link
+                        </button>
+                        <button class="delete-img-btn icon-btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ff6b6b; padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.8rem;" title="Eliminar imagen del banco">
+                            🗑️
+                        </button>
+                    </div>
                 </div>
             `;
 
@@ -2198,8 +2222,43 @@ async function fetchImageBankAssets() {
             if (copyBtn) {
                 copyBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(asset.image_url);
-                    copyBtn.textContent = '✅ Copied!';
-                    setTimeout(() => { copyBtn.textContent = '📋 Copy Image URL'; }, 1500);
+                    copyBtn.textContent = '✅ Copiado!';
+                    setTimeout(() => { copyBtn.textContent = '📋 Copiar Link'; }, 1500);
+                });
+            }
+
+            const delBtn = card.querySelector('.delete-img-btn');
+            if (delBtn) {
+                delBtn.addEventListener('click', async () => {
+                    if (!confirm(`¿Deseas eliminar esta imagen de la base de datos?\n\nMake: ${asset.make || 'Desconocido'}\nModel: ${asset.model || 'Desconocido'}`)) return;
+                    try {
+                        delBtn.disabled = true;
+                        delBtn.textContent = '⏳';
+                        const res = await fetch(`/api/image-bank?id=${asset.id}`, { method: 'DELETE' });
+                        const resData = await res.json();
+                        if (resData.success) {
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.85)';
+                            setTimeout(() => {
+                                card.remove();
+                                const totalEl = document.getElementById('img-bank-total-count');
+                                if (totalEl) {
+                                    const currentVal = parseInt(totalEl.textContent) || 0;
+                                    totalEl.textContent = Math.max(0, currentVal - 1);
+                                }
+                            }, 300);
+                        } else {
+                            alert('Error al eliminar imagen: ' + (resData.error || 'Error desconocido'));
+                            delBtn.disabled = false;
+                            delBtn.textContent = '🗑️';
+                        }
+                    } catch(e) {
+                        console.error('Error deleting asset:', e);
+                        alert('Error al conectar con el servidor.');
+                        delBtn.disabled = false;
+                        delBtn.textContent = '🗑️';
+                    }
                 });
             }
 
@@ -2303,7 +2362,8 @@ async function updateToolBugsBadge() {
 
 if (reportToolBugBtn && reportBugModal) {
     reportToolBugBtn.addEventListener('click', () => {
-        const activeUrl = lastScanData?.url || document.getElementById('url-input')?.value || '';
+        const activeData = window.lastScanData || (typeof lastScanData !== 'undefined' ? lastScanData : null);
+        const activeUrl = activeData?.url || document.getElementById('url-input')?.value || '';
         if (reportBugTargetUrl) reportBugTargetUrl.value = activeUrl;
         if (reportBugCommentInput) reportBugCommentInput.value = '';
         reportBugModal.style.display = 'flex';
@@ -2336,11 +2396,12 @@ if (submitReportBugBtn) {
             return;
         }
 
-        const caseId = (document.getElementById('case-number-input')?.value || lastScanData?.case_id || '').trim() || `CASE-${Date.now().toString().slice(-6)}`;
+        const activeData = window.lastScanData || (typeof lastScanData !== 'undefined' ? lastScanData : null);
+        const caseId = (document.getElementById('case-number-input')?.value || activeData?.case_id || '').trim() || `CASE-${Date.now().toString().slice(-6)}`;
         let pathStr = '';
         try { pathStr = new URL(rawUrl).pathname; } catch(e) { pathStr = rawUrl; }
 
-        const scanPayload = lastScanData || { url: rawUrl, case_id: caseId };
+        const scanPayload = activeData || { url: rawUrl, case_id: caseId };
         
         const tempBugObj = {
             case_id: caseId,
@@ -2488,7 +2549,12 @@ function renderToolBugsList(items) {
                     <span style="font-weight: 700; color: #ffb74d; font-size: 0.95rem; margin-right: 0.6rem;">📁 Case: ${escapeHtml(bug.case_id || 'N/A')}</span>
                     <span style="font-size: 0.8rem; color: #888;">${timeStr}</span>
                 </div>
-                <button class="delete-bug-btn icon-btn" style="color: #ff6b6b; padding: 2px 6px;" title="Delete bug report">🗑️</button>
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                    <button class="view-bug-case-btn secondary-btn" style="padding: 2px 8px; font-size: 0.78rem; border: 1px solid #4fc3f7; color: #4fc3f7; border-radius: 4px;" title="Ver y cargar este caso abajo en el tool">
+                        🔍 Ver en Tool
+                    </button>
+                    <button class="delete-bug-btn icon-btn" style="color: #ff6b6b; padding: 2px 6px;" title="Delete bug report">🗑️</button>
+                </div>
             </div>
 
             <div style="font-size: 0.85rem; word-break: break-all;">
@@ -2505,12 +2571,42 @@ function renderToolBugsList(items) {
 
             ${invSnippet}
 
-            <div style="display: flex; justify-content: flex-end; margin-top: 0.4rem;">
+            <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.4rem;">
+                <button class="view-bug-case-btn-bottom secondary-btn" style="font-size: 0.82rem; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid #4fc3f7; color: #4fc3f7; display: flex; align-items: center; gap: 0.3rem;">
+                    🔍 Cargar Caso en el Tool
+                </button>
                 <button class="copy-ai-prompt-btn primary-btn" style="background: linear-gradient(135deg, #7c4dff, #651fff); color: white; font-weight: 600; font-size: 0.82rem; padding: 0.4rem 0.8rem; border-radius: 6px; display: flex; align-items: center; gap: 0.4rem;">
                     📋 Copiar Info para AI
                 </button>
             </div>
         `;
+
+        const handleViewCase = () => {
+            if (toolBugsModal) toolBugsModal.style.display = 'none';
+            const caseInput = document.getElementById('case-number-input');
+            const urlInput = document.getElementById('url-input');
+            const titleInput = document.getElementById('expected-title-input');
+            if (bug.case_id && caseInput) caseInput.value = bug.case_id;
+            if (bug.url && urlInput) urlInput.value = bug.url;
+            if (bug.title && titleInput) titleInput.value = bug.title;
+
+            const fnRender = window.renderResults;
+            const scanData = bug.full_scan_data;
+            if (scanData && scanData.url && fnRender) {
+                fnRender(scanData);
+                const resultsArea = document.getElementById('results-area');
+                if (resultsArea) {
+                    resultsArea.style.display = 'block';
+                    resultsArea.scrollIntoView({ behavior: 'smooth' });
+                }
+            } else if (urlInput && urlInput.value) {
+                const submitBtn = document.getElementById('submit-btn');
+                if (submitBtn) submitBtn.click();
+            }
+        };
+
+        const viewBtns = card.querySelectorAll('.view-bug-case-btn, .view-bug-case-btn-bottom');
+        viewBtns.forEach(btn => btn.addEventListener('click', handleViewCase));
 
         const copyBtn = card.querySelector('.copy-ai-prompt-btn');
         if (copyBtn) {

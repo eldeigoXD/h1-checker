@@ -4927,10 +4927,18 @@ def generate_pdf():
 # -----------------------------------------------------------------------------
 # IMAGE BANK API ENDPOINTS
 # -----------------------------------------------------------------------------
-@app.route('/api/image-bank', methods=['GET'])
+@app.route('/api/image-bank', methods=['GET', 'DELETE'])
 def get_image_bank_api():
     try:
-        from image_bank_db import query_image_assets
+        from image_bank_db import query_image_assets, delete_image_asset
+        if request.method == 'DELETE':
+            asset_id = request.args.get('id')
+            img_url = request.args.get('url')
+            if not asset_id and not img_url:
+                return jsonify({'success': False, 'error': 'Missing id or url parameter'}), 400
+            ok = delete_image_asset(asset_id=int(asset_id) if asset_id else None, image_url=img_url)
+            return jsonify({'success': ok, 'message': 'Asset deleted successfully' if ok else 'Asset not found'})
+
         make = request.args.get('make')
         model = request.args.get('model')
         condition = request.args.get('condition')

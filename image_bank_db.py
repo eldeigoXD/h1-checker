@@ -172,5 +172,32 @@ def get_image_bank_stats():
         'categories': categories
     }
 
+def delete_image_asset(asset_id: int = None, image_url: str = None) -> bool:
+    """Deletes an asset from image_assets and its recorded occurrences."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        target_url = image_url
+        if asset_id:
+            cursor.execute("SELECT image_url FROM image_assets WHERE id = ?", (asset_id,))
+            row = cursor.fetchone()
+            if row:
+                target_url = row['image_url']
+            cursor.execute("DELETE FROM image_assets WHERE id = ?", (asset_id,))
+        elif image_url:
+            cursor.execute("DELETE FROM image_assets WHERE image_url = ?", (image_url,))
+            
+        if target_url:
+            cursor.execute("DELETE FROM image_occurrences WHERE image_url = ?", (target_url,))
+            
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error deleting image asset: {e}")
+        return False
+    finally:
+        conn.close()
+
 # Initialize database on module load
 init_db()
+

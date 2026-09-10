@@ -812,7 +812,8 @@
   },
   "www.benoitgmc.com": {
     "/used-inventory/chevrolet-farmerville-la.htm": "https://www.benoitgmc.com/used-inventory/index.htm?make=Chevrolet",
-    "/used-inventory/gmc-farmerville-la.htm": "/used-inventory/index.htm?make=GMC"
+    "/used-inventory/gmc-farmerville-la.htm": "/used-inventory/index.htm?make=GMC",
+    "/used-inventory/index.htm": "/used-inventory/index.htm"
   },
   "www.faulknervolvocarslancaster.com": {
     "/new-inventory/index.htm": "https://www.faulknervolvocarslancaster.com/new-inventory/index.htm",

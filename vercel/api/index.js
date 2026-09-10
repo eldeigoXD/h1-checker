@@ -275,6 +275,21 @@ module.exports = async (req, res) => {
     return res.status(400).json({ success: false, error: 'Invalid assets payload' });
   }
 
+  if (pathname === '/api/image-bank' && req.method === 'DELETE') {
+    const id = url.searchParams.get('id');
+    const imgUrl = url.searchParams.get('url');
+    if (id) {
+      const numId = parseInt(id, 10);
+      imageBankDb = imageBankDb.filter(a => a.id !== numId);
+      return res.status(200).json({ success: true, message: 'Asset deleted' });
+    }
+    if (imgUrl) {
+      imageBankDb = imageBankDb.filter(a => a.image_url !== imgUrl);
+      return res.status(200).json({ success: true, message: 'Asset deleted' });
+    }
+    return res.status(400).json({ success: false, error: 'Missing id or url' });
+  }
+
   // 1. Worker Endpoints (Used by your Home PC local_worker.py)
   if (pathname === '/api/jobs/pending' || (pathname === '/api/jobs' && url.searchParams.get('action') === 'pending')) {
     const authHeader = req.headers['x-worker-secret'] || url.searchParams.get('key');

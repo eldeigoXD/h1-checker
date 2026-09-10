@@ -102,10 +102,10 @@
     "filter_url": "/used-inventory/index.htm",
     "source": "manual_correction",
     "corrected_at": "2026-09-10T19:11:59+00:00",
-    "confirmation_count": 16,
-    "confidence": 0.87,
+    "confirmation_count": 17,
+    "confidence": 0.89,
     "url": "https://www.bishopchevroletbuick.com/used-inventory/index.htm?_ddcpreview=9ca0d125db9c43d3b0685a6d06085352&_toggleBasePageCache=false",
-    "last_confirmed": "2026-09-10T19:25:54+00:00",
+    "last_confirmed": "2026-09-10T19:36:06+00:00",
     "last_outcome": "match"
   }
 }
