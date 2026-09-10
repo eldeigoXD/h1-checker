@@ -14,13 +14,19 @@
 
 <body>
     <div class="container">
-        <header style="position: relative;">
-            <h1>QA Web Tool Pro</h1>
-            <p>Verifica validaciones H1, coherencia semántica y salud de <strong>Call to Actions</strong>.</p>
-            <div style="position: absolute; right: 0; top: 0; display: flex; gap: 0.5rem;">
-                <button id="tool-bugs-btn" class="outline-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">🚨 Tool Bugs <span id="tool-bugs-badge" style="background:#ff4d4d; color:#fff; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:10px; display:none;">0</span></button>
-                <button id="image-bank-btn" class="outline-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">🖼️ Image Bank</button>
-                <button id="history-btn" class="outline-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">📜 History</button>
+        <header style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-weight: 700; font-size: 1.05rem; color: #a78bfa; display: flex; align-items: center; gap: 0.4rem;">
+                    ⚡ QA Web Tool Pro
+                </div>
+                <div style="display: flex; gap: 0.6rem; align-items: center;">
+                    <button id="image-bank-btn" class="outline-btn" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #8b949e; font-size: 0.78rem; padding: 0.3rem 0.6rem; border-radius: 4px;" title="Asset Harvester Image Bank">🖼️ Image Bank</button>
+                    <button id="history-btn" class="outline-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px;">📜 History</button>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <h1 style="margin: 0; font-size: 2.2rem; background: linear-gradient(135deg, #a78bfa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">QA Web Tool Pro</h1>
+                <p style="margin-top: 0.4rem; color: var(--text-muted); font-size: 0.95rem;">Verifica validaciones H1, coherencia semántica y salud de <strong>Call to Actions</strong>.</p>
             </div>
         </header>
 
@@ -421,6 +427,18 @@
                 </div>
             </section>
         </main>
+
+        <!-- Footer / Bottom Bar -->
+        <footer style="margin-top: 3.5rem; padding: 1.5rem 0 2rem 0; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="font-size: 0.8rem; color: #8b949e;">
+                QA Web Tool Pro &bull; Automated Audit &amp; QA System
+            </div>
+            <div style="display: flex; gap: 0.8rem; align-items: center;">
+                <button id="tool-bugs-btn" class="outline-btn" style="background: rgba(255, 152, 0, 0.12); border: 1px solid rgba(255, 152, 0, 0.35); color: #ffb74d; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 6px; font-weight: 600;">
+                    🚨 Reported Tool Bugs <span id="tool-bugs-badge" style="background:#ff4d4d; color:#fff; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:10px; display:none;">0</span>
+                </button>
+            </div>
+        </footer>
     </div>
 
     <!-- History Modal -->
