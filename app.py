@@ -257,6 +257,38 @@ def parse_cta_instructions(instructions):
         
     return parsed
 
+def clean_inventory_instructions(instructions: str) -> str:
+    """
+    Cleans instructions passed to inventory inference/validation.
+    Filters out CTA links, anchor mappings, and CTA list headers (e.g.
+    'Vehicles Under $20K: /bargain-inventory/index.htm', '/contact.htm', 'CTAS:'),
+    so that internal links to other pages are never mistaken for the inventory
+    filter of the current page.
+    """
+    if not instructions:
+        return ""
+    clean_lines = []
+    for line in instructions.splitlines():
+        line_s = line.strip()
+        if not line_s:
+            continue
+        # Skip CTA block headers (e.g. "CTAS:", "Call to Actions:")
+        if re.match(r'^(?:ctas?|call\s*to\s*actions?)\s*:?$', line_s, re.IGNORECASE):
+            continue
+        # Skip CTA mapping lines like "Vehicles Under $20K: /bargain-inventory/index.htm" or "Trade-in: https://..."
+        # But preserve explicit inventory directives like "Inventory: /used-inventory/index.htm" or "Target inventory: ..."
+        if re.search(r':\s*(?:https?:\/\/|\/[a-zA-Z0-9_\-\.\/]+)', line_s):
+            if not re.match(r'^(?:inventory|filter|target)\s*(?:url|filter)?\s*:', line_s, re.IGNORECASE):
+                continue
+        # Skip lines in format "Text (URL)" or "Text - URL"
+        if re.search(r'\((?:https?:\/\/|\/)[^)]+\)', line_s) or re.search(r'\s+-\s+(?:https?:\/\/|\/)', line_s):
+            continue
+        # Skip bare URLs / paths
+        if line_s.startswith('/') or line_s.startswith('http://') or line_s.startswith('https://'):
+            continue
+        clean_lines.append(line_s)
+    return "\n".join(clean_lines).strip()
+
 
 def get_selenium_driver():
     opts = Options()
@@ -603,6 +635,7 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
     Determines the inventory filter URL using ONLY local Python matching.
     Returns a relative path+query string, a SUM: command, or None if unable to determine.
     """
+    instructions = clean_inventory_instructions(instructions)
     from urllib.parse import urlparse, urljoin, urlunparse
 
     parsed = urlparse(url)
@@ -1199,15 +1232,11 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
     inst_low = instructions.lower() if instructions else ""
     
     price_patterns = [
-        r'\bunder\s*\$?\d+',
-        r'\bbelow\s*\$?\d+',
-        r'\bless\s+than\s*\$?\d+',
-        r'\bunder\s*\d+k',
-        r'\bbelow\s*\d+k',
+        r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\$?\d+',
         r'\bpriced?\s+(?:under|below|less\s+than)\s*\$?\d+',
-        r'\bprice\s*(?:under|below)',
-        r'\bmax\s*price',
-        r'\bbudget\s*(?:under|below)'
+        r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\d+k',
+        r'\bmax\s*price\s*\$?\d+',
+        r'\bbudget\s*(?:under|below)\s*\$?\d+'
     ]
     has_slug_price = any(k in slug for k in [' bargain ', ' under ', ' 10k ', ' 15k ', ' 20k ', ' 30k ', ' 40k ', ' 50k '])
     has_instruction_price = bool(instructions and any(re.search(p, inst_low) for p in price_patterns))
@@ -1465,6 +1494,7 @@ def extract_inventory_configs(html: str):
 
 def validate_inventory(url: str, nav_links: list, initial_html: str = None, instructions: str = ""):
     """Uses provided HTML or Selenium to check inventory count and compares it with expected filter URL count."""
+    instructions = clean_inventory_instructions(instructions)
     import re
     driver = None
     bugs = []
@@ -1778,21 +1808,18 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             inventory_info['source'] = 'none'
             return bugs, inventory_info
 
-        if instructions and res and not res.startswith('SUM:'):
+        is_manual = inventory_info.get('source') == 'manual_correction'
+        if instructions and res and not res.startswith('SUM:') and not is_manual:
             # Apply explicit user instructions (e.g. "below $30,000" or "new vehicles") to override DB/cached filters
             inst_low = instructions.lower()
             import re
             
             price_patterns = [
-                r'\bunder\s*\$?\d+',
-                r'\bbelow\s*\$?\d+',
-                r'\bless\s+than\s*\$?\d+',
-                r'\bunder\s*\d+k',
-                r'\bbelow\s*\d+k',
+                r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\$?\d+',
                 r'\bpriced?\s+(?:under|below|less\s+than)\s*\$?\d+',
-                r'\bprice\s*(?:under|below)',
-                r'\bmax\s*price',
-                r'\bbudget\s*(?:under|below)'
+                r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\d+k',
+                r'\bmax\s*price\s*\$?\d+',
+                r'\bbudget\s*(?:under|below)\s*\$?\d+'
             ]
             has_price_intent = any(re.search(p, inst_low) for p in price_patterns)
             
@@ -3895,8 +3922,8 @@ def extract_h1():
             nav_selector = 'nav a, header a, .navbar-nav a, .ws-navigation a, [data-widget-name*="navigation"] a'
             nav_links_raw = soup.select(nav_selector)
             nav_links = [{"text": a.get_text(strip=True), "href": a.get('href')} for a in nav_links_raw if a.get('href') and not a['href'].startswith(('javascript', 'tel', 'mailto'))][:25]
-            combined_instructions = f"{special_instructions}\n{custom_rules}".strip()
-            inventory_validation_bugs, inventory_info = validate_inventory(url, nav_links, response.text, combined_instructions)
+            inv_rules = clean_inventory_instructions(f"{special_instructions}\n{custom_rules}")
+            inventory_validation_bugs, inventory_info = validate_inventory(url, nav_links, response.text, inv_rules)
         except Exception as e:
 
             import traceback
