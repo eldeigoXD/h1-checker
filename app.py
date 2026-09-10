@@ -1198,7 +1198,17 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
     is_mileage = any(k in slug for k in [' miles ', ' mile ', ' mileage ', ' low mileage', 'low-mileage', 'mileage-selection', 'low-miles'])
     inst_low = instructions.lower() if instructions else ""
     
-    price_patterns = [r'under\s*\$?\d+', r'below\s*\$?\d+', r'under\s*\d+k', r'below\s*\d+k', r'price\s*under', r'price\s*below', r'max\s*price', r'budget', r'\$\d+']
+    price_patterns = [
+        r'\bunder\s*\$?\d+',
+        r'\bbelow\s*\$?\d+',
+        r'\bless\s+than\s*\$?\d+',
+        r'\bunder\s*\d+k',
+        r'\bbelow\s*\d+k',
+        r'\bpriced?\s+(?:under|below|less\s+than)\s*\$?\d+',
+        r'\bprice\s*(?:under|below)',
+        r'\bmax\s*price',
+        r'\bbudget\s*(?:under|below)'
+    ]
     has_price_rule = any(k in slug for k in [' bargain ', ' under ']) or is_mileage or (instructions and any(re.search(p, inst_low) for p in price_patterns))
 
     if has_price_rule:
