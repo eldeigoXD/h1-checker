@@ -23,6 +23,7 @@ try {
 }
 
 let historyDb = [...initialHistory];
+let reportedBugsDb = [];
 
 module.exports = async (req, res) => {
   // Enable CORS for all remote clients
@@ -112,6 +113,43 @@ module.exports = async (req, res) => {
       return res.status(200).json({ success: true, message: 'History record saved successfully' });
     }
     return res.status(400).json({ success: false, error: 'Invalid history record payload' });
+  }
+
+  // 0.6. Reported Tool Bugs Endpoints
+  if (pathname === '/api/tool-bugs' && req.method === 'GET') {
+    return res.status(200).json({ success: true, data: reportedBugsDb });
+  }
+
+  if ((pathname === '/api/report-bug' || pathname === '/api/tool-bugs') && req.method === 'POST') {
+    const record = body;
+    if (record && (record.url || record.case_id)) {
+      const bugEntry = {
+        id: record.id || `BUG-${Date.now()}`,
+        case_id: record.case_id || 'N/A',
+        url: record.url || '',
+        title: record.title || record.page_title || '',
+        path: record.path || '',
+        user_comment: record.user_comment || '',
+        timestamp: record.timestamp || Math.floor(Date.now() / 1000),
+        full_scan_data: record.full_scan_data || {},
+        debug_prompt: record.debug_prompt || ''
+      };
+      reportedBugsDb.unshift(bugEntry);
+      if (reportedBugsDb.length > 100) {
+        reportedBugsDb = reportedBugsDb.slice(0, 100);
+      }
+      return res.status(200).json({ success: true, message: 'Tool bug report submitted successfully', id: bugEntry.id });
+    }
+    return res.status(400).json({ success: false, error: 'Invalid bug report payload' });
+  }
+
+  if (pathname === '/api/tool-bugs' && req.method === 'DELETE') {
+    const bugId = url.searchParams.get('id');
+    if (bugId) {
+      reportedBugsDb = reportedBugsDb.filter(b => b.id !== bugId);
+      return res.status(200).json({ success: true, message: 'Bug report deleted' });
+    }
+    return res.status(400).json({ success: false, error: 'Missing bug ID' });
   }
 
   // 1. Worker Endpoints (Used by your Home PC local_worker.py)

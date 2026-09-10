@@ -2210,3 +2210,350 @@ async function fetchImageBankAssets() {
         imgBankGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #ff6b6b;">Failed to load Image Bank assets.</div>';
     }
 }
+
+// ==========================================
+// REPORT TOOL BUG & REVIEW CASES CONTROLLER
+// ==========================================
+const reportToolBugBtn = document.getElementById('report-tool-bug-btn');
+const reportBugModal = document.getElementById('report-bug-modal');
+const closeReportBugBtn = document.getElementById('close-report-bug-btn');
+const cancelReportBugBtn = document.getElementById('cancel-report-bug-btn');
+const submitReportBugBtn = document.getElementById('submit-report-bug-btn');
+const reportBugTargetUrl = document.getElementById('report-bug-target-url');
+const reportBugCommentInput = document.getElementById('report-bug-comment-input');
+
+const toolBugsBtn = document.getElementById('tool-bugs-btn');
+const toolBugsBadge = document.getElementById('tool-bugs-badge');
+const toolBugsModal = document.getElementById('tool-bugs-modal');
+const closeToolBugsBtn = document.getElementById('close-tool-bugs-btn');
+const toolBugsSearch = document.getElementById('tool-bugs-search');
+const toolBugsListContainer = document.getElementById('tool-bugs-list-container');
+
+let allReportedToolBugs = [];
+
+function buildAiDebugPrompt(bugItem) {
+    const scan = bugItem.full_scan_data || {};
+    const url = bugItem.url || scan.url || 'N/A';
+    const caseId = bugItem.case_id || scan.case_id || 'N/A';
+    const path = bugItem.path || '';
+    const title = bugItem.title || scan.page_title || '';
+    const comment = bugItem.user_comment || 'No specific comment provided.';
+
+    let prompt = `<USER_REQUEST>\n`;
+    prompt += `Hola AI, hay un error / caso incorrecto reportado en el Tool de QA:\n\n`;
+    prompt += `📍 DETALLES DEL CASO:\n`;
+    prompt += `- URL: ${url}\n`;
+    prompt += `- Case #: ${caseId}\n`;
+    if (path) prompt += `- Path: ${path}\n`;
+    if (title) prompt += `- Title: ${title}\n`;
+    prompt += `\n💬 EXPLICACIÓN DEL PROBLEMA / LO QUE DEBERÍA DAR EL TOOL:\n`;
+    prompt += `${comment}\n\n`;
+
+    prompt += `📊 DATOS CAPTURADOS POR EL TOOL:\n`;
+    prompt += `- Total H1 Tags: ${scan.count ?? 'N/A'} (Válido: ${scan.h1_valid ?? 'N/A'})\n`;
+    if (scan.h1s && Array.isArray(scan.h1s)) {
+        prompt += `- H1 Text(s): ${scan.h1s.map(h => `"${h.text}"`).join(', ')}\n`;
+    }
+    if (scan.bugs && Array.isArray(scan.bugs) && scan.bugs.length > 0) {
+        prompt += `- Bugs Detectados por Tool: ${JSON.stringify(scan.bugs, null, 2)}\n`;
+    } else {
+        prompt += `- Bugs Detectados por Tool: Ninguno (0 bugs)\n`;
+    }
+
+    if (scan.inventory_validation) {
+        const inv = scan.inventory_validation;
+        prompt += `\n🛒 INVENTORY VALIDATION TOOL DATA:\n`;
+        prompt += `- Status: ${inv.status || 'N/A'}\n`;
+        prompt += `- Recommendation / Type: ${inv.recommendation || inv.match_type || 'N/A'}\n`;
+        prompt += `- Current Page Vehicles: ${inv.current_vehicles ?? 'N/A'}\n`;
+        prompt += `- Target Filter URL: ${inv.target_filter_url || 'N/A'}\n`;
+        prompt += `- Target Filter Vehicles: ${inv.target_vehicles ?? 'N/A'}\n`;
+        prompt += `- Matched Configs: ${JSON.stringify(inv.configs || inv.matched_configs || [])}\n`;
+        prompt += `- Full Inventory Validation Payload:\n\`\`\`json\n${JSON.stringify(inv, null, 2)}\n\`\`\`\n`;
+    }
+
+    if (scan.custom_cta_results) {
+        prompt += `\n🔗 CUSTOM CTA EVALUATION TOOL DATA:\n\`\`\`json\n${JSON.stringify(scan.custom_cta_results, null, 2)}\n\`\`\`\n`;
+    }
+
+    if (scan.custom_rules_validation) {
+        prompt += `\n📋 CUSTOM RULES DATA:\n\`\`\`json\n${JSON.stringify(scan.custom_rules_validation, null, 2)}\n\`\`\`\n`;
+    }
+
+    prompt += `\n¿Por qué el tool está infiriendo o fallando en este caso y cómo podemos solucionarlo en la lógica del tool o patrones de app.py?\n`;
+    prompt += `</USER_REQUEST>`;
+
+    return prompt;
+}
+
+async function updateToolBugsBadge() {
+    if (!toolBugsBadge) return;
+    try {
+        const res = await fetch('/api/tool-bugs');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+            const count = data.data.length;
+            toolBugsBadge.textContent = count;
+            toolBugsBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+    } catch (e) {
+        console.warn('Failed to update tool bugs badge:', e);
+    }
+}
+
+if (reportToolBugBtn && reportBugModal) {
+    reportToolBugBtn.addEventListener('click', () => {
+        const activeUrl = lastScanData?.url || document.getElementById('url-input')?.value || '';
+        if (reportBugTargetUrl) reportBugTargetUrl.value = activeUrl;
+        if (reportBugCommentInput) reportBugCommentInput.value = '';
+        reportBugModal.style.display = 'flex';
+    });
+}
+
+if (closeReportBugBtn && reportBugModal) {
+    closeReportBugBtn.addEventListener('click', () => {
+        reportBugModal.style.display = 'none';
+    });
+}
+if (cancelReportBugBtn && reportBugModal) {
+    cancelReportBugBtn.addEventListener('click', () => {
+        reportBugModal.style.display = 'none';
+    });
+}
+if (reportBugModal) {
+    reportBugModal.addEventListener('click', (e) => {
+        if (e.target === reportBugModal) reportBugModal.style.display = 'none';
+    });
+}
+
+if (submitReportBugBtn) {
+    submitReportBugBtn.addEventListener('click', async () => {
+        const rawUrl = (reportBugTargetUrl ? reportBugTargetUrl.value : '').trim() || (document.getElementById('url-input')?.value || '').trim();
+        const comment = (reportBugCommentInput ? reportBugCommentInput.value : '').trim();
+
+        if (!rawUrl) {
+            alert('Please perform or enter a target URL before reporting a bug.');
+            return;
+        }
+
+        const caseId = (document.getElementById('case-number-input')?.value || lastScanData?.case_id || '').trim() || `CASE-${Date.now().toString().slice(-6)}`;
+        let pathStr = '';
+        try { pathStr = new URL(rawUrl).pathname; } catch(e) { pathStr = rawUrl; }
+
+        const scanPayload = lastScanData || { url: rawUrl, case_id: caseId };
+        
+        const tempBugObj = {
+            case_id: caseId,
+            url: rawUrl,
+            path: pathStr,
+            title: scanPayload.page_title || (document.getElementById('expected-title-input')?.value || '').trim(),
+            user_comment: comment,
+            full_scan_data: scanPayload
+        };
+
+        const debugPrompt = buildAiDebugPrompt(tempBugObj);
+
+        submitReportBugBtn.disabled = true;
+        submitReportBugBtn.textContent = 'Submitting...';
+
+        try {
+            const res = await fetch('/api/report-bug', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...tempBugObj,
+                    debug_prompt: debugPrompt
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                submitReportBugBtn.textContent = 'Submitted!';
+                submitReportBugBtn.style.backgroundColor = '#4caf50';
+                setTimeout(() => {
+                    reportBugModal.style.display = 'none';
+                    submitReportBugBtn.disabled = false;
+                    submitReportBugBtn.textContent = 'Submit Bug Report';
+                    submitReportBugBtn.style.backgroundColor = '#ff9800';
+                    updateToolBugsBadge();
+                }, 1200);
+            } else {
+                alert('Error submitting report: ' + (data.error || data.message));
+                submitReportBugBtn.disabled = false;
+                submitReportBugBtn.textContent = 'Submit Bug Report';
+            }
+        } catch(err) {
+            console.error('Failed to submit tool bug report:', err);
+            alert('Failed to connect to server.');
+            submitReportBugBtn.disabled = false;
+            submitReportBugBtn.textContent = 'Submit Bug Report';
+        }
+    });
+}
+
+if (toolBugsBtn && toolBugsModal) {
+    toolBugsBtn.addEventListener('click', () => {
+        toolBugsModal.style.display = 'flex';
+        loadAndRenderToolBugs();
+    });
+}
+
+if (closeToolBugsBtn && toolBugsModal) {
+    closeToolBugsBtn.addEventListener('click', () => {
+        toolBugsModal.style.display = 'none';
+        if (toolBugsSearch) toolBugsSearch.value = '';
+    });
+}
+
+if (toolBugsModal) {
+    toolBugsModal.addEventListener('click', (e) => {
+        if (e.target === toolBugsModal) {
+            toolBugsModal.style.display = 'none';
+            if (toolBugsSearch) toolBugsSearch.value = '';
+        }
+    });
+}
+
+if (toolBugsSearch) {
+    toolBugsSearch.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = allReportedToolBugs.filter(item => {
+            const idMatch = item.id && item.id.toLowerCase().includes(query);
+            const caseMatch = item.case_id && item.case_id.toLowerCase().includes(query);
+            const urlMatch = item.url && item.url.toLowerCase().includes(query);
+            const commentMatch = item.user_comment && item.user_comment.toLowerCase().includes(query);
+            return idMatch || caseMatch || urlMatch || commentMatch;
+        });
+        renderToolBugsList(filtered);
+    });
+}
+
+async function loadAndRenderToolBugs() {
+    if (!toolBugsListContainer) return;
+    toolBugsListContainer.innerHTML = '<div style="text-align:center; color:#aaa; padding: 2rem;">Loading reported tool bugs...</div>';
+
+    try {
+        const res = await fetch('/api/tool-bugs');
+        const data = await res.json();
+        allReportedToolBugs = (data.success && Array.isArray(data.data)) ? data.data : [];
+        renderToolBugsList(allReportedToolBugs);
+        updateToolBugsBadge();
+    } catch(err) {
+        console.error('Failed to load tool bugs:', err);
+        toolBugsListContainer.innerHTML = '<div style="text-align:center; color:#ff6b6b; padding: 2rem;">Failed to load reported bugs.</div>';
+    }
+}
+
+function renderToolBugsList(items) {
+    if (!toolBugsListContainer) return;
+
+    if (!items || items.length === 0) {
+        toolBugsListContainer.innerHTML = `
+            <div style="text-align: center; padding: 3rem 1rem; color: #888;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎉</div>
+                <p style="margin: 0; font-size: 0.95rem;">No reported tool bugs found!</p>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 0.3rem;">If you notice any wrong inventory matching or CTA evaluation, click "🐛 Report Tool Error" on the audit page.</p>
+            </div>
+        `;
+        return;
+    }
+
+    toolBugsListContainer.innerHTML = '';
+    items.forEach(bug => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 8px; padding: 1rem; position: relative; display: flex; flex-direction: column; gap: 0.6rem;';
+
+        const d = bug.timestamp ? new Date(bug.timestamp * 1000) : new Date();
+        const timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const scan = bug.full_scan_data || {};
+        const inv = scan.inventory_validation || {};
+
+        let invSnippet = '';
+        if (inv && (inv.status || inv.recommendation)) {
+            invSnippet = `
+                <div style="background: rgba(0,0,0,0.3); padding: 0.5rem 0.8rem; border-radius: 6px; font-size: 0.78rem; font-family: monospace; color: #ffcc80;">
+                    <div>⚠️ <strong>Validation:</strong> ${inv.status || 'N/A'} | ${inv.recommendation || inv.match_type || ''}</div>
+                    <div>🚙 <strong>Vehicles:</strong> Current Page: ${inv.current_vehicles ?? 'N/A'} vs Target Filter: ${inv.target_vehicles ?? 'N/A'}</div>
+                    ${inv.target_filter_url ? `<div style="word-break: break-all;">🔗 <strong>Target Filter:</strong> ${inv.target_filter_url}</div>` : ''}
+                </div>
+            `;
+        }
+
+        const debugPromptText = bug.debug_prompt || buildAiDebugPrompt(bug);
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <span style="font-weight: 700; color: #ffb74d; font-size: 0.95rem; margin-right: 0.6rem;">📁 Case: ${escapeHtml(bug.case_id || 'N/A')}</span>
+                    <span style="font-size: 0.8rem; color: #888;">${timeStr}</span>
+                </div>
+                <button class="delete-bug-btn icon-btn" style="color: #ff6b6b; padding: 2px 6px;" title="Delete bug report">🗑️</button>
+            </div>
+
+            <div style="font-size: 0.85rem; word-break: break-all;">
+                <a href="${escapeHtml(bug.url)}" target="_blank" style="color: #4fc3f7; text-decoration: none; font-weight: 500;">
+                    🔗 ${escapeHtml(bug.url)}
+                </a>
+            </div>
+
+            ${bug.user_comment ? `
+                <div style="background: rgba(255, 152, 0, 0.08); border-left: 3px solid #ff9800; padding: 0.5rem 0.8rem; border-radius: 0 4px 4px 0; font-size: 0.85rem; color: #eee;">
+                    <strong>💬 Reported Issue:</strong> ${escapeHtml(bug.user_comment)}
+                </div>
+            ` : ''}
+
+            ${invSnippet}
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 0.4rem;">
+                <button class="copy-ai-prompt-btn primary-btn" style="background: linear-gradient(135deg, #7c4dff, #651fff); color: white; font-weight: 600; font-size: 0.82rem; padding: 0.4rem 0.8rem; border-radius: 6px; display: flex; align-items: center; gap: 0.4rem;">
+                    📋 Copiar Info para AI
+                </button>
+            </div>
+        `;
+
+        const copyBtn = card.querySelector('.copy-ai-prompt-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(debugPromptText).then(() => {
+                    const origText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '✅ ¡Copiado para la AI!';
+                    copyBtn.style.background = '#2e7d32';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = origText;
+                        copyBtn.style.background = 'linear-gradient(135deg, #7c4dff, #651fff)';
+                    }, 2200);
+                }).catch(err => {
+                    console.error('Clipboard error:', err);
+                    alert('Failed to copy to clipboard.');
+                });
+            });
+        }
+
+        const deleteBtn = card.querySelector('.delete-bug-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to delete this bug report?')) return;
+                try {
+                    const res = await fetch(`/api/tool-bugs?id=${encodeURIComponent(bug.id)}`, { method: 'DELETE' });
+                    const resData = await res.json();
+                    if (resData.success) {
+                        card.remove();
+                        allReportedToolBugs = allReportedToolBugs.filter(b => b.id !== bug.id);
+                        updateToolBugsBadge();
+                        if (allReportedToolBugs.length === 0) renderToolBugsList([]);
+                    }
+                } catch(e) {
+                    console.error('Failed to delete bug report:', e);
+                }
+            });
+        }
+
+        toolBugsListContainer.appendChild(card);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateToolBugsBadge();
+});
+updateToolBugsBadge();

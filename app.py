@@ -4929,6 +4929,69 @@ def get_image_bank_stats_api():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# -----------------------------------------------------------------------------
+# TOOL BUGS REPORTING API ENDPOINTS
+# -----------------------------------------------------------------------------
+REPORTED_TOOL_BUGS_FILE = 'reported_tool_bugs.json'
+
+def load_reported_tool_bugs():
+    if not os.path.exists(REPORTED_TOOL_BUGS_FILE):
+        return []
+    try:
+        with open(REPORTED_TOOL_BUGS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+def save_reported_tool_bug(bug_entry):
+    bugs_list = load_reported_tool_bugs()
+    bugs_list.insert(0, bug_entry)
+    if len(bugs_list) > 150:
+        bugs_list = bugs_list[:150]
+    try:
+        with open(REPORTED_TOOL_BUGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(bugs_list, f, indent=2)
+    except Exception as e:
+        print(f"Error saving reported tool bug: {e}")
+
+@app.route('/api/tool-bugs', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/report-bug', methods=['POST'])
+def handle_tool_bugs():
+    if request.method == 'GET':
+        bugs_list = load_reported_tool_bugs()
+        return jsonify({'success': True, 'data': bugs_list})
+    elif request.method == 'POST':
+        data = request.json or {}
+        if not data.get('url') and not data.get('case_id'):
+            return jsonify({'success': False, 'error': 'Missing URL or case_id'}), 400
+        
+        bug_entry = {
+            'id': data.get('id') or f"BUG-{int(time.time()*1000)}",
+            'case_id': data.get('case_id', 'N/A'),
+            'url': data.get('url', ''),
+            'title': data.get('title') or data.get('page_title', ''),
+            'path': data.get('path', ''),
+            'user_comment': data.get('user_comment', ''),
+            'timestamp': data.get('timestamp') or int(time.time()),
+            'full_scan_data': data.get('full_scan_data', {}),
+            'debug_prompt': data.get('debug_prompt', '')
+        }
+        save_reported_tool_bug(bug_entry)
+        return jsonify({'success': True, 'message': 'Tool bug report submitted', 'id': bug_entry['id']})
+    elif request.method == 'DELETE':
+        bug_id = request.args.get('id')
+        if bug_id:
+            bugs_list = load_reported_tool_bugs()
+            bugs_list = [b for b in bugs_list if b.get('id') != bug_id]
+            try:
+                with open(REPORTED_TOOL_BUGS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(bugs_list, f, indent=2)
+            except Exception as e:
+                print(f"Error deleting tool bug: {e}")
+            return jsonify({'success': True, 'message': 'Bug report deleted'})
+        return jsonify({'success': False, 'error': 'Missing bug ID'}), 400
+
+
 if __name__ == '__main__':
     if not os.path.exists('static'):
         os.makedirs('static')
