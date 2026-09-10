@@ -5047,7 +5047,7 @@ def handle_tool_bugs():
 if __name__ == '__main__':
     if not os.path.exists('static'):
         os.makedirs('static')
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
 
 
 
