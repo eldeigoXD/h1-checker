@@ -3578,13 +3578,21 @@ def extract_h1():
                 lnk, txt, wname, ltype = link_tuple
                 try:
                     resp = session.head(lnk, timeout=5, allow_redirects=True)
-                    if resp.status_code == 404 or resp.status_code >= 500:
-                        return {'type': 'broken', 'href': lnk, 'text': txt, 'widget': wname, 'status': resp.status_code}
+                    code = resp.status_code
+                    if code in [404, 405, 403] or code >= 500:
+                        try:
+                            resp_get = session.get(lnk, timeout=6, allow_redirects=True, stream=True)
+                            code = resp_get.status_code
+                        except Exception:
+                            pass
+
+                    if code == 404 or code >= 500:
+                        return {'type': 'broken', 'href': lnk, 'text': txt, 'widget': wname, 'status': code}
                     else:
                         return {'type': 'valid', 'href': lnk, 'text': txt, 'widget': wname, 'link_type': ltype}
                 except Exception as e:
                     # Timeout or Connection Error is almost always WAF/bot-protection. 
-                    # A real broken link will return a fast 404. We treat timeouts/connection errors as valid for now to avoid false positives.
+                    # A real broken link will return a fast 404. We treat timeouts/connection errors as valid to avoid false positives.
                     return {'type': 'valid', 'href': lnk, 'text': txt, 'widget': wname, 'link_type': ltype}
             
             with ThreadPoolExecutor(max_workers=15) as executor:
@@ -3814,24 +3822,9 @@ def extract_h1():
             for key, val in LOCAL_MAKES.items():
                 if len(key) <= 3:
                     continue
-                domain_tokens = re.split(r'[-_]|(?<=[a-z])(?=[0-9])|(?<=[0-9])(?=[a-z])', domain_core)
-                key_found = False
-                for token in domain_tokens:
-                    if token == key:
-                        key_found = True
-                        break
-                    if 'of' in token:
-                        parts = token.split('of')
-                        if key in parts:
-                            key_found = True
-                            break
-                if not key_found:
-                    if key == 'ford' and domain_core.endswith(('wexford', 'oxford', 'bradford', 'bedford', 'stanford', 'hartford')):
-                        key_found = False
-                    elif domain_core.startswith(key) or domain_core.endswith(key):
-                        key_found = True
-
-                if key_found:
+                if key in domain_core:
+                    if key == 'ford' and any(domain_core.endswith(w) for w in ['wexford', 'oxford', 'bradford', 'bedford', 'stanford', 'hartford']):
+                        continue
                     allowed_brands.add(val)
                     if not main_brand:
                         main_brand = val
@@ -4422,6 +4415,7 @@ def extract_h1():
             'media_audit_mobile': media_audit_mobile,
             'page_audit': page_audit,
             'inventory_info': inventory_info,
+            'inventory_validation': inventory_info,
             'sitemap_info': sitemap_info,
             'lead_form_info': lead_form_info,
             'breadcrumbs_info': breadcrumbs_info,
