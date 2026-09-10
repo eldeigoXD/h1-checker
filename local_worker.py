@@ -84,13 +84,18 @@ def poll_and_process():
 
         # 1. Check if local app.py server is up
         if not check_local_backend():
-            print("   [WARN] Local Flask server is not running on 127.0.0.1:5000.")
-            print("   [INFO] Starting local scan process...")
+            err_msg = f"Local Flask server (app.py) is NOT running on {LOCAL_FLASK_URL}. Please start 'python app.py' in your terminal!"
+            print(f"   [ERROR] {err_msg}")
+            try:
+                requests.post(complete_url, json={"job_id": job_id, "error": err_msg}, headers=headers, timeout=15)
+            except Exception:
+                pass
+            return
 
         # 2. Execute local request against Flask app
         local_target = f"{LOCAL_FLASK_URL}{endpoint}"
         try:
-            local_resp = requests.post(local_target, json=payload, timeout=120)
+            local_resp = requests.post(local_target, json=payload, timeout=300)
             if local_resp.status_code == 200:
                 content_type = local_resp.headers.get("content-type", "").lower()
                 if "application/pdf" in content_type or endpoint.endswith("generate-pdf"):
