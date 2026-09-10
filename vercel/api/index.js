@@ -22,15 +22,24 @@ try {
   initialHistory = [];
 }
 
+let initialImageBank = [];
+try {
+  initialImageBank = require('./initial_image_bank.json');
+} catch (e) {
+  initialImageBank = [];
+}
+
 let historyDb = [...initialHistory];
 let reportedBugsDb = [];
-let imageBankDb = [];
+let imageBankDb = [...initialImageBank];
 
 function mergeImageAssets(newAssets) {
   if (!Array.isArray(newAssets)) return;
   newAssets.forEach(asset => {
-    if (!asset || !asset.image_url) return;
-    const existing = imageBankDb.find(a => a.image_url === asset.image_url);
+    if (!asset) return;
+    const imgUrl = asset.image_url || asset.url;
+    if (!imgUrl) return;
+    const existing = imageBankDb.find(a => a.image_url === imgUrl);
     if (existing) {
       existing.use_count = Math.max(existing.use_count || 1, asset.use_count || 1);
       if (asset.make && asset.make !== 'unknown') existing.make = asset.make;
@@ -39,10 +48,11 @@ function mergeImageAssets(newAssets) {
       if (asset.category && asset.category !== 'general') existing.category = asset.category;
       if (asset.alt_text) existing.alt_text = asset.alt_text;
       if (asset.section_title) existing.section_title = asset.section_title;
+      if (asset.surrounding_text) existing.surrounding_text = asset.surrounding_text;
     } else {
       imageBankDb.push({
         id: asset.id || `IMG-${Date.now()}-${Math.random().toString(36).substr(2,4)}`,
-        image_url: asset.image_url,
+        image_url: imgUrl,
         make: asset.make || 'unknown',
         model: asset.model || 'unknown',
         condition: asset.condition || 'general',
@@ -267,7 +277,7 @@ module.exports = async (req, res) => {
   }
 
   if ((pathname === '/api/image-bank/sync' || pathname === '/api/image-bank') && req.method === 'POST') {
-    const newAssets = body.assets || (body.image_harvest ? body.image_harvest.harvested_assets : null) || body;
+    const newAssets = body.assets || (body.image_harvest ? (body.image_harvest.harvested_assets || body.image_harvest.harvested_items) : null) || body;
     if (Array.isArray(newAssets)) {
       mergeImageAssets(newAssets);
       return res.status(200).json({ success: true, message: `Synced ${newAssets.length} image assets`, total_in_db: imageBankDb.length });
@@ -334,8 +344,11 @@ module.exports = async (req, res) => {
       job.result = result;
 
       // Automatically extract and store harvested images in Vercel Image Bank
-      if (result && result.image_harvest && Array.isArray(result.image_harvest.harvested_assets)) {
-        mergeImageAssets(result.image_harvest.harvested_assets);
+      if (result && result.image_harvest) {
+        const assetsToMerge = result.image_harvest.harvested_assets || result.image_harvest.harvested_items;
+        if (Array.isArray(assetsToMerge)) {
+          mergeImageAssets(assetsToMerge);
+        }
       }
     }
     job.completedAt = Date.now();

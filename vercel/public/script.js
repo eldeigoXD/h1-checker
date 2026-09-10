@@ -2183,8 +2183,8 @@ async function fetchImageBankAssets() {
 
             card.innerHTML = `
                 <div style="position: relative; width: 100%; height: 160px; background: #0c0c12; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <a href="${escapeHtml(asset.image_url)}" target="_blank" title="Click para ver en resolución completa" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
-                        <img src="${escapeHtml(asset.image_url)}" alt="${escapeHtml(asset.alt_text || 'Vehicle Asset')}" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
+                    <a href="${escapeHtml(asset.image_url)}" target="_blank" rel="noreferrer" title="Click para ver en resolución completa" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                        <img src="${escapeHtml(asset.image_url)}" alt="${escapeHtml(asset.alt_text || 'Vehicle Asset')}" referrerpolicy="no-referrer" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
                     </a>
                     
                     <span style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.75); color: #4fc3f7; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 1px solid rgba(79,195,247,0.4);">
