@@ -24,6 +24,40 @@ try {
 
 let historyDb = [...initialHistory];
 let reportedBugsDb = [];
+let imageBankDb = [];
+
+function mergeImageAssets(newAssets) {
+  if (!Array.isArray(newAssets)) return;
+  newAssets.forEach(asset => {
+    if (!asset || !asset.image_url) return;
+    const existing = imageBankDb.find(a => a.image_url === asset.image_url);
+    if (existing) {
+      existing.use_count = Math.max(existing.use_count || 1, asset.use_count || 1);
+      if (asset.make && asset.make !== 'unknown') existing.make = asset.make;
+      if (asset.model && asset.model !== 'unknown') existing.model = asset.model;
+      if (asset.condition && asset.condition !== 'general') existing.condition = asset.condition;
+      if (asset.category && asset.category !== 'general') existing.category = asset.category;
+      if (asset.alt_text) existing.alt_text = asset.alt_text;
+      if (asset.section_title) existing.section_title = asset.section_title;
+    } else {
+      imageBankDb.push({
+        id: asset.id || `IMG-${Date.now()}-${Math.random().toString(36).substr(2,4)}`,
+        image_url: asset.image_url,
+        make: asset.make || 'unknown',
+        model: asset.model || 'unknown',
+        condition: asset.condition || 'general',
+        category: asset.category || 'general',
+        surrounding_text: asset.surrounding_text || '',
+        alt_text: asset.alt_text || '',
+        section_title: asset.section_title || '',
+        dealer_id: asset.dealer_id || '',
+        use_count: asset.use_count || 1,
+        first_seen: asset.first_seen || new Date().toISOString(),
+        last_seen: new Date().toISOString()
+      });
+    }
+  });
+}
 
 module.exports = async (req, res) => {
   // Enable CORS for all remote clients
@@ -152,6 +186,95 @@ module.exports = async (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing bug ID' });
   }
 
+  // 0.7. Image Bank API Endpoints & Sync
+  if (pathname === '/api/image-bank/stats' && req.method === 'GET') {
+    const makeCounts = {};
+    const modelCounts = {};
+    const categoryCounts = {};
+
+    imageBankDb.forEach(asset => {
+      if (asset.make && asset.make !== 'unknown') {
+        makeCounts[asset.make] = (makeCounts[asset.make] || 0) + 1;
+      }
+      if (asset.model && asset.model !== 'unknown') {
+        modelCounts[asset.model] = (modelCounts[asset.model] || 0) + 1;
+      }
+      if (asset.category) {
+        categoryCounts[asset.category] = (categoryCounts[asset.category] || 0) + 1;
+      }
+    });
+
+    const makes = Object.keys(makeCounts).map(m => ({ make: m, count: makeCounts[m] }));
+    const models = Object.keys(modelCounts).map(m => ({ model: m, count: modelCounts[m] }));
+    const categories = Object.keys(categoryCounts).map(c => ({ category: c, count: categoryCounts[c] }));
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        total_assets: imageBankDb.length,
+        makes: makes,
+        models: models,
+        categories: categories
+      }
+    });
+  }
+
+  if (pathname === '/api/image-bank' && req.method === 'GET') {
+    const make = url.searchParams.get('make');
+    const model = url.searchParams.get('model');
+    const condition = url.searchParams.get('condition');
+    const category = url.searchParams.get('category');
+    const search = url.searchParams.get('search');
+    const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+
+    let filtered = [...imageBankDb];
+
+    if (make) {
+      filtered = filtered.filter(a => (a.make || '').toLowerCase() === make.toLowerCase());
+    }
+    if (model) {
+      filtered = filtered.filter(a => (a.model || '').toLowerCase() === model.toLowerCase());
+    }
+    if (condition && condition.toLowerCase() !== 'all') {
+      filtered = filtered.filter(a => (a.condition || '').toLowerCase() === condition.toLowerCase());
+    }
+    if (category && category.toLowerCase() !== 'all') {
+      filtered = filtered.filter(a => (a.category || '').toLowerCase() === category.toLowerCase());
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(a => 
+        (a.surrounding_text || '').toLowerCase().includes(q) ||
+        (a.alt_text || '').toLowerCase().includes(q) ||
+        (a.section_title || '').toLowerCase().includes(q) ||
+        (a.image_url || '').toLowerCase().includes(q)
+      );
+    }
+
+    filtered.sort((a, b) => (b.use_count || 1) - (a.use_count || 1));
+
+    const total = filtered.length;
+    const paginated = filtered.slice(offset, offset + limit);
+
+    return res.status(200).json({
+      success: true,
+      assets: paginated,
+      total: total,
+      limit: limit,
+      offset: offset
+    });
+  }
+
+  if ((pathname === '/api/image-bank/sync' || pathname === '/api/image-bank') && req.method === 'POST') {
+    const newAssets = body.assets || (body.image_harvest ? body.image_harvest.harvested_assets : null) || body;
+    if (Array.isArray(newAssets)) {
+      mergeImageAssets(newAssets);
+      return res.status(200).json({ success: true, message: `Synced ${newAssets.length} image assets`, total_in_db: imageBankDb.length });
+    }
+    return res.status(400).json({ success: false, error: 'Invalid assets payload' });
+  }
+
   // 1. Worker Endpoints (Used by your Home PC local_worker.py)
   if (pathname === '/api/jobs/pending' || (pathname === '/api/jobs' && url.searchParams.get('action') === 'pending')) {
     const authHeader = req.headers['x-worker-secret'] || url.searchParams.get('key');
@@ -194,6 +317,11 @@ module.exports = async (req, res) => {
     } else {
       job.status = 'completed';
       job.result = result;
+
+      // Automatically extract and store harvested images in Vercel Image Bank
+      if (result && result.image_harvest && Array.isArray(result.image_harvest.harvested_assets)) {
+        mergeImageAssets(result.image_harvest.harvested_assets);
+      }
     }
     job.completedAt = Date.now();
 

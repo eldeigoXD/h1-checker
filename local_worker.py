@@ -50,6 +50,24 @@ def check_local_backend():
     except Exception:
         return False
 
+def sync_image_bank_to_vercel():
+    """Syncs local SQLite image bank assets to Vercel so Vercel Image Bank UI matches local."""
+    if not VERCEL_URL or "localhost" in VERCEL_URL:
+        return
+    try:
+        resp = requests.get(f"{LOCAL_FLASK_URL}/api/image-bank?limit=300", timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            assets = data.get("assets", [])
+            if assets:
+                sync_url = f"{VERCEL_URL}/api/image-bank/sync?key={WORKER_SECRET}"
+                headers = {"X-Worker-Secret": WORKER_SECRET, "Content-Type": "application/json"}
+                r_sync = requests.post(sync_url, json={"assets": assets}, headers=headers, timeout=15)
+                if r_sync.status_code == 200:
+                    print(f"   [IMAGE BANK] Synced {len(assets)} local vehicle image assets to Vercel.")
+    except Exception as e:
+        print(f"   [IMAGE BANK WARN] Could not sync Image Bank to Vercel: {e}")
+
 def poll_and_process():
     pending_url = f"{VERCEL_URL}/api/jobs/pending?key={WORKER_SECRET}"
     complete_url = f"{VERCEL_URL}/api/jobs/complete?key={WORKER_SECRET}"
@@ -118,6 +136,9 @@ def poll_and_process():
                 }
                 requests.post(complete_url, json=post_body, headers=headers, timeout=15)
                 print(f"   [SYNCED] Audit results sent back to Vercel for Job {job_id}.\n")
+
+                # 4. Sync harvested images to Vercel Image Bank
+                sync_image_bank_to_vercel()
             else:
                 err_msg = f"Local Flask returned status code {local_resp.status_code}: {local_resp.text[:200]}"
                 print(f"   [FAIL] {err_msg}")
@@ -147,7 +168,9 @@ def main():
     # Check local Flask backend
     if check_local_backend():
         print("[STATUS] Local Backend (Flask on :5000): ONLINE ✅")
+        sync_image_bank_to_vercel()
     else:
+        print("[STATUS] Local Backend (Flask on :5000): OFFLINE ❌")
         print("[STATUS] Local Backend (Flask on :5000): OFFLINE ⚠️")
         print("          Make sure start_app.bat is running on this PC!")
 
