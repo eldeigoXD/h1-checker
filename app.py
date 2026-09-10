@@ -3469,12 +3469,24 @@ def extract_h1():
         
         filtered_a_tags_count = 0
         
-        # Pre-detect breadcrumbs on the page (needed for the # link rule below)
-        _page_has_breadcrumbs = bool(
-            soup.find(attrs={'itemtype': lambda x: x and 'BreadcrumbList' in x}) or
-            soup.find(class_=lambda c: c and 'breadcrumb' in ' '.join(c).lower())
-        )
-        _hash_only_seen = 0  # counter of bare # links allowed when breadcrumbs present
+        # Helper to detect both standard and custom inline breadcrumb trails
+        def is_breadcrumb_element(tag):
+            for p in list(tag.parents)[:5]:
+                w_name = (p.get('data-widget-name', '') or '').lower()
+                cls_str = ' '.join(p.get('class', [])).lower()
+                if 'breadcrumb' in w_name or 'breadcrumb' in cls_str:
+                    return True
+                if p.get('itemtype') and 'BreadcrumbList' in str(p.get('itemtype')):
+                    return True
+                if p.name in ['ul', 'ol', 'nav', 'div', 'p']:
+                    p_text = p.get_text()
+                    has_sep = any(sep in p_text for sep in [' > ', ' › ', ' » ', ' / ']) or any(c.get_text().strip() in ['>', '›', '»', '/'] for c in p.children if hasattr(c, 'get_text'))
+                    has_home = bool(p.find('a', href=lambda h: h and h.strip() in ['/index.htm', '/', '/index.html']))
+                    if has_sep and has_home:
+                        return True
+            return False
+
+        _breadcrumb_hash_seen = 0  # Counter of allowed bare '#' links in breadcrumbs (only ONE allowed per page)
 
         for a in a_tags:
             href = a.get('href', '').strip()
@@ -3482,7 +3494,24 @@ def extract_h1():
             # ---------------- CTA LINK AUDIT RULES ----------------
             if not href or href == '#':
                 _empty_widget = get_widget_name(a)
-                # Ignore accordion toggles/headers that act as collapse trigger rather than CTA link
+                _empty_text = a.get_text(strip=True)[:50] or '[No text / Icon]'
+
+                # 1. Check if link is part of a breadcrumb trail
+                if is_breadcrumb_element(a):
+                    if _breadcrumb_hash_seen == 0:
+                        _breadcrumb_hash_seen += 1
+                        continue  # Exactly ONE bare '#' is valid for the active breadcrumb item
+                    else:
+                        # User rule: only ONE bare '#' is allowed in breadcrumbs
+                        cta_config_bugs.append({
+                            'platform': 'D/M',
+                            'type': 'Failed',
+                            'category': 'Config',
+                            'message': f"Multiple empty link destinations ('#') found in breadcrumb trail on element \"{_empty_text}\". Only one active item may use '#' as a placeholder."
+                        })
+                        continue
+
+                # 2. Ignore accordion toggles/headers that act as collapse trigger rather than CTA link
                 is_accordion_toggle = False
                 if 'accordion' in _empty_widget.lower():
                     classes = [c.lower() for c in (a.get('class') or [])]
@@ -3503,25 +3532,10 @@ def extract_h1():
                         elif not a.find_parent(class_='accordion-body') and not a.find_parent(class_='panel-body'):
                             is_accordion_toggle = True
 
-                # Ignore breadcrumbs — but only allow ONE bare '#' per page when breadcrumbs exist
-                is_breadcrumb = False
-                if 'breadcrumb' in _empty_widget.lower():
-                    is_breadcrumb = True
-                else:
-                    parent_bc = a.find_parent(attrs={'itemtype': lambda x: x and 'BreadcrumbList' in x})
-                    if parent_bc: is_breadcrumb = True
-
-                if is_breadcrumb or is_accordion_toggle or 'ws-inv-listing' in _empty_widget.lower() or 'inventory-listing' in _empty_widget.lower() or 'model-selector' in _empty_widget.lower():
+                if is_accordion_toggle or 'ws-inv-listing' in _empty_widget.lower() or 'inventory-listing' in _empty_widget.lower() or 'model-selector' in _empty_widget.lower():
                     continue
 
-                # Bare '#' outside breadcrumb/accordion context:
-                # If the page HAS breadcrumbs, allow exactly one (it's the active breadcrumb item)
-                if href == '#' and _page_has_breadcrumbs and _hash_only_seen == 0:
-                    _hash_only_seen += 1
-                    continue  # First bare '#' is forgiven when breadcrumbs exist
-
-                # Include text and widget so the user can locate the element
-                _empty_text = a.get_text(strip=True)[:50] or '[No text / Icon]'
+                # 3. Include text and widget so the user can locate the element
                 cta_config_bugs.append({
                     'platform': 'D/M',
                     'type': 'Failed',
@@ -4607,16 +4621,18 @@ def extract_dynamics_deliverable(url):
 
         # Extraction logic with JavaScript execution in Chrome
         extracted = driver.execute_script(r"""
-            function getFieldText(dataIdSubstrings) {
+            function getFieldText(dataIdSubstrings, excludeSubstrings = []) {
                 for (let sub of dataIdSubstrings) {
                     let elems = document.querySelectorAll(`[data-id*="${sub}"]`);
                     for (let el of elems) {
-                        let text = el.innerText || el.textContent || '';
-                        if (text.trim()) return text.trim();
-                        let input = el.querySelector('input, textarea, [contenteditable="true"]');
-                        if (input && (input.value || input.innerText)) {
-                            return (input.value || input.innerText).trim();
+                        let dataId = (el.getAttribute('data-id') || '').toLowerCase();
+                        if (excludeSubstrings.some(exc => dataId.includes(exc.toLowerCase()))) {
+                            continue;
                         }
+                        let text = el.innerText || el.textContent || '';
+                        let input = el.querySelector('input, textarea, [contenteditable="true"]');
+                        let val = (input && (input.value || input.innerText)) || text;
+                        if (val && val.trim()) return val.trim();
                     }
                 }
                 return '';
@@ -4652,7 +4668,10 @@ def extract_dynamics_deliverable(url):
                 return lines.join('\n');
             }
 
-            let title = getFieldText(['h1title.fieldControl', 'targeth1.fieldControl', 'pagetitle.fieldControl', 'ddcms_h1', 'ddcms_title', 'h1', 'name.fieldControl', 'ddcms_name', 'name']);
+            let title = getFieldText(
+                ['ddcms_name.fieldControl', 'ddcms_name', 'ddcms_h1', 'ddcms_title', 'h1title.fieldControl', 'targeth1.fieldControl', 'pagetitle.fieldControl', 'h1', 'name.fieldControl'],
+                ['account', 'customer', 'parentaccount', 'owner', 'createdby', 'modifiedby', 'header_crmformheader', 'dealer']
+            );
             let completedCopy = getFieldText(['completedcopy.fieldControl', 'completedcopy']);
             let completedPageUrl = getFieldText(['completedpageurl.fieldControl', 'completedpageurl']);
             let rawLinks = cleanCtaLabel(getFieldText(['links.fieldControl', 'links']));

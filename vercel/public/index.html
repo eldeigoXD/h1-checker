@@ -21,6 +21,7 @@
                     ⚡ QA Web Tool Pro
                 </div>
                 <div style="display: flex; gap: 0.6rem; align-items: center;">
+                    <button id="bookmarklet-btn" class="outline-btn" style="background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; font-size: 0.78rem; padding: 0.3rem 0.6rem; border-radius: 4px;" title="Obtener Bookmarklet de 1-Click">🔖 Bookmarklet</button>
                     <button id="image-bank-btn" class="outline-btn" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #8b949e; font-size: 0.78rem; padding: 0.3rem 0.6rem; border-radius: 4px;" title="Asset Harvester Image Bank">🖼️ Image Bank</button>
                     <button id="history-btn" class="outline-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px;">📜 History</button>
                 </div>
@@ -569,6 +570,49 @@
 
             <div id="tool-bugs-list-container" style="display: flex; flex-direction: column; gap: 0.8rem; min-height: 200px;">
                 <!-- JS injects reported bugs here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bookmarklet Setup Modal -->
+    <div id="bookmarklet-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 650px; width: 92%; max-height: 85vh; overflow-y: auto;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.25rem; color: #38bdf8;">⚡ 1-Click Dynamics CRM Bookmarklet</h2>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: #aaa;">Extrae automáticamente el Caso, Target H1, URL, Copy y CTAs desde Dynamics 365</p>
+                </div>
+                <button id="close-bookmarklet-btn" class="icon-btn">✖</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.85rem; color: #ccc; display: flex; flex-direction: column; gap: 1rem;">
+                <p style="margin: 0;">
+                    Arrastra el siguiente botón a tu <strong>barra de marcadores de Chrome</strong>, o haz clic en <strong>Copiar Código</strong> y crea un marcador manual con el código como URL:
+                </p>
+
+                <div style="background: rgba(0,0,0,0.4); border: 1px dashed rgba(56,189,248,0.4); border-radius: 8px; padding: 1.2rem; text-align: center;">
+                    <a id="draggable-bookmarklet-link" href="#" style="display: inline-block; background: linear-gradient(135deg, #0284c7, #38bdf8); color: #000; font-weight: 700; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; cursor: grab; font-size: 0.95rem; box-shadow: 0 2px 8px rgba(56,189,248,0.3);">
+                        🚀 Extraer a QA Tool
+                    </a>
+                    <div style="font-size: 0.75rem; color: #888; margin-top: 0.5rem;">👆 Arrastra este botón a tu barra de marcadores</div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                        <label style="font-weight: 600; color: #eee; font-size: 0.8rem;">Código JavaScript del Bookmarklet:</label>
+                        <button id="copy-bookmarklet-code-btn" class="secondary-btn" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">📋 Copiar Código</button>
+                    </div>
+                    <textarea id="bookmarklet-code-textarea" readonly rows="4" style="width: 100%; padding: 0.5rem; background: #0c0c12; color: #4fc3f7; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; font-family: monospace; font-size: 0.72rem; resize: none;"></textarea>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.8rem; font-size: 0.8rem; color: #aaa;">
+                    <strong style="color: #fff;">¿Cómo usarlo?</strong>
+                    <ol style="margin: 0.4rem 0 0 1.2rem; padding: 0; line-height: 1.5;">
+                        <li>Abre la pestaña de la tarea o deliverable en <strong>Microsoft Dynamics CRM</strong>.</li>
+                        <li>Haz clic en tu marcador <strong>🚀 Extraer a QA Tool</strong> en la barra superior.</li>
+                        <li>Verás una notificación verde confirmando el título extraído.</li>
+                        <li>¡Abre o recarga el Tool de QA y el formulario se llenará solo!</li>
+                    </ol>
+                </div>
             </div>
         </div>
     </div>
