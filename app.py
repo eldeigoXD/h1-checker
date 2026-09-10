@@ -4356,6 +4356,22 @@ def extract_h1():
         except Exception as e:
             print(f"Memory Engine error: {e}")
 
+        # Image Harvester Engine (Harvest & Classify images into Image Bank)
+        try:
+            from image_harvester import harvest_page_images
+            h1_first_text = h1_tags[0].get_text(strip=True) if h1_tags else ''
+            image_harvest = harvest_page_images(
+                url=url,
+                soup=soup,
+                page_title=page_title,
+                h1_text=h1_first_text,
+                html_raw=response.text,
+                case_id=case_id
+            )
+        except Exception as _ie:
+            print(f"Image Harvester error: {_ie}")
+            image_harvest = {'status': 'error', 'harvested_count': 0}
+
         return jsonify({
             'success': True,
             'count': h1_count,
@@ -4364,6 +4380,7 @@ def extract_h1():
             'h1_error_msg': h1_error_msg,
             'coherence_score': coherence_score,
             'coherence_explanation': coherence_explanation,
+            'image_harvest': image_harvest,
             
             'broken_links': list(broken_links),
             'broken_anchors': list(unique_broken_anchors),
@@ -4854,8 +4871,6 @@ def generate_pdf():
     pdf.cell(0, 6, 'MS Team - Coderoad', new_x="LMARGIN", new_y="NEXT", align='C')
 
     filename = f"{case_number}.pdf" if case_number else "Bug-Report.pdf"
-    
-    # fpdf2 output() returns bytearray by default
     pdf_bytes = bytes(pdf.output())
     
     response = make_response(pdf_bytes)
@@ -4864,8 +4879,39 @@ def generate_pdf():
     return response
 
 
+# -----------------------------------------------------------------------------
+# IMAGE BANK API ENDPOINTS
+# -----------------------------------------------------------------------------
+@app.route('/api/image-bank', methods=['GET'])
+def get_image_bank_api():
+    try:
+        from image_bank_db import query_image_assets
+        make = request.args.get('make')
+        model = request.args.get('model')
+        condition = request.args.get('condition')
+        category = request.args.get('category')
+        search = request.args.get('search')
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+        
+        result = query_image_assets(make, model, condition, category, search, limit, offset)
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/image-bank/stats', methods=['GET'])
+def get_image_bank_stats_api():
+    try:
+        from image_bank_db import get_image_bank_stats
+        stats = get_image_bank_stats()
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     if not os.path.exists('static'):
         os.makedirs('static')
     app.run(debug=True, port=5000)
+
 

@@ -2042,3 +2042,171 @@ function renderHistory(items) {
         historyList.appendChild(li);
     });
 }
+
+// -----------------------------------------------------------------------------
+// IMAGE BANK CONTROLLER
+// -----------------------------------------------------------------------------
+const imageBankBtn = document.getElementById('image-bank-btn');
+const imageBankModal = document.getElementById('image-bank-modal');
+const closeImageBankBtn = document.getElementById('close-image-bank-btn');
+const imgBankGrid = document.getElementById('image-bank-grid');
+
+const makeSelect = document.getElementById('img-bank-make-select');
+const modelSelect = document.getElementById('img-bank-model-select');
+const conditionSelect = document.getElementById('img-bank-condition-select');
+const categorySelect = document.getElementById('img-bank-category-select');
+const searchInput = document.getElementById('img-bank-search-input');
+
+if (imageBankBtn && imageBankModal) {
+    imageBankBtn.addEventListener('click', () => {
+        imageBankModal.style.display = 'flex';
+        loadBankStats();
+        fetchImageBankAssets();
+    });
+}
+
+if (closeImageBankBtn && imageBankModal) {
+    closeImageBankBtn.addEventListener('click', () => {
+        imageBankModal.style.display = 'none';
+    });
+}
+
+[makeSelect, modelSelect, conditionSelect, categorySelect].forEach(select => {
+    if (select) {
+        select.addEventListener('change', () => fetchImageBankAssets());
+    }
+});
+
+if (searchInput) {
+    let debounceTimer;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchImageBankAssets(), 350);
+    });
+}
+
+async function loadBankStats() {
+    try {
+        const res = await fetch('/api/image-bank/stats');
+        const data = await res.json();
+        if (data.success && data.stats) {
+            const stats = data.stats;
+            if (makeSelect && makeSelect.options.length <= 1) {
+                stats.makes.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.make;
+                    opt.textContent = `${m.make} (${m.count})`;
+                    makeSelect.appendChild(opt);
+                });
+            }
+            if (modelSelect && modelSelect.options.length <= 1) {
+                stats.models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.model;
+                    opt.textContent = `${m.model} (${m.count})`;
+                    modelSelect.appendChild(opt);
+                });
+            }
+        }
+    } catch(err) {
+        console.warn('Failed to load Image Bank stats:', err);
+    }
+}
+
+async function fetchImageBankAssets() {
+    if (!imgBankGrid) return;
+    imgBankGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #aaa;">Loading harvested assets...</div>';
+
+    const make = makeSelect ? makeSelect.value : '';
+    const model = modelSelect ? modelSelect.value : '';
+    const condition = conditionSelect ? conditionSelect.value : 'all';
+    const category = categorySelect ? categorySelect.value : 'all';
+    const search = searchInput ? searchInput.value.trim() : '';
+
+    const params = new URLSearchParams();
+    if (make) params.append('make', make);
+    if (model) params.append('model', model);
+    if (condition && condition !== 'all') params.append('condition', condition);
+    if (category && category !== 'all') params.append('category', category);
+    if (search) params.append('search', search);
+
+    try {
+        const res = await fetch(`/api/image-bank?${params.toString()}`);
+        const data = await res.json();
+
+        const totalEl = document.getElementById('img-bank-total-count');
+        if (totalEl) totalEl.textContent = data.total || 0;
+
+        if (!data.success || !data.assets || data.assets.length === 0) {
+            imgBankGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem; color: #888;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+                    <p style="margin:0;">No harvested images found matching the selected filters.</p>
+                    <p style="font-size:0.8rem; color:#666; margin-top:0.3rem;">Audit more dealer landing pages to automatically populate the Image Bank!</p>
+                </div>
+            `;
+            return;
+        }
+
+        imgBankGrid.innerHTML = '';
+        data.assets.forEach(asset => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; position: relative;';
+
+            const catBadgeColors = {
+                'performance': '#ff9800',
+                'exterior': '#2196f3',
+                'interior': '#9c27b0',
+                'safety': '#4caf50',
+                'technology': '#00bcd4',
+                'trims': '#e91e63',
+                'general': '#78909c'
+            };
+            const catColor = catBadgeColors[asset.category] || '#78909c';
+
+            card.innerHTML = `
+                <div style="position: relative; width: 100%; height: 150px; background: #0c0c12; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <img src="${escapeHTML(asset.image_url)}" alt="${escapeHTML(asset.alt_text || 'Vehicle Asset')}" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
+                    
+                    <span style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.75); color: #4fc3f7; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 1px solid rgba(79,195,247,0.4);">
+                        🔥 ${asset.use_count} ${asset.use_count === 1 ? 'use' : 'uses'}
+                    </span>
+
+                    <span style="position: absolute; top: 6px; left: 6px; background: ${catColor}; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+                        ${escapeHTML(asset.category)}
+                    </span>
+                </div>
+
+                <div style="padding: 0.7rem; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 0.3rem;">
+                            <span>${escapeHTML(asset.make || 'Unknown')} ${escapeHTML(asset.model || '')}</span>
+                            <span style="color: #aaa; font-size: 0.75rem; text-transform: capitalize;">${escapeHTML(asset.condition || 'General')}</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #bbb; margin: 0 0 0.5rem 0; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHTML(asset.alt_text || asset.section_title || asset.surrounding_text || '')}">
+                            ${escapeHTML(asset.alt_text || asset.section_title || asset.surrounding_text || 'No text snippet')}
+                        </p>
+                    </div>
+
+                    <button class="copy-img-btn secondary-btn" style="font-size: 0.75rem; width: 100%; padding: 0.3rem;" data-url="${escapeHTML(asset.image_url)}">
+                        📋 Copy Image URL
+                    </button>
+                </div>
+            `;
+
+            const copyBtn = card.querySelector('.copy-img-btn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(asset.image_url);
+                    copyBtn.textContent = '✅ Copied!';
+                    setTimeout(() => { copyBtn.textContent = '📋 Copy Image URL'; }, 1500);
+                });
+            }
+
+            imgBankGrid.appendChild(card);
+        });
+    } catch(err) {
+        console.error('Error fetching Image Bank assets:', err);
+        imgBankGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #ff6b6b;">Failed to load Image Bank assets.</div>';
+    }
+}
