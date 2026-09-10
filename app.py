@@ -1209,35 +1209,39 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
         r'\bmax\s*price',
         r'\bbudget\s*(?:under|below)'
     ]
-    has_price_rule = any(k in slug for k in [' bargain ', ' under ']) or is_mileage or (instructions and any(re.search(p, inst_low) for p in price_patterns))
+    has_slug_price = any(k in slug for k in [' bargain ', ' under ', ' 10k ', ' 15k ', ' 20k ', ' 30k ', ' 40k ', ' 50k '])
+    has_instruction_price = bool(instructions and any(re.search(p, inst_low) for p in price_patterns))
+    has_price_rule = has_slug_price or is_mileage or has_instruction_price
 
     if has_price_rule:
-        # Default limits
-        limit = '30000' if is_mileage else '20000'
+        limit = None
         
         # Check explicit numbers in instructions (e.g. "below $30,000" or "under 30k")
         if instructions:
             import re
-            pr_m = re.search(r'(?:under|below|less than|filter by|vehicles|cars|\$)\s*\$?(\d{2,3})[,\.]?(\d{3})', inst_low)
-            pr_k = re.search(r'(?:under|below|less than|max|budget|\$)?\s*\$?(\d{1,3})\s*k', inst_low)
+            pr_m = re.search(r'(?:under|below|less than|max price|budget|\$)\s*\$?(\d{2,3})[,\.]?(\d{3})', inst_low)
+            pr_k = re.search(r'(?:under|below|less than|max price|budget)\s*\$?(\d{1,3})\s*k', inst_low)
 
             if pr_m:
                 limit = pr_m.group(1) + pr_m.group(2)
             elif pr_k:
                 limit = str(int(pr_k.group(1)) * 1000)
 
-        if not instructions or limit == '20000':
+        if not limit:
             if ' 10k ' in slug or ' 10000 ' in slug: limit = '10000'
             elif ' 15k ' in slug or ' 15000 ' in slug: limit = '15000'
             elif ' 20k ' in slug or ' 20000 ' in slug: limit = '20000'
             elif ' 30k ' in slug or ' 30000 ' in slug: limit = '30000'
             elif ' 40k ' in slug or ' 40000 ' in slug: limit = '40000'
             elif ' 50k ' in slug or ' 50000 ' in slug: limit = '50000'
+            elif has_slug_price or is_mileage:
+                limit = '30000' if is_mileage else '20000'
 
-        if is_mileage:
-            params.append(f'odometer=0-{limit}')
-        else:
-            params.append(f'internetPrice=1-{limit}')
+        if limit:
+            if is_mileage:
+                params.append(f'odometer=0-{limit}')
+            else:
+                params.append(f'internetPrice=1-{limit}')
 
 
     for f in found_fuels:

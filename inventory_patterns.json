@@ -313,7 +313,8 @@
     "/new-gmc-sierra-1500-research/index.htm": "https://haddadgmc.cms.dealer.com/new-inventory/index.htm?model=Sierra%201500&make=GMC"
   },
   "www.gileshyundai.com": {
-    "/new-hyundai/hybrid-ev-alexandria-la.htm": "https://www.gileshyundai.com/new-inventory/index.htm?make=Hyundai&normalFuelType=Electric&normalFuelType=Hybrid"
+    "/new-hyundai/hybrid-ev-alexandria-la.htm": "https://www.gileshyundai.com/new-inventory/index.htm?make=Hyundai&normalFuelType=Electric&normalFuelType=Hybrid",
+    "/used-inventory/used-hyundai.htm": "/used-inventory/index.htm?make=Hyundai"
   },
   "www.genesisoflongview.com": {
     "/used-cars/genesis/longview-tx.htm": "https://www.genesisoflongview.com/used-inventory/index.htm?make=Genesis"
@@ -810,7 +811,8 @@
     "/new-chevrolet/traverse-suv-slaton-tx.htm": "/new-inventory/index.htm?model=Traverse&make=Chevrolet"
   },
   "www.benoitgmc.com": {
-    "/used-inventory/chevrolet-farmerville-la.htm": "https://www.benoitgmc.com/used-inventory/index.htm?make=Chevrolet"
+    "/used-inventory/chevrolet-farmerville-la.htm": "https://www.benoitgmc.com/used-inventory/index.htm?make=Chevrolet",
+    "/used-inventory/gmc-farmerville-la.htm": "/used-inventory/index.htm?make=GMC"
   },
   "www.faulknervolvocarslancaster.com": {
     "/new-inventory/index.htm": "https://www.faulknervolvocarslancaster.com/new-inventory/index.htm",
@@ -1200,7 +1202,8 @@
   },
   "dunningfordfd.cms.dealer.com": {
     "/new-ford/bronco-sport-cambridge-oh.htm": "/new-inventory/index.htm?model=Bronco+Sport&make=Ford",
-    "/used-inventory/ford-cambridge-oh.htm": "https://dunningfordfd.cms.dealer.com/used-inventory/index.htm?make=Ford"
+    "/used-inventory/ford-cambridge-oh.htm": "https://dunningfordfd.cms.dealer.com/used-inventory/index.htm?make=Ford",
+    "/bargain-inventory/index.htm": "/used-inventory/index.htm?internetPrice=1-20000"
   },
   "www.kyledurrenceautogroup.com": {
     "/new-inventory/models/chevrolet-equinox-claxton-ga.htm": "/new-inventory/index.htm?model=Equinox&make=Chevrolet"
@@ -1302,5 +1305,39 @@
   },
   "www.toyotaofsomerset.com": {
     "/new-toyotay/suvs-somerset-ky.htm": "/new-inventory/index.htm?normalBodyStyle=SUV"
+  },
+  "toyotaofcleveland.cms.dealer.com": {
+    "/pre-owned-jeep-inventory.htm": "/used-inventory/index.htm?make=Jeep"
+  },
+  "www.dishmandodge.net": {
+    "/used/ram/spokane-wa.htm": "/used-inventory/index.htm?make=Ram"
+  },
+  "www.garymathewsmotors.com": {
+    "/new-inventory/jeep-inventory-clarksville-tn.htm": "/new-inventory/index.htm?make=Jeep"
+  },
+  "www.miraclemotormart.com": {
+    "/used-inventory/used-honda.htm": "/used-inventory/index.htm?make=Honda"
+  },
+  "www.schafferdanhoffcdjr.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
+  },
+  "www.shaheenchevrolet.com": {
+    "/used-chevrolet/equinox-lansing-mi.htm": "/used-inventory/index.htm?model=Equinox&make=Chevrolet"
+  },
+  "www.mallofgeorgiachryslerdodgejeep.com": {
+    "/used-inventory/jeep-buford-ga.htm": "/used-inventory/index.htm?make=Jeep"
+  },
+  "www.whitesmountainsubaru.com": {
+    "/used-inventory/used-trucks-casper-wy.htm": "/used-inventory/index.htm?normalBodyStyle=Truck",
+    "/used-inventory/used-suvs-casper-wy.htm": "/used-inventory/index.htm?normalBodyStyle=SUV"
+  },
+  "www.fostersandusky.com": {
+    "/used-inventory/suv.htm": "https://www.fostersandusky.com/used-inventory/index.htm?normalBodyStyle=SUV"
+  },
+  "www.bishopchevroletbuick.com": {
+    "/used-inventory/index.htm": "/used-inventory/index.htm"
+  },
+  "www.deerybrotherschryslerdodgeramjeep.com": {
+    "/new-inventory/ram/1500-iowa-city-ia.htm": "/new-inventory/index.htm?model=1500&make=Ram"
   }
 }

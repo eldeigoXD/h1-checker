@@ -97,5 +97,15 @@
     "corrected_at": "2026-08-23T14:34:00+00:00",
     "confidence": 0.95,
     "url": "https://www.baldhilldodgechrysler.net/used-inventory/trucks-warwick-ri.htm"
+  },
+  "www.bishopchevroletbuick.com|/used-inventory/index.htm": {
+    "filter_url": "/used-inventory/index.htm",
+    "source": "manual_correction",
+    "corrected_at": "2026-09-10T16:19:48+00:00",
+    "confirmation_count": 6,
+    "confidence": 0.88,
+    "url": "https://www.bishopchevroletbuick.com/used-inventory/index.htm?_ddcpreview=9ca0d125db9c43d3b0685a6d06085352&_toggleBasePageCache=false",
+    "last_confirmed": "2026-09-10T16:29:19+00:00",
+    "last_outcome": "match"
   }
 }
