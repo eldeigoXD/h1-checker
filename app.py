@@ -3112,171 +3112,226 @@ def api_save_correction():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 def extract_sections_and_widgets(soup, url: str = ""):
-    """Extract DDC Composer Sections, Subsections/Containers, and Widgets recursively from DOM."""
-    import json, re, datetime
+    """Extract DDC Composer Sections, Subsections/Containers, and Widgets accurately from DOM."""
+    import json, re, datetime, os
+    from urllib.parse import urlparse
 
+    page_path = ""
+    if url:
+        try:
+            page_path = urlparse(url).pathname
+        except Exception:
+            page_path = ""
+
+    # Detect page alias, page path, and widget meta from script tags if present
+    page_alias = ""
+    for s in soup.find_all('script'):
+        txt = s.string or ""
+        if not page_alias:
+            m_alias = re.search(r'pageName\s*=\s*.*?["\']([a-zA-Z0-9_-]+)["\']', txt)
+            if m_alias:
+                page_alias = m_alias.group(1)
+        if not page_path:
+            m_path = re.search(r'pagePath\s*=\s*["\']([^"\']+)["\']', txt)
+            if m_path:
+                page_path = m_path.group(1).replace('\\-', '-').replace('\\/', '/')
+
+    def clean_section_title(raw):
+        if not raw:
+            return "Page Section"
+        cleaned = re.sub(r'\.\d+-\d+', '', raw)
+        cleaned = re.sub(r'-\d+$', '', cleaned)
+        c_low = cleaned.lower()
+        if c_low == 'title':
+            return 'Page Title'
+        if c_low == 'inventory-search-results':
+            return 'Inventory Search Results'
+        if c_low == 'content-centered':
+            return 'Content Centered'
+        if c_low == 'content-wide':
+            return 'Content Wide'
+        if c_low in ['primary-banner', 'hero-banner', 'hero']:
+            return 'Hero Banner'
+        return cleaned.replace('-', ' ').replace('_', ' ').title()
+
+    # Find top-level sections
+    all_sec = soup.find_all(lambda el: el.name in ['section'] or (el.name == 'div' and 'page-section' in el.get('class', [])))
     top_sections = []
-    raw_sections = soup.find_all(lambda el: el.name in ['section'] or 
-                                 (el.name == 'div' and ('page-section' in el.get('class', []) or 
-                                                       el.has_attr('data-section-name') or 
-                                                       (el.has_attr('data-name') and any(k in el.get('data-name', '') for k in ['container', 'section', 'wrapper', 'hero', 'content', 'title', 'inner'])))))
-    
-    if not raw_sections:
-        raw_sections = soup.find_all('div', class_=re.compile(r'container|section|ddc-content'))
-
-    for s in raw_sections:
-        is_child = False
-        for parent in top_sections:
-            if s in parent.find_all():
-                is_child = True
-                break
-        if not is_child:
+    for s in all_sec:
+        parent_sec = s.find_parent(lambda p: p != s and (p.name in ['section'] or (p.name == 'div' and 'page-section' in p.get('class', []))))
+        if not parent_sec:
             top_sections.append(s)
 
-    def parse_widgets_in_element(element):
-        """Extract immediate widgets inside an element."""
-        widget_nodes = element.find_all(lambda w: w.has_attr('data-widget-name') or 
-                                                 w.has_attr('data-widget-id') or 
-                                                 ('ddc-content' in w.get('class', [])) or
-                                                 w.has_attr('data-portlet-name'))
-        unique_widgets = []
-        for w in widget_nodes:
-            is_inner = False
-            for existing_w in unique_widgets:
-                if w in existing_w.find_all():
-                    is_inner = True
+    if not top_sections:
+        raw_candidates = soup.find_all('div', class_=re.compile(r'container|section|ddc-content'))
+        for s in raw_candidates:
+            is_child = False
+            for parent in top_sections:
+                if s in parent.find_all():
+                    is_child = True
                     break
-            if not is_inner:
-                unique_widgets.append(w)
+            if not is_child:
+                top_sections.append(s)
 
-        widgets_list = []
-        for w in unique_widgets:
-            w_name = w.get('data-widget-name') or w.get('data-portlet-name') or ''
-            w_id = w.get('data-widget-id') or w.get('id') or ''
-            w_classes = w.get('class', [])
-            
-            if not w_name and w_classes:
-                filtered_cls = [cls for cls in w_classes if cls != 'ddc-content']
-                w_name = filtered_cls[0] if filtered_cls else 'Widget'
-
-            formatted_w_name = w_name.replace('ws-', '').replace('-', ' ').title()
-            
-            w_type = 'default'
-            w_name_low = w_name.lower() + ' ' + (w_id or '').lower()
-            if any(k in w_name_low for k in ['img', 'image', 'gallery', 'media', 'photo']):
-                w_type = 'image'
-            elif any(k in w_name_low for k in ['content', 'text', 'wysiwyg', 'title', 'heading', 'paragraph']):
-                w_type = 'content'
-            elif any(k in w_name_low for k in ['nav', 'menu', 'links', 'drawer']):
-                w_type = 'navigation'
-            elif any(k in w_name_low for k in ['form', 'quote', 'lead', 'contact']):
-                w_type = 'form'
-            elif any(k in w_name_low for k in ['inv', 'vehicle', 'car', 'listing', 'card']):
-                w_type = 'inventory'
-
-            widgets_list.append({
-                "id": w_id or f"widget-{len(widgets_list)+1}",
-                "name": formatted_w_name,
-                "widget_type": w_name,
-                "type": w_type,
-                "classes": ' '.join(w_classes[:4])
-            })
-        return widgets_list
-
-    def parse_container_node(element):
-        """Recursively parse container children and immediate widgets."""
-        c_name = element.get('data-name') or (element.get('class')[0] if element.get('class') else 'container')
-        
-        child_containers = element.find_all(lambda c: c != element and (c.has_attr('data-name') or 
-                                            any(k in ' '.join(c.get('class', [])) for k in ['container', 'content-background', 'content-left', 'content-right', 'column', 'wrapper', 'inner'])))
-        
-        top_child_containers = []
-        for cc in child_containers:
-            is_grandchild = False
-            for p in child_containers:
-                if cc != p and cc in p.find_all():
-                    is_grandchild = True
+    def parse_widget_node(w_el):
+        w_id = w_el.get('data-widget-id') or w_el.get('id') or ''
+        w_name = w_el.get('data-widget-name') or w_el.get('data-portlet-name') or ''
+        classes = w_el.get('class', [])
+        if not w_name:
+            for c in classes:
+                if c != 'ddc-content' and not c.startswith('bg-') and not c.startswith('border-') and not c.startswith('p-') and not c.startswith('m-'):
+                    w_name = c
                     break
-            if not is_grandchild:
-                top_child_containers.append(cc)
+        w_name = w_name or 'widget'
 
-        sub_nodes = []
-        for cc in top_child_containers:
-            sub_nodes.append(parse_container_node(cc))
+        # Extract headings, snippets, links
+        headings = []
+        for h in w_el.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+            h_text = h.get_text(strip=True)
+            if h_text:
+                headings.append({'tag': h.name.upper(), 'text': h_text})
 
-        widgets = []
-        if not sub_nodes:
-            widgets = parse_widgets_in_element(element)
+        raw_text = w_el.get_text(separator=' ', strip=True)
+        text_snippet = raw_text[:280] if raw_text else ''
+        links = [a.get('href') for a in w_el.find_all('a', href=True)]
+
+        # Determine type
+        w_name_low = (w_name + ' ' + w_id).lower()
+        if any(k in w_name_low for k in ['title']):
+            w_type = 'title'
+        elif any(k in w_name_low for k in ['content', 'wysiwyg', 'text']):
+            w_type = 'content'
+        elif any(k in w_name_low for k in ['disclaimer']):
+            w_type = 'disclaimer'
+        elif any(k in w_name_low for k in ['search']):
+            w_type = 'search'
+        elif any(k in w_name_low for k in ['filter', 'facet']):
+            w_type = 'filters'
+        elif any(k in w_name_low for k in ['listing', 'result']):
+            w_type = 'listing'
+        elif any(k in w_name_low for k in ['paging']):
+            w_type = 'paging'
+        elif any(k in w_name_low for k in ['data', 'bus']):
+            w_type = 'data-bus'
+        elif any(k in w_name_low for k in ['placeholder', 'tps']):
+            w_type = 'placeholder'
         else:
-            all_widgets = parse_widgets_in_element(element)
-            child_widget_ids = set()
-            for sn in sub_nodes:
-                def get_w_ids(n):
-                    ids = [w['id'] for w in n.get('widgets', [])]
-                    for sc in n.get('containers', []):
-                        ids.extend(get_w_ids(sc))
-                    return ids
-                child_widget_ids.update(get_w_ids(sn))
-            widgets = [w for w in all_widgets if w['id'] not in child_widget_ids]
+            w_type = 'general'
+
+        clean_id = w_id.capitalize() if w_id.startswith('inventory') else w_id
+        if 'page-title' in w_name_low:
+            display_title = f'v9.widgets.content.page-title.a1 ({w_id})'
+            subtext = f'v9.widgets.content.page-title.a1 - {page_alias}:{w_id}' if page_alias else 'Renders page title and heading.'
+        elif 'ws-inv-data-service' in w_name_low:
+            display_title = f'v9.newmodel.inventory-listing.ws-inv-data-service ({w_id})'
+            subtext = f'v9.newmodel.inventory-listing.ws-inv-data-service - {page_alias}:{w_id}' if page_alias else w_name
+        elif 'placeholder' in w_id.lower() or 'tps-placeholder' in w_name_low:
+            display_title = f'Third Party API Placement ({w_id})'
+            subtext = f'Third Party API Placement ({w_id})'
+        elif 'disclaimer' in w_name_low:
+            display_title = f'Disclaimer ({w_id})'
+            subtext = 'Widget for dynamically pulling in disclaimer text.'
+        elif 'content' in w_name_low:
+            display_title = f'Content ({w_id})'
+            subtext = 'Space for entering in WYSIWYG content.'
+        elif w_name.startswith('ws-inv-') or w_name.startswith('ws-'):
+            display_title = f'{w_name} ({clean_id})'
+            subtext = f'{w_name} - {page_alias}:{w_id}' if page_alias else w_name
+        else:
+            display_title = f'{w_name} ({w_id})' if w_id else w_name
+            subtext = f'{page_alias}:{w_id}' if page_alias else ''
 
         return {
-            "name": c_name,
-            "containers": sub_nodes,
-            "widgets": widgets
+            'id': w_id or f'widget-{id(w_el)}',
+            'widget_name': w_name,
+            'name': w_name.replace('ws-', '').replace('-', ' ').title(),
+            'display_title': display_title,
+            'subtext': subtext,
+            'type': w_type,
+            'headings': headings,
+            'text_snippet': text_snippet,
+            'has_content': len(headings) > 0 or len(text_snippet) > 20,
+            'links_count': len(links),
+            'classes': ' '.join(classes[:5])
         }
 
     sections_tree = []
     total_widgets_count = 0
 
     for idx, sec in enumerate(top_sections, start=1):
-        sec_name = sec.get('data-section-name') or sec.get('data-name') or ''
-        
-        if not sec_name:
-            inner_w = sec.find(attrs={'data-widget-name': True})
-            if inner_w:
-                sec_name = inner_w.get('data-widget-name').replace('ws-', '').replace('-', ' ').title()
-            else:
-                sec_name = f"Section {idx}"
-        else:
-            sec_name = sec_name.replace('-', ' ').replace('_', ' ').title()
+        raw_sec_name = sec.get('data-name') or sec.get('data-section-name') or f'section-{idx}'
+        sec_title = clean_section_title(raw_sec_name)
 
-        top_child_containers = sec.find_all(lambda c: c != sec and (c.has_attr('data-name') or 
-                                            any(k in ' '.join(c.get('class', [])) for k in ['container', 'wrapper', 'inner'])))
-        
-        direct_containers = []
-        for cc in top_child_containers:
-            is_sub = False
-            for p in top_child_containers:
-                if cc != p and cc in p.find_all():
-                    is_sub = True
+        # Collect unique widgets
+        all_widget_nodes = sec.find_all(lambda w: w.has_attr('data-widget-id') or w.has_attr('data-widget-name') or ('ddc-content' in w.get('class', [])))
+        unique_nodes = []
+        for wn in all_widget_nodes:
+            is_inner = False
+            for existing in unique_nodes:
+                if wn in existing.find_all():
+                    is_inner = True
                     break
-            if not is_sub:
-                direct_containers.append(cc)
+            if not is_inner:
+                unique_nodes.append(wn)
 
-        if not direct_containers:
-            direct_containers = [sec]
+        sec_widgets = [parse_widget_node(wn) for wn in unique_nodes]
+        total_widgets_count += len(sec_widgets)
 
-        containers_tree = []
-        for c in direct_containers:
-            containers_tree.append(parse_container_node(c))
+        # Check for multi-column combined layout (e.g. inventory-search-results combined facets + listing)
+        columns_layout = None
+        combined_c = sec.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['combined', 'two-column', 'split']))
+        if combined_c:
+            facets_c = combined_c.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['facet', 'filter', 'left']))
+            listing_c = combined_c.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['listing', 'result', 'right']))
+            if facets_c and listing_c:
+                facets_w_nodes = [wn for wn in unique_nodes if wn in facets_c.find_all() or wn == facets_c]
+                listing_w_nodes = [wn for wn in unique_nodes if wn in listing_c.find_all() or wn == listing_c]
+                other_w_nodes = [wn for wn in unique_nodes if wn not in facets_w_nodes and wn not in listing_w_nodes]
 
-        def count_w(n):
-            c_cnt = len(n.get('widgets', []))
-            for sub_c in n.get('containers', []):
-                c_cnt += count_w(sub_c)
-            return c_cnt
+                left_title = "ws-inv-facets (Inventory-facets1)"
+                if facets_w_nodes:
+                    left_title = parse_widget_node(facets_w_nodes[0])['display_title']
 
-        sec_widgets_count = sum(count_w(n) for n in containers_tree)
-        total_widgets_count += sec_widgets_count
+                right_title = "ws-inv-listing (Inventory-results1)"
+                if listing_w_nodes:
+                    right_title = parse_widget_node(listing_w_nodes[0])['display_title']
+
+                columns_layout = {
+                    'top_widgets': [parse_widget_node(wn) for wn in other_w_nodes],
+                    'left_column': {
+                        'title': left_title,
+                        'name': facets_c.get('data-name', 'facets-column'),
+                        'widgets': [parse_widget_node(wn) for wn in facets_w_nodes]
+                    },
+                    'right_column': {
+                        'title': right_title,
+                        'name': listing_c.get('data-name', 'listing-column'),
+                        'widgets': [parse_widget_node(wn) for wn in listing_w_nodes]
+                    }
+                }
+
+        # Backwards compatible container hierarchy
+        containers_tree = [{
+            "name": raw_sec_name,
+            "containers": [],
+            "widgets": sec_widgets
+        }]
 
         sections_tree.append({
             "section_id": f"section-{idx}",
-            "name": sec_name,
-            "total_widgets": sec_widgets_count,
+            "raw_name": raw_sec_name,
+            "name": sec_title,
+            "title": sec_title,
+            "total_widgets": len(sec_widgets),
+            "widgets_count": len(sec_widgets),
+            "widgets": sec_widgets,
+            "columns_layout": columns_layout,
             "containers": containers_tree
         })
 
     result_data = {
+        "page_path": page_path,
+        "page_alias": page_alias,
         "total_sections": len(sections_tree),
         "total_widgets": total_widgets_count,
         "sections": sections_tree

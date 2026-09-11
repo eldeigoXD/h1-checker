@@ -1760,6 +1760,85 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    function getWidgetDocSvg() {
+        return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>`;
+    }
+
+    function renderWidgetCardHtml(w) {
+        const hasHeadings = w.headings && w.headings.length > 0;
+        const hasSnippet = Boolean(w.text_snippet && w.text_snippet.trim());
+        const canPreview = hasHeadings || hasSnippet;
+
+        let headingsHtml = '';
+        if (hasHeadings) {
+            headingsHtml = w.headings.map(h => `
+                <div style="margin-bottom: 0.25rem;">
+                    <span class="ddc-preview-heading-badge ${h.tag.toLowerCase()}">${h.tag}</span>
+                    <strong style="color: #f8fafc;">${escapeHTML(h.text)}</strong>
+                </div>
+            `).join('');
+        }
+
+        let snippetHtml = '';
+        if (hasSnippet) {
+            snippetHtml = `<div class="ddc-preview-text-snippet">${escapeHTML(w.text_snippet)}</div>`;
+        }
+
+        let previewDrawerHtml = '';
+        if (canPreview) {
+            previewDrawerHtml = `
+                <div class="ddc-content-preview-drawer" id="preview-drawer-${escapeHTML(w.id)}" style="display: none;">
+                    ${headingsHtml}
+                    ${snippetHtml}
+                    <div class="ddc-preview-meta">
+                        ${w.links_count ? `<span>🔗 ${w.links_count} Links</span>` : ''}
+                        ${w.text_snippet ? `<span>📝 ~${w.text_snippet.split(/\s+/).length} Words preview</span>` : ''}
+                        <span>🆔 ${escapeHTML(w.id)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (w.type === 'placeholder') {
+            return `
+                <div class="ddc-placeholder-box" data-widget-filter="${escapeHTML(w.display_title || w.id).toLowerCase()}">
+                    Third Party API Placement (${escapeHTML(w.id)})
+                </div>
+            `;
+        }
+
+        return `
+            <div class="ddc-widget-wrapper" data-widget-filter="${escapeHTML((w.display_title || '') + ' ' + (w.subtext || '') + ' ' + w.id).toLowerCase()}">
+                <div class="ddc-widget-card" onclick="const dr = document.getElementById('preview-drawer-${escapeHTML(w.id)}'); if (dr) { dr.style.display = dr.style.display === 'none' ? 'block' : 'none'; }">
+                    <div class="ddc-widget-left">
+                        <div class="ddc-widget-doc-icon">
+                            ${getWidgetDocSvg()}
+                        </div>
+                        <div class="ddc-widget-details">
+                            <span class="ddc-widget-title">${escapeHTML(w.display_title || w.name || w.id)}</span>
+                            <span class="ddc-widget-subtext">${escapeHTML(w.subtext || w.widget_name || w.id)}</span>
+                        </div>
+                    </div>
+                    <div class="ddc-widget-actions" onclick="event.stopPropagation();">
+                        ${canPreview ? `
+                            <span class="ddc-action-btn info" title="View Live Widget Content" onclick="const dr = document.getElementById('preview-drawer-${escapeHTML(w.id)}'); if (dr) { dr.style.display = dr.style.display === 'none' ? 'block' : 'none'; }">ℹ️</span>
+                        ` : ''}
+                        <span class="ddc-action-btn" title="Widget Settings / Lock">🔒</span>
+                        <span class="ddc-action-btn" title="Device Responsive Visibility">🖥️</span>
+                        <span class="ddc-action-btn delete" title="Delete Widget">✕</span>
+                    </div>
+                </div>
+                ${previewDrawerHtml}
+            </div>
+        `;
+    }
+
     function renderSectionsAndWidgets(swData) {
         const card = document.getElementById('sections-widgets-card');
         const badge = document.getElementById('sections-widgets-badge');
@@ -1779,31 +1858,238 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = '';
 
-        swData.sections.forEach((sec) => {
-            const secItem = document.createElement('div');
-            secItem.className = 'tree-section-item';
+        const pagePath = swData.page_path || (window.lastScanData && window.lastScanData.path) || '/used-inventory/pre-owned-toyota.htm';
+        const pageHost = (window.lastScanData && window.lastScanData.url) ? new URL(window.lastScanData.url).hostname : 'www.guarantycars.com';
 
-            let containersHtml = '';
-            if (sec.containers && sec.containers.length > 0) {
-                containersHtml = sec.containers.map(c => renderContainerNodeHtml(c)).join('');
-            } else {
-                containersHtml = `<div style="color: var(--text-muted); font-style: italic; padding: 0.5rem;">No containers</div>`;
+        // 1. DDC Control Toolbar
+        const toolbar = document.createElement('div');
+        toolbar.className = 'ddc-view-toolbar';
+        toolbar.innerHTML = `
+            <div class="ddc-path-info">
+                <span class="ddc-path-label">Page Path:</span>
+                <span class="ddc-path-code">${escapeHTML(pageHost)} ${escapeHTML(pagePath)}</span>
+                <span style="font-size: 0.76rem; color: #a7f3d0; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.15rem 0.5rem; border-radius: 4px;">✓ External Edit Allowed</span>
+            </div>
+            <div class="ddc-toolbar-actions">
+                <input type="text" id="ddc-filter-input" class="ddc-filter-input" placeholder="🔍 Filter widgets..." />
+                <button type="button" class="ddc-view-btn active" id="btn-view-composer" title="Page Composer Canvas View">🎨 Composer</button>
+                <button type="button" class="ddc-view-btn" id="btn-view-designer" title="Page Designer Sidebar View">📑 Designer</button>
+                <button type="button" class="ddc-view-btn" id="btn-view-split" title="Side-by-Side View">◫ Split View</button>
+            </div>
+        `;
+        container.appendChild(toolbar);
+
+        // 2. Workbench Grid
+        const workbench = document.createElement('div');
+        workbench.className = 'ddc-workbench-grid';
+        workbench.id = 'ddc-workbench-grid';
+
+        // --- Left Panel: Page Designer (Sidebar - Image 1) ---
+        const designerPanel = document.createElement('div');
+        designerPanel.className = 'ddc-designer-panel';
+        designerPanel.id = 'ddc-designer-panel';
+        designerPanel.style.display = 'none'; // hidden by default unless in designer or split mode
+
+        let designerItemsHtml = '';
+        swData.sections.forEach((sec, sIdx) => {
+            const secId = sec.section_id || `section-${sIdx + 1}`;
+            let subitemsHtml = '';
+            if (sec.widgets && sec.widgets.length > 0) {
+                subitemsHtml = sec.widgets.map(w => `
+                    <div class="ddc-designer-subitem" onclick="const el = document.getElementById('composer-sec-${secId}'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.boxShadow = '0 0 15px rgba(99, 102, 241, 0.6)'; setTimeout(() => el.style.boxShadow='', 1800); }">
+                        <span>📄 ${escapeHTML(w.display_title || w.name)}</span>
+                        <span style="font-family: monospace; font-size: 0.7rem; color: #64748b;">${escapeHTML(w.id)}</span>
+                    </div>
+                `).join('');
             }
 
-            secItem.innerHTML = `
-                <div class="tree-section-header" onclick="const w = this.nextElementSibling; const isH = w.style.display === 'none'; w.style.display = isH ? 'block' : 'none'; this.querySelector('.tree-arrow').textContent = isH ? '▼' : '►';">
-                    <div class="tree-section-title">
-                        <span class="tree-arrow">▼</span> <strong>${escapeHTML(sec.name)}</strong>
+            designerItemsHtml += `
+                <div class="ddc-designer-item" id="designer-item-${secId}">
+                    <div class="ddc-designer-item-header" onclick="
+                        const isExp = this.classList.toggle('expanded');
+                        const sl = document.getElementById('designer-sublist-${secId}');
+                        if (sl) sl.style.display = isExp ? 'flex' : 'none';
+                        const el = document.getElementById('composer-sec-${secId}');
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            el.style.borderColor = '#818cf8';
+                            setTimeout(() => el.style.borderColor='', 1500);
+                        }
+                    ">
+                        <div class="ddc-designer-item-title-group">
+                            <span class="ddc-designer-chevron">›</span>
+                            <strong>${escapeHTML(sec.title || sec.name)}</strong>
+                        </div>
+                        <div class="ddc-designer-item-meta">
+                            <span class="ddc-designer-item-badge">${sec.widgets_count || (sec.widgets ? sec.widgets.length : 0)} widgets</span>
+                            <span class="ddc-designer-drag-handle">☰</span>
+                        </div>
                     </div>
-                    <span class="tree-section-badge">${sec.total_widgets || 0} Widget${sec.total_widgets === 1 ? '' : 's'}</span>
-                </div>
-                <div class="tree-subsections-wrapper" style="display: block; padding: 0.6rem 0.8rem 0.8rem 0.8rem;">
-                    ${containersHtml}
+                    <div class="ddc-designer-sublist" id="designer-sublist-${secId}" style="display: none;">
+                        ${subitemsHtml}
+                    </div>
                 </div>
             `;
-
-            container.appendChild(secItem);
         });
+
+        designerPanel.innerHTML = `
+            <div class="ddc-designer-header">
+                <div class="ddc-designer-header-top">
+                    <span class="ddc-designer-title">Page Designer</span>
+                    <div class="ddc-designer-icons">
+                        <span class="ddc-designer-icon-btn" title="Add Section/Widget">➕</span>
+                        <span class="ddc-designer-icon-btn" title="Device Preview">💻</span>
+                        <span class="ddc-designer-icon-btn" title="Toggle Layout">◫</span>
+                        <span class="ddc-designer-icon-btn" title="Close Panel">✕</span>
+                    </div>
+                </div>
+                <div class="ddc-designer-subtitle">${escapeHTML(pagePath)}</div>
+            </div>
+            <div class="ddc-designer-list">
+                ${designerItemsHtml}
+            </div>
+        `;
+        workbench.appendChild(designerPanel);
+
+        // --- Right Canvas: Page Composer (Images 2, 3, 4, 5) ---
+        const composerCanvas = document.createElement('div');
+        composerCanvas.className = 'ddc-composer-canvas';
+        composerCanvas.id = 'ddc-composer-canvas';
+
+        let sectionsCanvasHtml = `
+            <div class="ddc-alert-disabled-banner">
+                Alert banner top disabled. Click to Edit to set "Show Top Alert Banner" to True.
+            </div>
+        `;
+
+        swData.sections.forEach((sec, sIdx) => {
+            const secId = sec.section_id || `section-${sIdx + 1}`;
+            let innerContentHtml = '';
+
+            // If multi-column SRP layout (Facets on left, Listing + Paging + Disclaimer on right - Image 3 & 4)
+            if (sec.columns_layout) {
+                const colLayout = sec.columns_layout;
+                let topWidgetsHtml = '';
+                if (colLayout.top_widgets && colLayout.top_widgets.length > 0) {
+                    topWidgetsHtml = colLayout.top_widgets.map(w => renderWidgetCardHtml(w)).join('');
+                }
+
+                let leftWidgetsHtml = '';
+                if (colLayout.left_column && colLayout.left_column.widgets) {
+                    leftWidgetsHtml = colLayout.left_column.widgets.map(w => renderWidgetCardHtml(w)).join('');
+                }
+
+                let rightWidgetsHtml = '';
+                if (colLayout.right_column && colLayout.right_column.widgets) {
+                    rightWidgetsHtml = colLayout.right_column.widgets.map(w => renderWidgetCardHtml(w)).join('');
+                }
+
+                innerContentHtml = `
+                    <div class="ddc-composer-section-widgets">
+                        ${topWidgetsHtml}
+                        <div class="ddc-columns-container">
+                            <div class="ddc-column-facets">
+                                <span class="ddc-column-label">Left Facets Column</span>
+                                ${leftWidgetsHtml}
+                            </div>
+                            <div class="ddc-column-listing">
+                                <span class="ddc-column-label">Right Listing Column</span>
+                                ${rightWidgetsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Standard section with sequential widgets
+                let widgetsHtml = '';
+                if (sec.widgets && sec.widgets.length > 0) {
+                    widgetsHtml = sec.widgets.map(w => renderWidgetCardHtml(w)).join('');
+                } else {
+                    widgetsHtml = `<div style="color: var(--text-muted); font-style: italic; padding: 0.5rem;">No widgets detected</div>`;
+                }
+
+                innerContentHtml = `
+                    <div class="ddc-composer-section-widgets">
+                        ${widgetsHtml}
+                    </div>
+                `;
+            }
+
+            sectionsCanvasHtml += `
+                <div class="ddc-composer-section" id="composer-sec-${secId}">
+                    <div class="ddc-composer-section-badge">${escapeHTML(sec.title || sec.name)}</div>
+                    ${innerContentHtml}
+                </div>
+            `;
+        });
+
+        composerCanvas.innerHTML = sectionsCanvasHtml;
+        workbench.appendChild(composerCanvas);
+        container.appendChild(workbench);
+
+        // 3. View Switcher Event Handlers
+        const btnComposer = document.getElementById('btn-view-composer');
+        const btnDesigner = document.getElementById('btn-view-designer');
+        const btnSplit = document.getElementById('btn-view-split');
+
+        function setViewMode(mode) {
+            [btnComposer, btnDesigner, btnSplit].forEach(b => b.classList.remove('active'));
+            if (mode === 'composer') {
+                btnComposer.classList.add('active');
+                workbench.classList.remove('split-mode');
+                designerPanel.style.display = 'none';
+                composerCanvas.style.display = 'block';
+            } else if (mode === 'designer') {
+                btnDesigner.classList.add('active');
+                workbench.classList.remove('split-mode');
+                designerPanel.style.display = 'block';
+                composerCanvas.style.display = 'none';
+            } else if (mode === 'split') {
+                btnSplit.classList.add('active');
+                workbench.classList.add('split-mode');
+                designerPanel.style.display = 'block';
+                composerCanvas.style.display = 'block';
+            }
+        }
+
+        btnComposer.addEventListener('click', () => setViewMode('composer'));
+        btnDesigner.addEventListener('click', () => setViewMode('designer'));
+        btnSplit.addEventListener('click', () => setViewMode('split'));
+
+        // If screen is large, default to split view; else composer canvas
+        if (window.innerWidth >= 1200) {
+            setViewMode('split');
+        } else {
+            setViewMode('composer');
+        }
+
+        // 4. Real-time Search Filter Handler
+        const filterInput = document.getElementById('ddc-filter-input');
+        if (filterInput) {
+            filterInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const allWidgetEls = container.querySelectorAll('.ddc-widget-wrapper, .ddc-placeholder-box');
+                allWidgetEls.forEach(el => {
+                    const text = el.getAttribute('data-widget-filter') || el.textContent.toLowerCase();
+                    if (!query || text.includes(query)) {
+                        el.style.display = '';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+
+                // Also filter designer sidebar subitems
+                const designerSubitems = container.querySelectorAll('.ddc-designer-subitem');
+                designerSubitems.forEach(el => {
+                    const text = el.textContent.toLowerCase();
+                    if (!query || text.includes(query)) {
+                        el.style.display = '';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+            });
+        }
     }
 
 

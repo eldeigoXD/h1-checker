@@ -10848,7 +10848,7 @@
       }
     },
     "https://www.pruittford.com/new-inventory/ford-expedition-burkburnett-tx.htm": {
-      "analyzed_at": "2026-09-10T18:08:26.469988",
+      "analyzed_at": "2026-09-11T10:07:51.621089",
       "summary": {
         "total_sections": 6,
         "total_widgets": 15,
@@ -11691,25 +11691,62 @@
       }
     },
     "https://www.guarantycars.com/used-inventory/pre-owned-toyota.htm": {
-      "analyzed_at": "2026-09-10T19:44:53.664579",
+      "analyzed_at": "2026-09-11T15:44:18.721710",
       "summary": {
+        "page_path": "/used-inventory/pre-owned-toyota.htm",
+        "page_alias": "SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1",
         "total_sections": 3,
-        "total_widgets": 9,
+        "total_widgets": 11,
         "sections": [
           {
             "section_id": "section-1",
-            "name": "Title.2 1",
+            "raw_name": "title.2-1",
+            "name": "Page Title",
+            "title": "Page Title",
             "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "page-title1",
+                "widget_name": "content-page-title",
+                "name": "Content Page Title",
+                "display_title": "v9.widgets.content.page-title.a1 (page-title1)",
+                "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:page-title1",
+                "type": "title",
+                "headings": [
+                  {
+                    "tag": "H1",
+                    "text": "Shop the Used Toyota Inventory"
+                  }
+                ],
+                "text_snippet": "Shop the Used Toyota Inventory",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-page-title bg-transparent"
+              }
+            ],
+            "columns_layout": null,
             "containers": [
               {
-                "name": "title-container-1",
+                "name": "title.2-1",
                 "containers": [],
                 "widgets": [
                   {
                     "id": "page-title1",
+                    "widget_name": "content-page-title",
                     "name": "Content Page Title",
-                    "widget_type": "content-page-title",
-                    "type": "content",
+                    "display_title": "v9.widgets.content.page-title.a1 (page-title1)",
+                    "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:page-title1",
+                    "type": "title",
+                    "headings": [
+                      {
+                        "tag": "H1",
+                        "text": "Shop the Used Toyota Inventory"
+                      }
+                    ],
+                    "text_snippet": "Shop the Used Toyota Inventory",
+                    "has_content": true,
+                    "links_count": 0,
                     "classes": "ddc-content content-page-title bg-transparent"
                   }
                 ]
@@ -11718,81 +11755,1247 @@
           },
           {
             "section_id": "section-2",
-            "name": "Inventory Search Results.1 1",
-            "total_widgets": 7,
+            "raw_name": "inventory-search-results.1-1",
+            "name": "Inventory Search Results",
+            "title": "Inventory Search Results",
+            "total_widgets": 9,
+            "widgets_count": 9,
+            "widgets": [
+              {
+                "id": "inventory-data-bus1",
+                "widget_name": "inventory-listing-ws-inv-data-service",
+                "name": "Inventory Listing Inv Data Service",
+                "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-data-bus1",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+              },
+              {
+                "id": "inventory-data-bus2",
+                "widget_name": "ws-inv-data",
+                "name": "Inv Data",
+                "display_title": "ws-inv-data (Inventory-data-bus2)",
+                "subtext": "ws-inv-data - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-data-bus2",
+                "type": "data-bus",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-data spacing-reset d-none"
+              },
+              {
+                "id": "placeholder1",
+                "widget_name": "ws-tps-placeholder",
+                "name": "Tps Placeholder",
+                "display_title": "Third Party API Placement (placeholder1)",
+                "subtext": "Third Party API Placement (placeholder1)",
+                "type": "placeholder",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-tps-placeholder p-5 hide"
+              },
+              {
+                "id": "inventory-search1",
+                "widget_name": "ws-inv-text-search",
+                "name": "Inv Text Search",
+                "display_title": "ws-inv-text-search (Inventory-search1)",
+                "subtext": "ws-inv-text-search - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-search1",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+              },
+              {
+                "id": "inventory-filters1",
+                "widget_name": "ws-inv-filters",
+                "name": "Inv Filters",
+                "display_title": "ws-inv-filters (Inventory-filters1)",
+                "subtext": "ws-inv-filters - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-filters1",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+              },
+              {
+                "id": "inventory-facets1",
+                "widget_name": "ws-inv-facets",
+                "name": "Inv Facets",
+                "display_title": "ws-inv-facets (Inventory-facets1)",
+                "subtext": "ws-inv-facets - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-facets1",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-facets"
+              },
+              {
+                "id": "inventory-results1",
+                "widget_name": "ws-inv-listing",
+                "name": "Inv Listing",
+                "display_title": "ws-inv-listing (Inventory-results1)",
+                "subtext": "ws-inv-listing - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-results1",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+              },
+              {
+                "id": "inventory-paging1",
+                "widget_name": "ws-inv-paging",
+                "name": "Inv Paging",
+                "display_title": "ws-inv-paging (Inventory-paging1)",
+                "subtext": "ws-inv-paging - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-paging1",
+                "type": "paging",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-paging"
+              },
+              {
+                "id": "disclaimer2",
+                "widget_name": "content-disclaimer",
+                "name": "Content Disclaimer",
+                "display_title": "Disclaimer (disclaimer2)",
+                "subtext": "Widget for dynamically pulling in disclaimer text.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "Disclaimer: The Manufacturer\u2019s Suggested Retail Price excludes tax, title, license, dealer fees and optional equipment. Dealer sets final price. 1Dealer Discount applied to everyone",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+              }
+            ],
+            "columns_layout": {
+              "top_widgets": [
+                {
+                  "id": "inventory-data-bus1",
+                  "widget_name": "inventory-listing-ws-inv-data-service",
+                  "name": "Inventory Listing Inv Data Service",
+                  "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                  "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-data-bus1",
+                  "type": "listing",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                },
+                {
+                  "id": "inventory-data-bus2",
+                  "widget_name": "ws-inv-data",
+                  "name": "Inv Data",
+                  "display_title": "ws-inv-data (Inventory-data-bus2)",
+                  "subtext": "ws-inv-data - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-data-bus2",
+                  "type": "data-bus",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                },
+                {
+                  "id": "placeholder1",
+                  "widget_name": "ws-tps-placeholder",
+                  "name": "Tps Placeholder",
+                  "display_title": "Third Party API Placement (placeholder1)",
+                  "subtext": "Third Party API Placement (placeholder1)",
+                  "type": "placeholder",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                },
+                {
+                  "id": "inventory-search1",
+                  "widget_name": "ws-inv-text-search",
+                  "name": "Inv Text Search",
+                  "display_title": "ws-inv-text-search (Inventory-search1)",
+                  "subtext": "ws-inv-text-search - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-search1",
+                  "type": "content",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                },
+                {
+                  "id": "inventory-filters1",
+                  "widget_name": "ws-inv-filters",
+                  "name": "Inv Filters",
+                  "display_title": "ws-inv-filters (Inventory-filters1)",
+                  "subtext": "ws-inv-filters - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-filters1",
+                  "type": "filters",
+                  "headings": [],
+                  "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                  "has_content": true,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                }
+              ],
+              "left_column": {
+                "title": "ws-inv-facets (Inventory-facets1)",
+                "name": "inventory-search-results-facets-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  }
+                ]
+              },
+              "right_column": {
+                "title": "ws-inv-facets (Inventory-facets1)",
+                "name": "inventory-search-results-combined-inner-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "inventory-results1",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results1)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-results1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging1",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging1)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-paging1",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer2",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer2)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Disclaimer: The Manufacturer\u2019s Suggested Retail Price excludes tax, title, license, dealer fees and optional equipment. Dealer sets final price. 1Dealer Discount applied to everyone",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            },
             "containers": [
               {
-                "name": "inventory-search-results-page-primary-banner-1",
+                "name": "inventory-search-results.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "inventory-data-bus1",
+                    "widget_name": "inventory-listing-ws-inv-data-service",
+                    "name": "Inventory Listing Inv Data Service",
+                    "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                    "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-data-bus1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                  },
+                  {
+                    "id": "inventory-data-bus2",
+                    "widget_name": "ws-inv-data",
+                    "name": "Inv Data",
+                    "display_title": "ws-inv-data (Inventory-data-bus2)",
+                    "subtext": "ws-inv-data - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-data-bus2",
+                    "type": "data-bus",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                  },
+                  {
+                    "id": "placeholder1",
+                    "widget_name": "ws-tps-placeholder",
+                    "name": "Tps Placeholder",
+                    "display_title": "Third Party API Placement (placeholder1)",
+                    "subtext": "Third Party API Placement (placeholder1)",
+                    "type": "placeholder",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                  },
+                  {
+                    "id": "inventory-search1",
+                    "widget_name": "ws-inv-text-search",
+                    "name": "Inv Text Search",
+                    "display_title": "ws-inv-text-search (Inventory-search1)",
+                    "subtext": "ws-inv-text-search - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-search1",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                  },
+                  {
+                    "id": "inventory-filters1",
+                    "widget_name": "ws-inv-filters",
+                    "name": "Inv Filters",
+                    "display_title": "ws-inv-filters (Inventory-filters1)",
+                    "subtext": "ws-inv-filters - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-filters1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                  },
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "inventory-results1",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results1)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-results1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging1",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging1)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_SHOP_THE_USED_TOYOTA_INVENTORY_1:inventory-paging1",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer2",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer2)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Disclaimer: The Manufacturer\u2019s Suggested Retail Price excludes tax, title, license, dealer fees and optional equipment. Dealer sets final price. 1Dealer Discount applied to everyone",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "raw_name": "content-centered.1-1",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content2",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content2)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H2",
+                    "text": "Shop the Used Toyota Inventory at Guaranty Chevrolet"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Why Choose a Used Toyota?"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Explore Used Toyota Sedans"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Discover Used Toyota SUVs"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Used Toyota Trucks Built for Work and Play"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Used Toyota Hybrid and Electric Options"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Find Your Next Vehicle Today"
+                  }
+                ],
+                "text_snippet": "Shop the Used Toyota Inventory at Guaranty Chevrolet When you're searching for a reliable pre-owned vehicle that delivers lasting value, Toyota stands as one of the most trusted names in the automotive industry. At Guaranty Chevrolet, we're proud to offer an impressive selection ",
+                "has_content": true,
+                "links_count": 2,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content2",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content2)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H2",
+                        "text": "Shop the Used Toyota Inventory at Guaranty Chevrolet"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Why Choose a Used Toyota?"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Explore Used Toyota Sedans"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Discover Used Toyota SUVs"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Used Toyota Trucks Built for Work and Play"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Used Toyota Hybrid and Electric Options"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Find Your Next Vehicle Today"
+                      }
+                    ],
+                    "text_snippet": "Shop the Used Toyota Inventory at Guaranty Chevrolet When you're searching for a reliable pre-owned vehicle that delivers lasting value, Toyota stands as one of the most trusted names in the automotive industry. At Guaranty Chevrolet, we're proud to offer an impressive selection ",
+                    "has_content": true,
+                    "links_count": 2,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "https://www.sheabuickgmc.com/bargain-inventory/index.htm?_ddcpreview=a133762395284e08ba3c80eec24b1c22&_toggleBasePageCache=false": {
+      "analyzed_at": "2026-09-11T09:59:12.896407",
+      "summary": {
+        "total_sections": 14,
+        "total_widgets": 21,
+        "sections": [
+          {
+            "section_id": "section-1",
+            "name": "Srp Wrapper Page Title",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-title-inner",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "inventory-page-title1",
+                    "name": "Inv Page Title",
+                    "widget_type": "ws-inv-page-title",
+                    "type": "content",
+                    "classes": "ddc-content ws-inv-page-title spacing-reset"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "name": "Content Centered.1 1",
+            "total_widgets": 2,
+            "containers": [
+              {
+                "name": "content-centered-container-1",
                 "containers": [
                   {
-                    "name": "inventory-search-results-page-primary-banner-inner-1",
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "links1",
+                    "name": "Links List",
+                    "widget_type": "links-list",
+                    "type": "navigation",
+                    "classes": "links-list ddc-content"
+                  },
+                  {
+                    "id": "content5",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "name": "Srp Wrapper Page Filters Sort",
+            "total_widgets": 2,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-filters-sort-inner",
+                "containers": [
+                  {
+                    "name": "free-text-search-form",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "inventory-search1",
+                    "name": "Inv Text Search",
+                    "widget_type": "ws-inv-text-search",
+                    "type": "content",
+                    "classes": "ddc-content ws-inv-text-search mx-0 mt-0"
+                  },
+                  {
+                    "id": "inventory-filters1",
+                    "name": "Inv Filters",
+                    "widget_type": "ws-inv-filters",
+                    "type": "inventory",
+                    "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "name": "Srp Wrapper Combined",
+            "total_widgets": 4,
+            "containers": [
+              {
+                "name": "srp-wrapper-combined-inner",
+                "containers": [
+                  {
+                    "name": "srp-wrapper-facets",
                     "containers": [],
                     "widgets": [
                       {
-                        "id": "placeholder1",
-                        "name": "Tps Placeholder",
-                        "widget_type": "ws-tps-placeholder",
-                        "type": "default",
-                        "classes": "ddc-content ws-tps-placeholder p-5 hide"
-                      }
-                    ]
-                  }
-                ],
-                "widgets": []
-              },
-              {
-                "name": "inventory-search-results-page-filters-sort-1",
-                "containers": [
-                  {
-                    "name": "inventory-search-results-page-filters-sort-inner-1",
-                    "containers": [
-                      {
-                        "name": "free-text-search-form",
-                        "containers": [],
-                        "widgets": []
-                      }
-                    ],
-                    "widgets": [
-                      {
-                        "id": "inventory-search1",
-                        "name": "Inv Text Search",
-                        "widget_type": "ws-inv-text-search",
-                        "type": "content",
-                        "classes": "ddc-content ws-inv-text-search mx-0 mt-0"
-                      },
-                      {
-                        "id": "inventory-filters1",
-                        "name": "Inv Filters",
-                        "widget_type": "ws-inv-filters",
+                        "id": "inventory-facets1",
+                        "name": "Inv Facets",
+                        "widget_type": "ws-inv-facets",
                         "type": "inventory",
-                        "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                        "classes": "ddc-content ws-inv-facets"
                       }
                     ]
-                  }
-                ],
-                "widgets": []
-              },
-              {
-                "name": "inventory-search-results-combined-1",
-                "containers": [
+                  },
                   {
-                    "name": "inventory-search-results-combined-inner-1",
+                    "name": "srp-wrapper-listing",
                     "containers": [
                       {
-                        "name": "inventory-search-results-facets-1",
-                        "containers": [],
+                        "name": "srp-wrapper-listing-inner-inventory-results",
+                        "containers": [
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-media-container",
+                            "containers": [],
+                            "widgets": []
+                          },
+                          {
+                            "name": "vehicle-card-details-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
                         "widgets": [
                           {
-                            "id": "inventory-facets1",
-                            "name": "Inv Facets",
-                            "widget_type": "ws-inv-facets",
+                            "id": "inventory-results1",
+                            "name": "Inv Listing",
+                            "widget_type": "ws-inv-listing",
                             "type": "inventory",
-                            "classes": "ddc-content ws-inv-facets"
+                            "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
                           }
                         ]
                       },
                       {
-                        "name": "inventory-search-results-listing-1",
+                        "name": "srp-wrapper-listing-inner-inventory-paging",
+                        "containers": [],
+                        "widgets": [
+                          {
+                            "id": "inventory-paging1",
+                            "name": "Inv Paging",
+                            "widget_type": "ws-inv-paging",
+                            "type": "inventory",
+                            "classes": "ddc-content ws-inv-paging"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "srp-wrapper-listing-inner-content",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "disclaimer2",
+                            "name": "Content Disclaimer",
+                            "widget_type": "content-disclaimer",
+                            "type": "content",
+                            "classes": "text-muted pt-5 border-top ddc-content"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-5",
+            "name": "Content Centered.1 2",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-2",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content6",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-6",
+            "name": "Content Background Image Left.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content7",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-7",
+            "name": "Content Background Image Right.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-2",
+                "containers": [
+                  {
+                    "name": "content-background-right-1",
+                    "containers": [
+                      {
+                        "name": "content-left-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content8",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "background-image-right-1",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-8",
+            "name": "Content Background Image Left.1 1 2",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1-2",
+                "containers": [
+                  {
+                    "name": "content-background-left-1-2",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1-2",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1-2",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content13",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-9",
+            "name": "Content Background Image Right.1 1 2",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-2-2",
+                "containers": [
+                  {
+                    "name": "content-background-right-1-2",
+                    "containers": [
+                      {
+                        "name": "content-left-1-2",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content11",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "background-image-right-1-2",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-10",
+            "name": "Content Background Image Left.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content12",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-11",
+            "name": "Content Background Image Right.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-2-1",
+                "containers": [
+                  {
+                    "name": "content-background-right-1-1",
+                    "containers": [
+                      {
+                        "name": "content-left-1-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content10",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "background-image-right-1-1",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-12",
+            "name": "Content Centered.1 3",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-3",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content9",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-13",
+            "name": "Form Centered.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "form-centered-container-1",
+                "containers": [
+                  {
+                    "name": "recaptcha-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "contact1",
+                    "name": "Contact Form",
+                    "widget_type": "contact-form",
+                    "type": "form",
+                    "classes": "contact-form ddc-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-14",
+            "name": "Map Hours.2 1",
+            "total_widgets": 3,
+            "containers": [
+              {
+                "name": "map-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "map1",
+                    "name": "Map Dynamic",
+                    "widget_type": "map-dynamic",
+                    "type": "default",
+                    "classes": "map-dynamic ddc-content"
+                  }
+                ]
+              },
+              {
+                "name": "contact-hours-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "contact2",
+                    "name": "Contact Info",
+                    "widget_type": "contact-info",
+                    "type": "form",
+                    "classes": "ddc-content text-center contact-info"
+                  },
+                  {
+                    "id": "hours1",
+                    "name": "Hours",
+                    "widget_type": "ws-hours",
+                    "type": "default",
+                    "classes": "ddc-content ws-hours"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "https://www.srhyundai.com/new-inventory/index.htm?_ddcpreview=3bbd6ab065c64f77aabd1a5c1bfd220e&_toggleBasePageCache=false": {
+      "analyzed_at": "2026-09-11T10:38:16.005115",
+      "summary": {
+        "total_sections": 12,
+        "total_widgets": 26,
+        "sections": [
+          {
+            "section_id": "section-1",
+            "name": "Srp Wrapper Page Title Content",
+            "total_widgets": 0,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-title-content-inner",
+                "containers": [],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "name": "Srp Wrapper Page Title Banner",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-title-banner-inner",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "placeholder1",
+                    "name": "Tps Placeholder",
+                    "widget_type": "ws-tps-placeholder",
+                    "type": "default",
+                    "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "name": "Srp Wrapper Page Title",
+            "total_widgets": 2,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-title-inner",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "inventory-page-title1",
+                    "name": "Inv Page Title",
+                    "widget_type": "ws-inv-page-title",
+                    "type": "content",
+                    "classes": "ddc-content ws-inv-page-title spacing-reset"
+                  },
+                  {
+                    "id": "content3",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "spacing-reset ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "name": "Srp Wrapper Page Filters Sort",
+            "total_widgets": 2,
+            "containers": [
+              {
+                "name": "srp-wrapper-page-filters-sort-inner",
+                "containers": [
+                  {
+                    "name": "free-text-search-form",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "inventory-search1",
+                    "name": "Inv Text Search",
+                    "widget_type": "ws-inv-text-search",
+                    "type": "content",
+                    "classes": "ddc-content ws-inv-text-search mx-0 mt-0"
+                  },
+                  {
+                    "id": "inventory-filters1",
+                    "name": "Inv Filters",
+                    "widget_type": "ws-inv-filters",
+                    "type": "inventory",
+                    "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-5",
+            "name": "Srp Wrapper Combined",
+            "total_widgets": 4,
+            "containers": [
+              {
+                "name": "srp-wrapper-combined-inner",
+                "containers": [
+                  {
+                    "name": "srp-wrapper-facets",
+                    "containers": [],
+                    "widgets": [
+                      {
+                        "id": "inventory-facets1",
+                        "name": "Inv Facets",
+                        "widget_type": "ws-inv-facets",
+                        "type": "inventory",
+                        "classes": "ddc-content ws-inv-facets"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "srp-wrapper-listing",
+                    "containers": [
+                      {
+                        "name": "srp-wrapper-listing-inner-inventory-results",
                         "containers": [
                           {
                             "name": "vehicle-card-media-container",
@@ -11855,7 +13058,7 @@
                             "widgets": []
                           },
                           {
-                            "name": "text-content-container",
+                            "name": "media-modal-container",
                             "containers": [],
                             "widgets": []
                           }
@@ -11867,20 +13070,38 @@
                             "widget_type": "ws-inv-listing",
                             "type": "inventory",
                             "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
-                          },
+                          }
+                        ]
+                      },
+                      {
+                        "name": "srp-wrapper-listing-inner-inventory-paging",
+                        "containers": [],
+                        "widgets": [
                           {
                             "id": "inventory-paging1",
                             "name": "Inv Paging",
                             "widget_type": "ws-inv-paging",
                             "type": "inventory",
                             "classes": "ddc-content ws-inv-paging"
-                          },
+                          }
+                        ]
+                      },
+                      {
+                        "name": "srp-wrapper-listing-inner-content",
+                        "containers": [
                           {
-                            "id": "disclaimer2",
-                            "name": "Content Disclaimer",
-                            "widget_type": "content-disclaimer",
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content1",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
                             "type": "content",
-                            "classes": "text-muted pt-5 border-top ddc-content"
+                            "classes": "ddc-content content-default"
                           }
                         ]
                       }
@@ -11893,7 +13114,7 @@
             ]
           },
           {
-            "section_id": "section-3",
+            "section_id": "section-6",
             "name": "Content Centered.1 1",
             "total_widgets": 1,
             "containers": [
@@ -11908,11 +13129,310 @@
                 ],
                 "widgets": [
                   {
-                    "id": "content2",
+                    "id": "content5",
                     "name": "Content Default",
                     "widget_type": "content-default",
                     "type": "content",
                     "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-7",
+            "name": "Content Background Image Left.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content6",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-8",
+            "name": "Content Background Image Right.1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-2",
+                "containers": [
+                  {
+                    "name": "content-background-right-1",
+                    "containers": [
+                      {
+                        "name": "content-left-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content7",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "background-image-right-1",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-9",
+            "name": "Content Background Image Left.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-1-1",
+                "containers": [
+                  {
+                    "name": "content-background-left-1-1",
+                    "containers": [
+                      {
+                        "name": "background-image-left-1-1",
+                        "containers": [],
+                        "widgets": []
+                      },
+                      {
+                        "name": "content-right-1-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content10",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-10",
+            "name": "Content Background Image Right.1 1 1",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-wrapper-container-2-1",
+                "containers": [
+                  {
+                    "name": "content-background-right-1-1",
+                    "containers": [
+                      {
+                        "name": "content-left-1-1",
+                        "containers": [
+                          {
+                            "name": "text-content-container",
+                            "containers": [],
+                            "widgets": []
+                          }
+                        ],
+                        "widgets": [
+                          {
+                            "id": "content9",
+                            "name": "Content Default",
+                            "widget_type": "content-default",
+                            "type": "content",
+                            "classes": "p-10 m-0 ddc-content content-default"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "background-image-right-1-1",
+                        "containers": [],
+                        "widgets": []
+                      }
+                    ],
+                    "widgets": []
+                  }
+                ],
+                "widgets": []
+              }
+            ]
+          },
+          {
+            "section_id": "section-11",
+            "name": "Content Centered.1 2",
+            "total_widgets": 1,
+            "containers": [
+              {
+                "name": "content-centered-container-2",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "content8",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-12",
+            "name": "Footer Hyundai Wrapper",
+            "total_widgets": 11,
+            "containers": [
+              {
+                "name": "footer-hyundai-container",
+                "containers": [
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  },
+                  {
+                    "name": "text-content-container",
+                    "containers": [],
+                    "widgets": []
+                  }
+                ],
+                "widgets": [
+                  {
+                    "id": "template-footer-content1",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default mb-6"
+                  },
+                  {
+                    "id": "template-footer-dealership-badges1",
+                    "name": "Dealership Badges",
+                    "widget_type": "ws-dealership-badges",
+                    "type": "default",
+                    "classes": "ddc-content ws-dealership-badges mb-5 mb-xl-6"
+                  },
+                  {
+                    "id": "template-footer-contact1",
+                    "name": "Contact",
+                    "widget_type": "ws-contact",
+                    "type": "form",
+                    "classes": "ddc-content ws-contact"
+                  },
+                  {
+                    "id": "template-footer-hours1",
+                    "name": "Hours",
+                    "widget_type": "ws-hours",
+                    "type": "default",
+                    "classes": "ddc-content ws-hours ddc-font-size-small"
+                  },
+                  {
+                    "id": "template-footer-map1",
+                    "name": "Map Dynamic",
+                    "widget_type": "map-dynamic",
+                    "type": "default",
+                    "classes": "map-dynamic ddc-content"
+                  },
+                  {
+                    "id": "template-footer-image1",
+                    "name": "Image Default",
+                    "widget_type": "image-default",
+                    "type": "image",
+                    "classes": "hyundai-footer-logo mb-0 pr-4 h-100"
+                  },
+                  {
+                    "id": "template-footer-image2",
+                    "name": "Image Default",
+                    "widget_type": "image-default",
+                    "type": "image",
+                    "classes": "image-default pl-4 border-left border-white"
+                  },
+                  {
+                    "id": "template-footer-links-locale1",
+                    "name": "Links Locale",
+                    "widget_type": "links-locale",
+                    "type": "navigation",
+                    "classes": "links-locale ddc-content text-center text-md-right"
+                  },
+                  {
+                    "id": "template-links5",
+                    "name": "Links List",
+                    "widget_type": "links-list",
+                    "type": "navigation",
+                    "classes": "links-list ddc-content"
+                  },
+                  {
+                    "id": "template-ddc-logo1",
+                    "name": "Ddc Logo",
+                    "widget_type": "ws-ddc-logo",
+                    "type": "default",
+                    "classes": "ddc-content ws-ddc-logo m-sm-0"
+                  },
+                  {
+                    "id": "template-footer-disclaimer1",
+                    "name": "Content Default",
+                    "widget_type": "content-default",
+                    "type": "content",
+                    "classes": "ddc-content content-default text-center text-inverse"
                   }
                 ]
               }
