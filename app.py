@@ -4644,32 +4644,6 @@ def extract_dynamics_deliverable(url):
 
         # Extraction logic with JavaScript execution in Chrome
         extracted = driver.execute_script(r"""
-            function getFieldText(dataIdSubstrings, excludeSubstrings = []) {
-                for (let sub of dataIdSubstrings) {
-                    let elems = document.querySelectorAll(`[data-id*="${sub}"]`);
-                    for (let el of elems) {
-                        let dataId = (el.getAttribute('data-id') || '').toLowerCase();
-                        if (excludeSubstrings.some(exc => dataId.includes(exc.toLowerCase()))) {
-                            continue;
-                        }
-                        let text = el.innerText || el.textContent || '';
-                        let input = el.querySelector('input, textarea, [contenteditable="true"]');
-                        let val = (input && (input.value || input.innerText)) || text;
-                        if (val && val.trim()) return val.trim();
-                    }
-                }
-                return '';
-            }
-
-            let deliverableId = getFieldText(['deliverablenumber.fieldControl', 'deliverableid.fieldControl', 'ticketnumber.fieldControl', 'deliverableid', 'deliverable_number', 'deliverable_id', 'ticketnumber', 'deliverable']);
-            if (!deliverableId) {
-                let urlParams = new URLSearchParams(window.location.search);
-                let rawId = urlParams.get('id') || '';
-                if (rawId) {
-                    deliverableId = rawId.split('-')[0].toUpperCase();
-                }
-            }
-
             var DYNAMICS_ICON_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\u202A-\u202E\u2500-\u25FF\u2600-\u27BF\uE000-\uF8FF\uFFF0-\uFFFF]/g;
 
             function cleanFieldText(val) {
@@ -4677,120 +4651,224 @@ def extract_dynamics_deliverable(url):
                 return val.replace(DYNAMICS_ICON_REGEX, '').trim();
             }
 
-            function cleanCtaLabel(val) {
+            function cleanCtaPayload(val) {
                 if (!val) return '';
-                let cleaned = val.replace(DYNAMICS_ICON_REGEX, ' ').trim();
-                let lines = cleaned.split(/[\r\n]+/)
-                    .map(l => {
-                        let trimmed = l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim();
-                        trimmed = trimmed.replace(/\b(calls\s*to\s*action|links|ctas(\s*and\s*links)?)\b/gi, '').trim();
-                        trimmed = trimmed.replace(/^[:\-\s\t]+|[:\-\s\t]+$/g, '').trim();
-                        return trimmed;
-                    })
-                    .filter(l => l && /[a-zA-Z0-9]/.test(l));
+                var cleaned = val.replace(DYNAMICS_ICON_REGEX, ' ').trim();
+                var lines = cleaned.split(/[\r\n]+/).map(function(l) {
+                    var trimmed = l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim();
+                    trimmed = trimmed.replace(/\b(calls\s*to\s*action|links|ctas(\s*and\s*links)?)\b/gi, '').trim();
+                    trimmed = trimmed.replace(/^[:\-\s\t]+|[:\-\s\t]+$/g, '').trim();
+                    return trimmed;
+                }).filter(function(l) { return l && /[a-zA-Z0-9]/.test(l); });
                 return lines.join('\n');
             }
 
-            let title = getFieldText(
-                ['ddcms_name.fieldControl', 'ddcms_name', 'ddcms_h1', 'ddcms_title', 'h1title.fieldControl', 'targeth1.fieldControl', 'pagetitle.fieldControl', 'h1', 'name.fieldControl'],
-                ['account', 'customer', 'parentaccount', 'owner', 'createdby', 'modifiedby', 'header_crmformheader', 'dealer']
-            );
-            let completedCopy = getFieldText(['completedcopy.fieldControl', 'completedcopy']);
-            let completedPageUrl = getFieldText(['completedpageurl.fieldControl', 'completedpageurl']);
-            let rawLinks = cleanCtaLabel(getFieldText(['links.fieldControl', 'links']));
-            let rawCtas = cleanCtaLabel(getFieldText(['callstoaction.fieldControl', 'callstoaction']));
-            function getDetailsFieldText() {
-                let selectors = ['ddcms_details.fieldControl', 'ddcms_details', 'details.fieldControl', 'details', 'specialinstructions'];
-                for (let sub of selectors) {
-                    let elems = document.querySelectorAll(`[data-id*="${sub}"]`);
-                    for (let el of elems) {
-                        let dataId = (el.getAttribute('data-id') || '').toLowerCase();
-                        if (dataId.includes('copywriting')) continue;
-                        let txt = el.innerText || el.textContent || '';
-                        let input = el.querySelector('input, textarea, [contenteditable="true"]');
-                        let val = (input && (input.value || input.innerText)) || txt;
-                        if (val && val.trim() && val.trim().toLowerCase() !== 'details') {
-                            return val.trim();
+            function getF(keys, excludeKeys, labelTexts) {
+                excludeKeys = excludeKeys || [];
+                keys = keys || [];
+                labelTexts = labelTexts || [];
+                var docs = [document];
+                try {
+                    var iframes = document.querySelectorAll('iframe');
+                    for (var f = 0; f < iframes.length; f++) {
+                        try {
+                            var d = iframes[f].contentDocument || (iframes[f].contentWindow && iframes[f].contentWindow.document);
+                            if (d && docs.indexOf(d) === -1) docs.push(d);
+                        } catch (e) {}
+                    }
+                } catch (e) {}
+
+                function extractVal(cont, labelFilter) {
+                    if (!cont) return '';
+                    if (cont.tagName === 'INPUT' || cont.tagName === 'TEXTAREA') {
+                        var cv = (cont.value || cont.getAttribute('value') || '').trim();
+                        if (cv && (!labelFilter || cv.toLowerCase() !== labelFilter.toLowerCase())) return cv;
+                    }
+                    if (cont.tagName === 'A') {
+                        var at = (cont.innerText || cont.textContent || '').trim();
+                        if (at && (!labelFilter || at.toLowerCase() !== labelFilter.toLowerCase())) return at;
+                        var ah = (cont.getAttribute('href') || '').trim();
+                        if (ah && !ah.startsWith('javascript:') && ah !== '#' && ah.indexOf('.') !== -1) return ah;
+                    }
+                    var inps = cont.querySelectorAll('input, textarea');
+                    for (var i = 0; i < inps.length; i++) {
+                        var iv = (inps[i].value || inps[i].getAttribute('value') || '').trim();
+                        if (iv && (!labelFilter || iv.toLowerCase() !== labelFilter.toLowerCase())) return iv;
+                    }
+                    var links = cont.querySelectorAll('a');
+                    for (var j = 0; j < links.length; j++) {
+                        var aTxt = (links[j].innerText || links[j].textContent || '').trim();
+                        if (aTxt && (!labelFilter || aTxt.toLowerCase() !== labelFilter.toLowerCase())) return aTxt;
+                        var aHref = (links[j].getAttribute('href') || '').trim();
+                        if (aHref && !aHref.startsWith('javascript:') && aHref !== '#' && aHref.indexOf('.') !== -1) return aHref;
+                    }
+                    var ctrls = cont.querySelectorAll('[data-id*="fieldControl" i], [role="textbox"], [data-id*="value" i]');
+                    for (var k = 0; k < ctrls.length; k++) {
+                        var cTxt = (ctrls[k].innerText || ctrls[k].textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
+                        if (cTxt && (!labelFilter || cTxt.toLowerCase() !== labelFilter.toLowerCase())) return cTxt;
+                    }
+                    var allTxt = (cont.innerText || cont.textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
+                    if (allTxt && labelFilter) {
+                        var lines = allTxt.split(/[\r\n]+/).map(function(l) { return l.trim(); }).filter(Boolean);
+                        for (var m = 0; m < lines.length; m++) {
+                            var lLow = lines[m].toLowerCase();
+                            if (lLow !== labelFilter.toLowerCase() && lLow.indexOf(labelFilter.toLowerCase()) === -1 && !lines[m].startsWith('*') && lines[m] !== '🔒') return lines[m];
+                        }
+                    }
+                    return '';
+                }
+
+                for (var docIdx = 0; docIdx < docs.length; docIdx++) {
+                    var doc = docs[docIdx];
+                    for (var l = 0; l < labelTexts.length; l++) {
+                        var lt = labelTexts[l];
+                        var ariaEls = doc.querySelectorAll('[aria-label*="' + lt + '" i], [title*="' + lt + '" i]');
+                        for (var a = 0; a < ariaEls.length; a++) {
+                            var aVal = extractVal(ariaEls[a], lt) || (ariaEls[a].parentElement ? extractVal(ariaEls[a].parentElement, lt) : '');
+                            if (aVal) return aVal;
+                        }
+                    }
+                    for (var l2 = 0; l2 < labelTexts.length; l2++) {
+                        var target = labelTexts[l2].toLowerCase();
+                        var allCandidates = doc.querySelectorAll('label, [role="presentation"], span, div');
+                        for (var c = 0; c < allCandidates.length; c++) {
+                            var cRaw = (allCandidates[c].innerText || allCandidates[c].textContent || '').trim().toLowerCase();
+                            var cClean = cRaw.replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*\:🔒]+$/g, '').trim();
+                            if (cClean === target || (cRaw.indexOf(target) === 0 && cRaw.length <= target.length + 5)) {
+                                var curr = allCandidates[c].parentElement;
+                                for (var up = 0; up < 5 && curr; up++) {
+                                    var foundVal = extractVal(curr, target);
+                                    if (foundVal) return foundVal;
+                                    curr = curr.parentElement;
+                                }
+                            }
+                        }
+                    }
+                    for (var i2 = 0; i2 < keys.length; i2++) {
+                        var els = doc.querySelectorAll('[data-id*="' + keys[i2] + '" i]');
+                        for (var j2 = 0; j2 < els.length; j2++) {
+                            var el = els[j2];
+                            var dataId = (el.getAttribute('data-id') || '').toLowerCase();
+                            var shouldExclude = false;
+                            for (var k2 = 0; k2 < excludeKeys.length; k2++) {
+                                if (dataId.indexOf(excludeKeys[k2].toLowerCase()) !== -1) {
+                                    shouldExclude = true;
+                                    break;
+                                }
+                            }
+                            if (shouldExclude) continue;
+                            var val = extractVal(el, '');
+                            if (val) return val;
                         }
                     }
                 }
                 return '';
             }
-            let details = cleanFieldText(getDetailsFieldText());
 
-            let matchUrl = completedPageUrl.match(/https?:\/\/[^\s\)\'\"]+/i);
-            if (matchUrl) {
-                completedPageUrl = matchUrl[0];
+            function getDetailsField() {
+                var selectors = ['ddcms_details.fieldControl', 'ddcms_details', 'details.fieldControl', 'details', 'specialinstructions'];
+                return getF(selectors, ['copywriting'], ['Details', 'Special Instructions']);
             }
 
-            let combinedCtasLinks = [];
-            if (rawCtas) combinedCtasLinks.push(rawCtas);
-            if (rawLinks) combinedCtasLinks.push(rawLinks);
-
-            let rawPageEx = cleanFieldText(getFieldText(['ddcms_pageexample.fieldControl', 'ddcms_pageexample', 'pageexample.fieldControl', 'pageexample']));
-            let rawWebsite = cleanFieldText(getFieldText(['websiteurl.fieldControl', 'websiteurl', 'website.fieldControl', 'website', 'ddcms_websiteurl', 'ddcms_website']));
-            let rawSiteId = cleanFieldText(getFieldText(['ddcms_productfulfillmentaccountid.fieldControl', 'ddcms_productfulfillmentaccountid', 'productfulfillmentaccount.fieldControl', 'productfulfillmentaccount', 'ddcms_productfulfillmentaccount']));
-
-            let cleanWebsite = rawWebsite.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
-            let cleanSiteId = rawSiteId.replace(/[^a-zA-Z0-9_\-]/g, '').trim();
-
-            let pageExUrl = '';
-            let pageExLiveUrl = '';
-            let pageExCmsUrl = '';
-            let pageExPath = '';
-            let pageExType = '';
-
-            if (rawPageEx) {
-                let directMatch = rawPageEx.match(/^https?:\/\/([^\/\s:]+)(.*)$/i);
-                let isDirect = false;
-                if (directMatch) {
-                    let host = directMatch[1];
-                    if (host && host.indexOf('.') !== -1 && !host.startsWith('/')) {
-                        isDirect = true;
-                        pageExPath = directMatch[2] || '/';
-                    }
+            function getPathFromUrl(str) {
+                if (!str) return '/';
+                var s = str.trim();
+                var idx = s.indexOf('://');
+                if (idx !== -1) {
+                    s = s.substring(idx + 3);
+                    if (s.indexOf('/') === 0) return s;
+                    var slashIdx = s.indexOf('/');
+                    return slashIdx !== -1 ? s.substring(slashIdx) : '/';
                 }
-                if (!isDirect) {
-                    let cleanP = rawPageEx.replace(/^https?:\/\/*/i, '');
-                    pageExPath = cleanP.startsWith('/') ? cleanP : ('/' + cleanP);
-                }
-                if (!pageExPath.startsWith('/')) pageExPath = '/' + pageExPath;
+                return s.indexOf('/') === 0 ? s : ('/' + s);
+            }
 
-                if (cleanWebsite) {
-                    pageExLiveUrl = 'https://' + cleanWebsite + pageExPath;
-                }
-                if (cleanSiteId) {
-                    pageExCmsUrl = 'https://' + cleanSiteId + '.cms.dealer.com' + pageExPath;
-                }
+            function isDirectUrl(str) {
+                if (!str) return false;
+                var s = str.trim();
+                var idx = s.indexOf('://');
+                if (idx === -1) return false;
+                var rest = s.substring(idx + 3);
+                if (rest.indexOf('/') === 0) return false;
+                var host = rest.split('/')[0].split('?')[0];
+                return host.indexOf('.') !== -1;
+            }
 
-                if (isDirect) {
-                    pageExUrl = rawPageEx;
-                    pageExType = 'direct';
-                } else if (pageExLiveUrl) {
-                    pageExUrl = pageExLiveUrl;
-                    pageExType = 'live';
-                } else if (pageExCmsUrl) {
-                    pageExUrl = pageExCmsUrl;
-                    pageExType = 'cms';
-                } else {
-                    pageExUrl = pageExPath;
-                    pageExType = 'path';
-                }
+            function cleanHost(str) {
+                if (!str) return '';
+                var s = str.trim();
+                var idx = s.indexOf('://');
+                if (idx !== -1) s = s.substring(idx + 3);
+                return s.split('/')[0].split('?')[0].trim();
+            }
+
+            function cleanId(str) {
+                if (!str) return '';
+                return str.trim().split(/\s+/)[0].replace(/[^a-zA-Z0-9_\-]/g, '');
+            }
+
+            var delId = cleanFieldText(getF(['deliverablenumber.fieldControl', 'deliverableid.fieldControl', 'ticketnumber.fieldControl', 'deliverableid', 'deliverable_number'], [], ['Deliverable Number', 'Deliverable ID', 'Ticket Number']));
+            if (!delId) {
+                var params = new URLSearchParams(window.location.search);
+                var rawId = params.get('id') || '';
+                if (rawId) delId = rawId.split('-')[0].toUpperCase();
+            }
+
+            var title = cleanFieldText(getF(['ddcms_name.fieldControl', 'ddcms_name', 'ddcms_h1', 'ddcms_title', 'h1title.fieldControl', 'targeth1.fieldControl', 'pagetitle.fieldControl', 'h1', 'name.fieldControl'], ['account', 'customer', 'parentaccount', 'owner', 'createdby', 'modifiedby', 'header_crmformheader', 'dealer'], ['Title', 'Target H1', 'Page Title', 'Name']));
+            var copy = cleanFieldText(getF(['completedcopy.fieldControl', 'completedcopy'], [], ['Completed Copy', 'Copy']));
+            var url = cleanFieldText(getF(['completedpageurl.fieldControl', 'completedpageurl'], [], ['Completed Page URL', 'Page URL']));
+            var matchUrl = url.match(/https?:\/\/[^\s\)\'\"]+/i);
+            if (matchUrl) url = matchUrl[0];
+
+            var ctas = cleanCtaPayload(getF(['callstoaction.fieldControl', 'callstoaction'], [], ['Calls to Action', 'CTAs']));
+            var links = cleanCtaPayload(getF(['links.fieldControl', 'links'], [], ['Links']));
+            var combinedCtas = [];
+            if (ctas) combinedCtas.push(ctas);
+            if (links) combinedCtas.push(links);
+
+            var details = cleanFieldText(getDetailsField());
+
+            var rawPageEx = cleanFieldText(getF(['ddcms_pageexample.fieldControl', 'ddcms_pageexample', 'pageexample.fieldControl', 'pageexample'], [], ['Page Example']));
+            var rawWebsite = cleanFieldText(getF(['websiteurl.fieldControl', 'websiteurl', 'website.fieldControl', 'website', 'ddcms_websiteurl'], [], ['Website', 'Web Site']));
+            var rawSiteId = cleanFieldText(getF(['ddcms_productfulfillmentaccountid.fieldControl', 'ddcms_productfulfillmentaccountid', 'productfulfillmentaccount.fieldControl', 'productfulfillmentaccount', 'ddcms_productfulfillmentaccount'], [], ['Product Fulfillment Account']));
+
+            var isDirect = isDirectUrl(rawPageEx);
+            var path = getPathFromUrl(rawPageEx);
+            var host = cleanHost(rawWebsite);
+            var siteId = cleanId(rawSiteId);
+
+            var liveUrl = host ? ('https://' + host + path) : '';
+            var cmsUrl = siteId ? ('https://' + siteId + '.cms.dealer.com' + path) : '';
+            var primaryUrl = '';
+            var pType = '';
+
+            if (isDirect) {
+                primaryUrl = rawPageEx.trim();
+                pType = 'direct';
+            } else if (liveUrl) {
+                primaryUrl = liveUrl;
+                pType = 'live';
+            } else if (cmsUrl) {
+                primaryUrl = cmsUrl;
+                pType = 'cms';
+            } else if (path && path !== '/') {
+                primaryUrl = path;
+                pType = 'path';
             }
 
             return {
-                deliverable_id: deliverableId,
+                deliverable_id: delId,
                 title: title,
-                completed_copy: completedCopy,
-                completed_page_url: completedPageUrl,
-                ctas_and_links: combinedCtasLinks.join('\\n'),
+                completed_copy: copy,
+                completed_page_url: url,
+                ctas_and_links: combinedCtas.join('\n'),
                 special_instructions: details,
                 page_example_raw: rawPageEx,
-                page_example_url: pageExUrl,
-                page_example_live_url: pageExLiveUrl,
-                page_example_cms_url: pageExCmsUrl,
-                page_example_path: pageExPath,
-                page_example_type: pageExType,
+                page_example_url: primaryUrl,
+                page_example_live_url: liveUrl,
+                page_example_cms_url: cmsUrl,
+                page_example_path: path,
+                page_example_type: pType,
                 website: rawWebsite,
                 product_fulfillment_account: rawSiteId
             };
