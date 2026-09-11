@@ -4644,324 +4644,326 @@ def extract_dynamics_deliverable(url):
 
         # Extraction logic with JavaScript execution in Chrome
         extracted = driver.execute_script(r"""
-(function(){
-var DYNAMICS_ICON_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\u202A-\u202E\u2500-\u25FF\u2600-\u27BF\uE000-\uF8FF\uFFF0-\uFFFF]/g;
+(function() {
+    var DYNAMICS_ICON_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\u202A-\u202E\u2500-\u25FF\u2600-\u27BF\uE000-\uF8FF\uFFF0-\uFFFF]/g;
 
-function cleanFieldText(val) {
-    if (!val) return '';
-    return val.replace(DYNAMICS_ICON_REGEX, '').trim();
-}
-
-function cleanCtaPayload(val) {
-    if (!val) return '';
-    var cleaned = val.replace(DYNAMICS_ICON_REGEX, ' ').trim();
-    var lines = cleaned.split(/[\r\n]+/).map(function(l) {
-        var trimmed = l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim();
-        trimmed = trimmed.replace(/\b(calls\s*to\s*action|links|ctas(\s*and\s*links)?)\b/gi, '').trim();
-        trimmed = trimmed.replace(/^[:\-\s\t]+|[:\-\s\t]+$/g, '').trim();
-        return trimmed;
-    }).filter(function(l) { return l && /[a-zA-Z0-9]/.test(l); });
-    return lines.join('\n');
-}
-
-function getDocs() {
-    var docs = [document];
-    try {
-        var iframes = document.querySelectorAll('iframe');
-        for (var f = 0; f < iframes.length; f++) {
-            try {
-                var d = iframes[f].contentDocument || (iframes[f].contentWindow && iframes[f].contentWindow.document);
-                if (d && docs.indexOf(d) === -1) docs.push(d);
-            } catch(e) {}
-        }
-    } catch(e) {}
-    return docs;
-}
-
-function extractValFromEl(el, excludeKeys) {
-    if (!el) return '';
-    var dataId = (el.getAttribute('data-id') || '').toLowerCase();
-    for (var k = 0; k < excludeKeys.length; k++) {
-        if (dataId.indexOf(excludeKeys[k].toLowerCase()) !== -1) return '';
+    function cleanFieldText(val) {
+        if (!val) return '';
+        return val.replace(DYNAMICS_ICON_REGEX, '').trim();
     }
-    if (dataId.indexOf('label-container') !== -1 || dataId.indexOf('-label') !== -1 || el.tagName === 'LABEL') {
+
+    function cleanCtaPayload(val) {
+        if (!val) return '';
+        var cleaned = val.replace(DYNAMICS_ICON_REGEX, ' ').trim();
+        var lines = cleaned.split(/[\r\n]+/).map(function(l) {
+            var trimmed = l.replace(/^[•\-\*\s\u25A1\u25A0\u2022\u00A0]+/g, '').trim();
+            trimmed = trimmed.replace(/\b(calls\s*to\s*action|links|ctas(\s*and\s*links)?)\b/gi, '').trim();
+            trimmed = trimmed.replace(/^[:\-\s\t]+|[:\-\s\t]+$/g, '').trim();
+            return trimmed;
+        }).filter(function(l) { return l && /[a-zA-Z0-9]/.test(l); });
+        return lines.join('\n');
+    }
+
+    function getDocs() {
+        var docs = [document];
+        try {
+            var iframes = document.querySelectorAll('iframe');
+            for (var f = 0; f < iframes.length; f++) {
+                try {
+                    var d = iframes[f].contentDocument || (iframes[f].contentWindow && iframes[f].contentWindow.document);
+                    if (d && docs.indexOf(d) === -1) docs.push(d);
+                } catch(e) {}
+            }
+        } catch(e) {}
+        return docs;
+    }
+
+    function extractValFromEl(el, excludeKeys) {
+        if (!el) return '';
+        var dataId = (el.getAttribute('data-id') || '').toLowerCase();
+        for (var k = 0; k < excludeKeys.length; k++) {
+            if (dataId.indexOf(excludeKeys[k].toLowerCase()) !== -1) return '';
+        }
+        if (dataId.indexOf('label-container') !== -1 || dataId.indexOf('-label') !== -1 || el.tagName === 'LABEL') {
+            return '';
+        }
+        var inps = el.querySelectorAll('input, textarea');
+        for (var i = 0; i < inps.length; i++) {
+            var iv = (inps[i].value || inps[i].getAttribute('value') || '').trim();
+            if (iv) return iv;
+        }
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            var ev = (el.value || el.getAttribute('value') || '').trim();
+            if (ev) return ev;
+        }
+        var links = el.querySelectorAll('a');
+        for (var j = 0; j < links.length; j++) {
+            var aTxt = (links[j].innerText || links[j].textContent || '').trim();
+            if (aTxt && !/^(open|visit|link|http|https|website|click|view)$/i.test(aTxt)) return aTxt;
+            var aHref = (links[j].getAttribute('href') || '').trim();
+            if (aHref && !aHref.startsWith('javascript:') && aHref !== '#' && aHref.indexOf('.') !== -1) return aHref;
+        }
+        var ctrls = el.querySelectorAll('[data-id*="fieldControl" i], [role="textbox"], [data-id*="value" i]');
+        for (var c = 0; c < ctrls.length; c++) {
+            var cTxt = (ctrls[c].innerText || ctrls[c].textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
+            if (cTxt) return cTxt;
+        }
+        var txt = (el.innerText || el.textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
+        return txt;
+    }
+
+    function getF(keys, excludeKeys, labelTexts) {
+        excludeKeys = excludeKeys || [];
+        keys = keys || [];
+        labelTexts = labelTexts || [];
+        var docs = getDocs();
+        for (var d = 0; d < docs.length; d++) {
+            var doc = docs[d];
+            for (var i = 0; i < keys.length; i++) {
+                var els = doc.querySelectorAll('[data-id*="' + keys[i] + '" i]');
+                for (var j = 0; j < els.length; j++) {
+                    var val = extractValFromEl(els[j], excludeKeys);
+                    if (val && val.trim()) {
+                        var isLbl = false;
+                        for (var l = 0; l < labelTexts.length; l++) {
+                            if (val.trim().toLowerCase() === labelTexts[l].toLowerCase()) {
+                                isLbl = true;
+                                break;
+                            }
+                        }
+                        if (!isLbl) return val.trim();
+                    }
+                }
+            }
+        }
+        if (labelTexts && labelTexts.length > 0) {
+            for (var d2 = 0; d2 < docs.length; d2++) {
+                var doc2 = docs[d2];
+                for (var l2 = 0; l2 < labelTexts.length; l2++) {
+                    var target = labelTexts[l2].toLowerCase();
+                    var labels = doc2.querySelectorAll('label, span[role="presentation"]');
+                    for (var b = 0; b < labels.length; b++) {
+                        var lText = (labels[b].innerText || labels[b].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
+                        if (lText === target) {
+                            var row = labels[b].parentElement;
+                            for (var up = 0; up < 5 && row; up++) {
+                                var inp = row.querySelector('input, textarea');
+                                if (inp && inp.value && inp.value.trim() && inp.value.trim().toLowerCase() !== target) return inp.value.trim();
+                                var lnk = row.querySelector('a');
+                                if (lnk) {
+                                    var lt = (lnk.innerText || lnk.textContent || '').trim();
+                                    if (lt && lt.toLowerCase() !== target) return lt;
+                                    var lh = (lnk.getAttribute('href') || '').trim();
+                                    if (lh && lh.indexOf('.') !== -1 && !lh.startsWith('javascript:')) return lh;
+                                }
+                                var tb = row.querySelector('[role="textbox"], [data-id*="value" i]');
+                                if (tb) {
+                                    var tt = (tb.innerText || tb.textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
+                                    if (tt && tt.toLowerCase() !== target) return tt;
+                                }
+                                row = row.parentElement;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return '';
     }
-    var inps = el.querySelectorAll('input, textarea');
-    for (var i = 0; i < inps.length; i++) {
-        var iv = (inps[i].value || inps[i].getAttribute('value') || '').trim();
-        if (iv) return iv;
-    }
-    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        var ev = (el.value || el.getAttribute('value') || '').trim();
-        if (ev) return ev;
-    }
-    var links = el.querySelectorAll('a');
-    for (var j = 0; j < links.length; j++) {
-        var aTxt = (links[j].innerText || links[j].textContent || '').trim();
-        if (aTxt && !/^(open|visit|link|http|https|website|click|view)$/i.test(aTxt)) return aTxt;
-        var aHref = (links[j].getAttribute('href') || '').trim();
-        if (aHref && !aHref.startsWith('javascript:') && aHref !== '#' && aHref.indexOf('.') !== -1) return aHref;
-    }
-    var ctrls = el.querySelectorAll('[data-id*="fieldControl" i], [role="textbox"], [data-id*="value" i]');
-    for (var c = 0; c < ctrls.length; c++) {
-        var cTxt = (ctrls[c].innerText || ctrls[c].textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
-        if (cTxt) return cTxt;
-    }
-    var txt = (el.innerText || el.textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
-    return txt;
-}
 
-function getF(keys, excludeKeys, labelTexts) {
-    excludeKeys = excludeKeys || [];
-    keys = keys || [];
-    labelTexts = labelTexts || [];
-    var docs = getDocs();
-    for (var d = 0; d < docs.length; d++) {
-        var doc = docs[d];
-        for (var i = 0; i < keys.length; i++) {
-            var els = doc.querySelectorAll('[data-id*="' + keys[i] + '" i]');
-            for (var j = 0; j < els.length; j++) {
-                var val = extractValFromEl(els[j], excludeKeys);
-                if (val && val.trim()) {
-                    var isLbl = false;
-                    for (var l = 0; l < labelTexts.length; l++) {
-                        if (val.trim().toLowerCase() === labelTexts[l].toLowerCase()) {
-                            isLbl = true;
-                            break;
-                        }
-                    }
-                    if (!isLbl) return val.trim();
-                }
-            }
+    function getPathFromUrl(str) {
+        if (!str) return '/';
+        var s = str.trim();
+        var idx = s.indexOf('://');
+        if (idx !== -1) {
+            s = s.substring(idx + 3);
+            if (s.indexOf('/') === 0) return s;
+            var slashIdx = s.indexOf('/');
+            return slashIdx !== -1 ? s.substring(slashIdx) : '/';
         }
+        return s.indexOf('/') === 0 ? s : ('/' + s);
     }
-    if (labelTexts && labelTexts.length > 0) {
-        for (var d2 = 0; d2 < docs.length; d2++) {
-            var doc2 = docs[d2];
-            for (var l2 = 0; l2 < labelTexts.length; l2++) {
-                var target = labelTexts[l2].toLowerCase();
-                var labels = doc2.querySelectorAll('label, span[role="presentation"]');
-                for (var b = 0; b < labels.length; b++) {
-                    var lText = (labels[b].innerText || labels[b].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
-                    if (lText === target) {
-                        var row = labels[b].parentElement;
-                        for (var up = 0; up < 5 && row; up++) {
-                            var inp = row.querySelector('input, textarea');
-                            if (inp && inp.value && inp.value.trim() && inp.value.trim().toLowerCase() !== target) return inp.value.trim();
-                            var lnk = row.querySelector('a');
-                            if (lnk) {
-                                var lt = (lnk.innerText || lnk.textContent || '').trim();
-                                if (lt && lt.toLowerCase() !== target) return lt;
-                                var lh = (lnk.getAttribute('href') || '').trim();
-                                if (lh && lh.indexOf('.') !== -1 && !lh.startsWith('javascript:')) return lh;
-                            }
-                            var tb = row.querySelector('[role="textbox"], [data-id*="value" i]');
-                            if (tb) {
-                                var tt = (tb.innerText || tb.textContent || '').replace(DYNAMICS_ICON_REGEX, '').trim();
-                                if (tt && tt.toLowerCase() !== target) return tt;
-                            }
-                            row = row.parentElement;
+
+    function isDirectUrl(str) {
+        if (!str) return false;
+        var s = str.trim();
+        var idx = s.indexOf('://');
+        if (idx === -1) return false;
+        var rest = s.substring(idx + 3);
+        if (rest.indexOf('/') === 0) return false;
+        var host = rest.split('/')[0].split('?')[0];
+        return host.indexOf('.') !== -1;
+    }
+
+    function cleanHost(str) {
+        if (!str) return '';
+        var s = str.trim();
+        var idx = s.indexOf('://');
+        if (idx !== -1) s = s.substring(idx + 3);
+        s = s.split('/')[0].split('?')[0].split('#')[0].trim();
+        if (!/\.[a-zA-Z]{2,}/.test(s)) return '';
+        if (/^(url|website|http|https|none|null|undefined)$/i.test(s)) return '';
+        return s;
+    }
+
+    function cleanId(str) {
+        if (!str) return '';
+        var s = str.trim().split(/\s+/)[0].replace(/[^-a-zA-Z0-9_]/g, '');
+        if (/^(product|fulfillment|account|website|details|name|title|page|none|null)$/i.test(s)) return '';
+        return s;
+    }
+
+    var delId = cleanFieldText(getF(['deliverablenumber.fieldControl', 'deliverableid.fieldControl', 'ticketnumber.fieldControl', 'deliverableid', 'deliverable_number']));
+    if (!delId) {
+        var params = new URLSearchParams(window.location.search);
+        var rawId = params.get('id') || '';
+        if (rawId) delId = rawId.split('-')[0].toUpperCase();
+    }
+
+    var title = cleanFieldText(getF(['ddcms_name.fieldControl', 'ddcms_name', 'ddcms_h1', 'ddcms_title', 'h1title.fieldControl', 'targeth1.fieldControl', 'pagetitle.fieldControl', 'h1', 'name.fieldControl'], ['account', 'customer', 'parentaccount', 'owner', 'createdby', 'modifiedby', 'header_crmformheader', 'dealer', 'quickview']));
+    var copy = cleanFieldText(getF(['completedcopy.fieldControl', 'completedcopy']));
+    var url = cleanFieldText(getF(['completedpageurl.fieldControl', 'completedpageurl']));
+    var httpIdx = url.indexOf('http');
+    if (httpIdx !== -1) {
+        url = url.substring(httpIdx).split(/[\s\)\'"]/)[0];
+    }
+
+    var ctas = cleanCtaPayload(getF(['callstoaction.fieldControl', 'callstoaction']));
+    var links = cleanCtaPayload(getF(['links.fieldControl', 'links']));
+    var combinedCtas = [];
+    if (ctas) combinedCtas.push(ctas);
+    if (links) combinedCtas.push(links);
+
+    var details = cleanFieldText(getF(['ddcms_details.fieldControl', 'ddcms_details', 'details.fieldControl', 'details', 'specialinstructions'], ['copywriting']));
+
+    var rawPageEx = cleanFieldText(getF(['ddcms_pageexample.fieldControl', 'ddcms_pageexample', 'pageexample.fieldControl', 'pageexample'], [], ['Page Example']));
+
+    var rawWebsite = cleanFieldText(getF(['websiteurl.fieldControl', 'websiteurl', 'website.fieldControl', 'website', 'ddcms_websiteurl'], [], ['Website']));
+    var host = cleanHost(rawWebsite);
+    if (!host) {
+        var allDocs = getDocs();
+        for (var d3 = 0; d3 < allDocs.length; d3++) {
+            var lbls = allDocs[d3].querySelectorAll('label, [role="presentation"], span');
+            for (var b3 = 0; b3 < lbls.length; b3++) {
+                var lt3 = (lbls[b3].innerText || lbls[b3].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
+                if (lt3 === 'website') {
+                    var r3 = lbls[b3].parentElement;
+                    for (var u3 = 0; u3 < 5 && r3; u3++) {
+                        var is3 = r3.querySelectorAll('input, textarea');
+                        for (var k3 = 0; k3 < is3.length; k3++) {
+                            var h3 = cleanHost(is3[k3].value || is3[k3].getAttribute('value') || '');
+                            if (h3) { host = h3; rawWebsite = h3; break; }
                         }
-                    }
-                }
-            }
-        }
-    }
-    return '';
-}
-
-function getPathFromUrl(str) {
-    if (!str) return '/';
-    var s = str.trim();
-    var idx = s.indexOf('://');
-    if (idx !== -1) {
-        s = s.substring(idx + 3);
-        if (s.indexOf('/') === 0) return s;
-        var slashIdx = s.indexOf('/');
-        return slashIdx !== -1 ? s.substring(slashIdx) : '/';
-    }
-    return s.indexOf('/') === 0 ? s : ('/' + s);
-}
-
-function isDirectUrl(str) {
-    if (!str) return false;
-    var s = str.trim();
-    var idx = s.indexOf('://');
-    if (idx === -1) return false;
-    var rest = s.substring(idx + 3);
-    if (rest.indexOf('/') === 0) return false;
-    var host = rest.split('/')[0].split('?')[0];
-    return host.indexOf('.') !== -1;
-}
-
-function cleanHost(str) {
-    if (!str) return '';
-    var s = str.trim();
-    var idx = s.indexOf('://');
-    if (idx !== -1) s = s.substring(idx + 3);
-    s = s.split('/')[0].split('?')[0].split('#')[0].trim();
-    if (!/\.[a-zA-Z]{2,}/.test(s)) return '';
-    if (/^(url|website|http|https|none|null|undefined)$/i.test(s)) return '';
-    return s;
-}
-
-function cleanId(str) {
-    if (!str) return '';
-    var s = str.trim().split(/\s+/)[0].replace(/[^-a-zA-Z0-9_]/g, '');
-    if (/^(product|fulfillment|account|website|details|name|title|page|none|null)$/i.test(s)) return '';
-    return s;
-}
-
-var delId = cleanFieldText(getF(['deliverablenumber.fieldControl', 'deliverableid.fieldControl', 'ticketnumber.fieldControl', 'deliverableid', 'deliverable_number']));
-if (!delId) {
-    var params = new URLSearchParams(window.location.search);
-    var rawId = params.get('id') || '';
-    if (rawId) delId = rawId.split('-')[0].toUpperCase();
-}
-
-var title = cleanFieldText(getF(['ddcms_name.fieldControl', 'ddcms_name', 'ddcms_h1', 'ddcms_title', 'h1title.fieldControl', 'targeth1.fieldControl', 'pagetitle.fieldControl', 'h1', 'name.fieldControl'], ['account', 'customer', 'parentaccount', 'owner', 'createdby', 'modifiedby', 'header_crmformheader', 'dealer', 'quickview']));
-var copy = cleanFieldText(getF(['completedcopy.fieldControl', 'completedcopy']));
-var url = cleanFieldText(getF(['completedpageurl.fieldControl', 'completedpageurl']));
-var matchUrl = url.match(/https?:\/\/[^\s\)\'\"]+/i);
-if (matchUrl) url = matchUrl[0];
-
-var ctas = cleanCtaPayload(getF(['callstoaction.fieldControl', 'callstoaction']));
-var links = cleanCtaPayload(getF(['links.fieldControl', 'links']));
-var combinedCtas = [];
-if (ctas) combinedCtas.push(ctas);
-if (links) combinedCtas.push(links);
-
-var details = cleanFieldText(getF(['ddcms_details.fieldControl', 'ddcms_details', 'details.fieldControl', 'details', 'specialinstructions'], ['copywriting']));
-
-var rawPageEx = cleanFieldText(getF(['ddcms_pageexample.fieldControl', 'ddcms_pageexample', 'pageexample.fieldControl', 'pageexample'], [], ['Page Example']));
-
-var rawWebsite = cleanFieldText(getF(['websiteurl.fieldControl', 'websiteurl', 'website.fieldControl', 'website', 'ddcms_websiteurl'], [], ['Website']));
-var host = cleanHost(rawWebsite);
-if (!host) {
-    var allDocs = getDocs();
-    for (var d3 = 0; d3 < allDocs.length; d3++) {
-        var lbls = allDocs[d3].querySelectorAll('label, [role="presentation"], span');
-        for (var b3 = 0; b3 < lbls.length; b3++) {
-            var lt3 = (lbls[b3].innerText || lbls[b3].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
-            if (lt3 === 'website') {
-                var r3 = lbls[b3].parentElement;
-                for (var u3 = 0; u3 < 5 && r3; u3++) {
-                    var is3 = r3.querySelectorAll('input, textarea');
-                    for (var k3 = 0; k3 < is3.length; k3++) {
-                        var h3 = cleanHost(is3[k3].value || is3[k3].getAttribute('value') || '');
-                        if (h3) { host = h3; rawWebsite = h3; break; }
+                        if (host) break;
+                        var as3 = r3.querySelectorAll('a');
+                        for (var m3 = 0; m3 < as3.length; m3++) {
+                            var h4 = cleanHost(as3[m3].innerText || as3[m3].textContent || '') || cleanHost(as3[m3].getAttribute('href') || '');
+                            if (h4) { host = h4; rawWebsite = h4; break; }
+                        }
+                        if (host) break;
+                        r3 = r3.parentElement;
                     }
                     if (host) break;
-                    var as3 = r3.querySelectorAll('a');
-                    for (var m3 = 0; m3 < as3.length; m3++) {
-                        var h4 = cleanHost(as3[m3].innerText || as3[m3].textContent || '') || cleanHost(as3[m3].getAttribute('href') || '');
-                        if (h4) { host = h4; rawWebsite = h4; break; }
-                    }
-                    if (host) break;
-                    r3 = r3.parentElement;
                 }
-                if (host) break;
             }
+            if (host) break;
         }
-        if (host) break;
     }
-}
 
-var rawSiteId = cleanFieldText(getF(['ddcms_productfulfillmentaccountid.fieldControl', 'ddcms_productfulfillmentaccountid', 'productfulfillmentaccount.fieldControl', 'productfulfillmentaccount', 'ddcms_productfulfillmentaccount', 'fulfillmentaccount'], [], ['Product Fulfillment Account']));
-var siteId = cleanId(rawSiteId);
-if (!siteId) {
-    var allDocs2 = getDocs();
-    for (var d4 = 0; d4 < allDocs2.length; d4++) {
-        var lbls2 = allDocs2[d4].querySelectorAll('label, [role="presentation"], span');
-        for (var b4 = 0; b4 < lbls2.length; b4++) {
-            var lt4 = (lbls2[b4].innerText || lbls2[b4].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
-            if (lt4 === 'product fulfillment account' || lt4.indexOf('product fulfillment') === 0) {
-                var r4 = lbls2[b4].parentElement;
-                for (var u4 = 0; u4 < 5 && r4; u4++) {
-                    var is4 = r4.querySelectorAll('input, textarea');
-                    for (var k4 = 0; k4 < is4.length; k4++) {
-                        var s4 = cleanId(is4[k4].value || is4[k4].getAttribute('value') || '');
-                        if (s4) { siteId = s4; rawSiteId = s4; break; }
+    var rawSiteId = cleanFieldText(getF(['ddcms_productfulfillmentaccountid.fieldControl', 'ddcms_productfulfillmentaccountid', 'productfulfillmentaccount.fieldControl', 'productfulfillmentaccount', 'ddcms_productfulfillmentaccount', 'fulfillmentaccount'], [], ['Product Fulfillment Account']));
+    var siteId = cleanId(rawSiteId);
+    if (!siteId) {
+        var allDocs2 = getDocs();
+        for (var d4 = 0; d4 < allDocs2.length; d4++) {
+            var lbls2 = allDocs2[d4].querySelectorAll('label, [role="presentation"], span');
+            for (var b4 = 0; b4 < lbls2.length; b4++) {
+                var lt4 = (lbls2[b4].innerText || lbls2[b4].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
+                if (lt4 === 'product fulfillment account' || lt4.indexOf('product fulfillment') === 0) {
+                    var r4 = lbls2[b4].parentElement;
+                    for (var u4 = 0; u4 < 5 && r4; u4++) {
+                        var is4 = r4.querySelectorAll('input, textarea');
+                        for (var k4 = 0; k4 < is4.length; k4++) {
+                            var s4 = cleanId(is4[k4].value || is4[k4].getAttribute('value') || '');
+                            if (s4) { siteId = s4; rawSiteId = s4; break; }
+                        }
+                        if (siteId) break;
+                        var tbs4 = r4.querySelectorAll('[role="textbox"], [data-id*="value" i]');
+                        for (var m4 = 0; m4 < tbs4.length; m4++) {
+                            var s5 = cleanId(tbs4[m4].innerText || tbs4[m4].textContent || '');
+                            if (s5) { siteId = s5; rawSiteId = s5; break; }
+                        }
+                        if (siteId) break;
+                        r4 = r4.parentElement;
                     }
                     if (siteId) break;
-                    var tbs4 = r4.querySelectorAll('[role="textbox"], [data-id*="value" i]');
-                    for (var m4 = 0; m4 < tbs4.length; m4++) {
-                        var s5 = cleanId(tbs4[m4].innerText || tbs4[m4].textContent || '');
-                        if (s5) { siteId = s5; rawSiteId = s5; break; }
-                    }
-                    if (siteId) break;
-                    r4 = r4.parentElement;
                 }
-                if (siteId) break;
             }
+            if (siteId) break;
         }
-        if (siteId) break;
     }
-}
 
-var isDirect = isDirectUrl(rawPageEx);
-var path = getPathFromUrl(rawPageEx);
-var liveUrl = host ? ('https://' + host + path) : '';
-var cmsUrl = siteId ? ('https://' + siteId + '.cms.dealer.com' + path) : '';
-var primaryUrl = '';
-var pType = '';
+    var isDirect = isDirectUrl(rawPageEx);
+    var path = getPathFromUrl(rawPageEx);
+    var liveUrl = host ? ('https://' + host + path) : '';
+    var cmsUrl = siteId ? ('https://' + siteId + '.cms.dealer.com' + path) : '';
+    var primaryUrl = '';
+    var pType = '';
 
-if (isDirect) {
-    primaryUrl = rawPageEx.trim();
-    pType = 'direct';
-} else if (liveUrl) {
-    primaryUrl = liveUrl;
-    pType = 'live';
-} else if (cmsUrl) {
-    primaryUrl = cmsUrl;
-    pType = 'cms';
-} else if (path && path !== '/') {
-    primaryUrl = path;
-    pType = 'path';
-}
+    if (isDirect) {
+        primaryUrl = rawPageEx.trim();
+        pType = 'direct';
+    } else if (liveUrl) {
+        primaryUrl = liveUrl;
+        pType = 'live';
+    } else if (cmsUrl) {
+        primaryUrl = cmsUrl;
+        pType = 'cms';
+    } else if (path && path !== '/') {
+        primaryUrl = path;
+        pType = 'path';
+    }
 
-var payload = {
-    deliverable_id: delId,
-    title: title,
-    completed_copy: copy,
-    completed_page_url: url,
-    ctas_and_links: combinedCtas.join('\n'),
-    special_instructions: details,
-    page_example_raw: rawPageEx,
-    page_example_url: primaryUrl,
-    page_example_live_url: liveUrl,
-    page_example_cms_url: cmsUrl,
-    page_example_path: path,
-    page_example_type: pType,
-    website: rawWebsite,
-    product_fulfillment_account: rawSiteId,
-    source: 'bookmarklet',
-    timestamp: Date.now()
-};
+    var payload = {
+        deliverable_id: delId,
+        title: title,
+        completed_copy: copy,
+        completed_page_url: url,
+        ctas_and_links: combinedCtas.join('\n'),
+        special_instructions: details,
+        page_example_raw: rawPageEx,
+        page_example_url: primaryUrl,
+        page_example_live_url: liveUrl,
+        page_example_cms_url: cmsUrl,
+        page_example_path: path,
+        page_example_type: pType,
+        website: rawWebsite,
+        product_fulfillment_account: rawSiteId,
+        source: 'bookmarklet',
+        timestamp: Date.now()
+    };
 
-var qaUrl = 'https://qa-tool-brown.vercel.app';
-var jsonStr = JSON.stringify(payload);
+    var qaUrl = 'https://qa-tool-brown.vercel.app';
+    var jsonStr = JSON.stringify(payload);
 
-try {
-    fetch('http://127.0.0.1:5000/api/save-extracted-dynamics', {
+    try {
+        fetch('http://127.0.0.1:5000/api/save-extracted-dynamics', {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: jsonStr
+        }).catch(function() {});
+    } catch(e) {}
+
+    fetch(qaUrl + '/api/save-extracted-dynamics', {
         method: 'POST',
         mode: 'cors',
         headers: { 'Content-Type': 'application/json' },
         body: jsonStr
-    }).catch(function() {});
-} catch(e) {}
-
-fetch(qaUrl + '/api/save-extracted-dynamics', {
-    method: 'POST',
-    mode: 'cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: jsonStr
-}).then(function() {
-    window.open(qaUrl, '_blank');
-}).catch(function() {
-    window.open(qaUrl, '_blank');
-});
+    }).then(function() {
+        window.open(qaUrl, '_blank');
+    }).catch(function() {
+        window.open(qaUrl, '_blank');
+    });
 
 })();
         """)
