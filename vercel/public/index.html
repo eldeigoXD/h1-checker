@@ -77,6 +77,11 @@
                                 placeholder="e.g. 'Please include inventory config to pre-owned under 30k', 'Must have a hero image', 'Add breadcrumbs code', etc."
                                 rows="3"></textarea>
                         </div>
+                        <div class="seo-field">
+                            <label for="expected-page-example-input">Page Example (Reference URL)</label>
+                            <input type="text" id="expected-page-example-input"
+                                placeholder="e.g. https://dealer.cms.dealer.com/... or /used-inventory/pre-owned-chevrolet.htm">
+                        </div>
                     </div>
                 </div>
             </form>
@@ -129,6 +134,88 @@
                                 style="font-size: 0.8rem; color: #80deea; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
                                 ⚠ Missing on Mobile</h4>
                             <ul id="missing-chunks-list-mobile" class="missing-chunks-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page Example Reference Card -->
+                <div id="page-example-card" class="stats-card" style="display: none; border-left:4px solid #38bdf8;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.2rem;">🔗</span> Page Example
+                        </h2>
+                        <span id="page-example-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">
+                            Reference Link
+                        </span>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 0.9rem; border: 1px solid rgba(255,255,255,0.06);">
+                        <!-- Primary Page Example URL -->
+                        <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;" id="page-example-primary-label">
+                                    Resolved Page Example URL
+                                </span>
+                                <span id="page-example-type-tag" style="font-size: 0.72rem; color: #38bdf8; font-weight: 600;"></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(15, 23, 42, 0.6); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); flex-wrap: wrap;">
+                                <a id="page-example-main-link" href="#" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; font-size: 0.9rem; text-decoration: none; word-break: break-all; flex-grow: 1; font-weight: 500;">
+                                    -
+                                </a>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; margin-left: auto;">
+                                    <button type="button" id="copy-page-example-btn" class="secondary-btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; white-space: nowrap;">
+                                        📋 Copiar
+                                    </button>
+                                    <a id="open-page-example-btn" href="#" target="_blank" rel="noopener noreferrer" class="outline-btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; text-decoration: none; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 4px; white-space: nowrap;">
+                                        ↗ Abrir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alternative CMS Fallback Link -->
+                        <div id="page-example-cms-row" style="display: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.65rem; margin-top: 0.65rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; flex-wrap: wrap; gap: 0.3rem;">
+                                <span style="font-size: 0.75rem; font-weight: 600; color: #fbbf24; display: flex; align-items: center; gap: 0.3rem;">
+                                    🛠️ CMS Alternative (Dealer.com CMS)
+                                </span>
+                                <span style="font-size: 0.7rem; color: #94a3b8;">Accede por aquí si el Live Site falla o está en migración</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(30, 27, 75, 0.4); padding: 0.45rem 0.7rem; border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.2); flex-wrap: wrap;">
+                                <a id="page-example-cms-link" href="#" target="_blank" rel="noopener noreferrer" style="color: #fbbf24; font-size: 0.85rem; text-decoration: none; word-break: break-all; flex-grow: 1;">
+                                    -
+                                </a>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; margin-left: auto;">
+                                    <button type="button" id="copy-page-example-cms-btn" class="secondary-btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; white-space: nowrap;">
+                                        📋 Copiar
+                                    </button>
+                                    <a id="open-page-example-cms-btn" href="#" target="_blank" rel="noopener noreferrer" class="outline-btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; text-decoration: none; background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); border-radius: 4px; white-space: nowrap;">
+                                        ↗ Abrir CMS
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alternative Live Fallback Link -->
+                        <div id="page-example-live-row" style="display: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.65rem; margin-top: 0.65rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                                <span style="font-size: 0.75rem; font-weight: 600; color: #34d399; display: flex; align-items: center; gap: 0.3rem;">
+                                    🌐 Live Site URL
+                                </span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(6, 78, 59, 0.3); padding: 0.45rem 0.7rem; border-radius: 6px; border: 1px solid rgba(52, 211, 153, 0.2); flex-wrap: wrap;">
+                                <a id="page-example-live-link" href="#" target="_blank" rel="noopener noreferrer" style="color: #34d399; font-size: 0.85rem; text-decoration: none; word-break: break-all; flex-grow: 1;">
+                                    -
+                                </a>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; margin-left: auto;">
+                                    <button type="button" id="copy-page-example-live-btn" class="secondary-btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; white-space: nowrap;">
+                                        📋 Copiar
+                                    </button>
+                                    <a id="open-page-example-live-btn" href="#" target="_blank" rel="noopener noreferrer" class="outline-btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; text-decoration: none; background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.4); border-radius: 4px; white-space: nowrap;">
+                                        ↗ Abrir Live
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

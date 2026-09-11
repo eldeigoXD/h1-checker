@@ -615,7 +615,8 @@
     "/used-inventory/toyota-oregon-city-or.htm": "https://www.oregoncitysubaru.com/used-inventory/index.htm?make=Toyota"
   },
   "www.guarantycars.com": {
-    "/new-chevy/silverado-3500.htm": "/new-inventory/index.htm?model=Silverado+3500+HD&make=Chevrolet"
+    "/new-chevy/silverado-3500.htm": "/new-inventory/index.htm?model=Silverado+3500+HD&make=Chevrolet",
+    "/used-inventory/pre-owned-toyota.htm": "/used-inventory/index.htm?make=Toyota"
   },
   "www.stykemain.com": {
     "/used-inventory/index.htm": "https://www.stykemain.com/used-inventory/index.htm",
@@ -1340,5 +1341,11 @@
   },
   "www.deerybrotherschryslerdodgeramjeep.com": {
     "/new-inventory/ram/1500-iowa-city-ia.htm": "/new-inventory/index.htm?model=1500&make=Ram"
+  },
+  "www.friendlychevroletspringfield.com": {
+    "/used-inventory/jeep-for-sale-springfield-il.htm": "/used-inventory/index.htm?make=Jeep"
+  },
+  "www.pruittford.com": {
+    "/new-inventory/ford-expedition-burkburnett-tx.htm": "/new-inventory/index.htm?model=Expedition&make=Ford"
   }
 }

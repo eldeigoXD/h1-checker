@@ -1,5 +1,149 @@
 [
   {
+    "id": "D-136521",
+    "title": "Shop the Used Toyota Inventory | Guaranty Chevrolet",
+    "path": "/used-inventory/pre-owned-toyota.htm",
+    "timestamp": 1789081347
+  },
+  {
+    "id": "D-131892",
+    "title": "Used Jeep For Sale in Springfield, IL | Friendly Chevrolet",
+    "path": "/used-inventory/jeep-for-sale-springfield-il.htm",
+    "timestamp": 1789080447
+  },
+  {
+    "id": "D-139630",
+    "title": "New Ford Expedition in Burkburnett, TX near Wichita Falls | Pruitt Ford",
+    "path": "/new-inventory/ford-expedition-burkburnett-tx.htm",
+    "timestamp": 1789078147
+  },
+  {
+    "id": "D-136116",
+    "title": "Used Jeep For Sale in Springfield, IL | Friendly Chevrolet",
+    "path": "/used-inventory/jeep-for-sale-springfield-il.htm",
+    "timestamp": 1789075779
+  },
+  {
+    "id": "D-136506",
+    "title": "Used Cars for Sale in Farmerville, LA",
+    "path": "/used-inventory/index.htm",
+    "timestamp": 1789069209
+  },
+  {
+    "id": "D-TEST",
+    "title": "Used Cars, Trucks & SUVs for Sale in Rogers City, MI",
+    "path": "/used-inventory/index.htm",
+    "timestamp": 1789061631
+  },
+  {
+    "id": "D-135905",
+    "title": "New Ram 1500 Trucks for Sale | Iowa City, IA Dealership",
+    "path": "/new-inventory/ram/1500-iowa-city-ia.htm",
+    "timestamp": 1789056997
+  },
+  {
+    "id": "D-135213",
+    "title": "Used Cars, Trucks & SUVs for Sale in Rogers City, MI",
+    "path": "/used-inventory/index.htm",
+    "timestamp": 1789051831
+  },
+  {
+    "id": "TEST-BISHOP",
+    "title": "Used Cars, Trucks & SUVs for Sale in Rogers City, MI",
+    "path": "/used-inventory/index.htm",
+    "timestamp": 1789051244
+  },
+  {
+    "id": "D-132809",
+    "title": "Used SUVs for Sale in Casper WY | White's Mountain Subaru",
+    "path": "/used-inventory/used-suvs-casper-wy.htm",
+    "timestamp": 1788990059
+  },
+  {
+    "id": "D-135753",
+    "title": "Used SUV Inventory For Sale In Sandusky, OH | Foster Chevrolet",
+    "path": "/used-inventory/suv.htm",
+    "timestamp": 1788988632
+  },
+  {
+    "id": "D-132825",
+    "title": "Used Trucks for Sale in Casper, WY | White's Mountain Subaru",
+    "path": "/used-inventory/used-trucks-casper-wy.htm",
+    "timestamp": 1788985470
+  },
+  {
+    "id": "D-132574",
+    "title": "Used Jeep SUVs for Sale in Buford, GA | Mall of Georgia CDJR",
+    "path": "/used-inventory/jeep-buford-ga.htm",
+    "timestamp": 1788983327
+  },
+  {
+    "id": "D-135057",
+    "title": "Used Chevy Equinox Inventory | Shaheen Chevrolet",
+    "path": "/used-chevrolet/equinox-lansing-mi.htm",
+    "timestamp": 1788965600
+  },
+  {
+    "id": "D-132533",
+    "title": "New Chrysler Dodge Jeep Ram for Sale in Willard, OH",
+    "path": "/new-inventory/index.htm",
+    "timestamp": 1788964706
+  },
+  {
+    "id": "D-132803",
+    "title": "Pre-Owned GMC Cars & Trucks in Farmerville LA | Benoit GMC",
+    "path": "/used-inventory/gmc-farmerville-la.htm",
+    "timestamp": 1788962832
+  },
+  {
+    "id": "D-134939",
+    "title": "Used Honda For Sale In Columbus, OH",
+    "path": "/used-inventory/used-honda.htm",
+    "timestamp": 1788961636
+  },
+  {
+    "id": "D-132634",
+    "title": "Used Vehicles Under $25,000 in Cambridge, OH | Dunning Ford",
+    "path": "/bargain-inventory/index.htm",
+    "timestamp": 1788960669
+  },
+  {
+    "id": "D-132573",
+    "title": "Used Hyundai Inventory | Giles Hyundai",
+    "path": "/used-inventory/used-hyundai.htm",
+    "timestamp": 1788960029
+  },
+  {
+    "id": "D-131892",
+    "title": "New Jeep SUVs for sale in Clarksville, TN | Gary Mathews Motors",
+    "path": "/new-inventory/jeep-inventory-clarksville-tn.htm",
+    "timestamp": 1788911422
+  },
+  {
+    "id": "D-131648",
+    "title": "Pre-Owned Trucks for Sale in New Iberia | Musson Patout Automotive Group",
+    "path": "/used-inventory/truck-new-iberia.htm",
+    "timestamp": 1788901333
+  },
+  {
+    "id": "D-131396",
+    "title": "Used Ram Trucks For Sale in Spokane, WA",
+    "path": "/used/ram/spokane-wa.htm",
+    "timestamp": 1788899299
+  },
+  {
+    "id": "D-132475",
+    "title": "New Toyota SUVs | Toyota of Somerset",
+    "path": "/new-toyotay/suvs-somerset-ky.htm",
+    "timestamp": 1788897172
+  },
+  {
+    "id": "D-132057",
+    "title": "Pre-Owned Jeep Vehicles for Sale in Schenectady, NY | Toyota of Cleveland",
+    "path": "/pre-owned-jeep-inventory.htm",
+    "timestamp": 1788893339
+  },
+  {
     "id": "D-124795",
     "title": "Used Nissan for sale in Raleigh, NC | Murphy Motor Co.",
     "path": "/used-inventory/nissan-for-sale-raleigh-nc.htm",

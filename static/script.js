@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const expectedContentInput = document.getElementById('expected-content-input');
         const specialInstructionsInput = document.getElementById('special-instructions-input');
         const customRulesInput = document.getElementById('custom-rules-input');
+        const expectedPageExampleInput = document.getElementById('expected-page-example-input');
 
         const seoPanelBody = document.querySelector('#seo-inputs-section .seo-panel-body');
         const toggleIcon = document.querySelector('#toggle-seo-inputs .toggle-icon');
@@ -200,6 +201,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 filledCount++;
             }
         }
+
+        const cleanedPageEx = cleanFieldText(data.page_example_url || '');
+        if (expectedPageExampleInput) {
+            expectedPageExampleInput.value = cleanedPageEx;
+            if (cleanedPageEx) {
+                flashField(expectedPageExampleInput);
+                filledCount++;
+            }
+        }
+
+        window.currentDynamicsData = data;
 
         showDynamicsStatus(`✅ Successfully imported ${filledCount} fields from Dynamics CRM! Form is ready for scan.`, 'success');
     }
@@ -371,6 +383,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('expected-content-input').value = '';
             document.getElementById('special-instructions-input').value = '';
             document.getElementById('custom-rules-input').value = '';
+            const pageExInput = document.getElementById('expected-page-example-input');
+            if (pageExInput) pageExInput.value = '';
+            window.currentDynamicsData = null;
             resultsArea.style.display = 'none';
             hideError();
             // Full state reset to avoid data leaking into next scan
@@ -378,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentBugs = [];
             // Reset all dynamic cards visibility
             const cardsToHide = [
-                'seo-coverage-card', 'inventory-card', 'media-audit-card',
+                'seo-coverage-card', 'page-example-card', 'inventory-card', 'media-audit-card',
                 'rules-validation-card', 'custom-layout-rules-card', 'sitemap-card',
                 'lead-form-card', 'coherence-card', 'links-card', 'bug-report-card',
                 'page-audit-card'
@@ -402,6 +417,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const expectedContent = document.getElementById('expected-content-input')?.value.trim() || '';
         const specialInstructions = document.getElementById('special-instructions-input')?.value.trim() || '';
         const customRules = document.getElementById('custom-rules-input')?.value.trim() || '';
+        const pageExampleUrl = document.getElementById('expected-page-example-input')?.value.trim() || window.currentDynamicsData?.page_example_url || '';
+        const pageExampleCmsUrl = window.currentDynamicsData?.page_example_cms_url || '';
+        const pageExampleLiveUrl = window.currentDynamicsData?.page_example_live_url || '';
+        const pageExampleRaw = window.currentDynamicsData?.page_example_raw || '';
+        const pageExampleType = window.currentDynamicsData?.page_example_type || '';
 
         // Reset UI Context
         setLoading(true);
@@ -420,7 +440,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     expected_title: expectedTitle,
                     expected_content: expectedContent,
                     special_instructions: specialInstructions,
-                    custom_rules: customRules
+                    custom_rules: customRules,
+                    page_example_url: pageExampleUrl,
+                    page_example_cms_url: pageExampleCmsUrl,
+                    page_example_live_url: pageExampleLiveUrl,
+                    page_example_raw: pageExampleRaw,
+                    page_example_type: pageExampleType
                 })
             });
             let data = await response.json();
@@ -619,6 +644,124 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (seoCard) seoCard.style.display = 'none';
         }
+
+        // Page Example Rendering Logic (between Content Coverage and Inventory Validation)
+        function renderPageExample(data) {
+            const card = document.getElementById('page-example-card');
+            if (!card) return;
+
+            const mainLink = document.getElementById('page-example-main-link');
+            const openBtn = document.getElementById('open-page-example-btn');
+            const copyBtn = document.getElementById('copy-page-example-btn');
+            const typeTag = document.getElementById('page-example-type-tag');
+
+            const cmsRow = document.getElementById('page-example-cms-row');
+            const cmsLink = document.getElementById('page-example-cms-link');
+            const openCmsBtn = document.getElementById('open-page-example-cms-btn');
+            const copyCmsBtn = document.getElementById('copy-page-example-cms-btn');
+
+            const liveRow = document.getElementById('page-example-live-row');
+            const liveLink = document.getElementById('page-example-live-link');
+            const openLiveBtn = document.getElementById('open-page-example-live-btn');
+            const copyLiveBtn = document.getElementById('copy-page-example-live-btn');
+
+            const formInputVal = document.getElementById('expected-page-example-input')?.value.trim() || '';
+            const dyn = window.currentDynamicsData || {};
+
+            let primaryUrl = data.page_example_url || formInputVal || dyn.page_example_url || '';
+            let cmsUrl = data.page_example_cms_url || dyn.page_example_cms_url || '';
+            let liveUrl = data.page_example_live_url || dyn.page_example_live_url || '';
+            let pType = data.page_example_type || dyn.page_example_type || '';
+
+            if (!primaryUrl && !cmsUrl && !liveUrl) {
+                card.style.display = 'none';
+                return;
+            }
+
+            function formatHref(u) {
+                if (!u) return '#';
+                if (!u.startsWith('http://') && !u.startsWith('https://')) return 'https://' + u;
+                return u;
+            }
+
+            card.style.display = 'block';
+
+            if (mainLink) {
+                mainLink.href = formatHref(primaryUrl);
+                mainLink.textContent = primaryUrl;
+            }
+            if (openBtn) {
+                openBtn.href = formatHref(primaryUrl);
+            }
+            if (copyBtn) {
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(primaryUrl);
+                    const orig = copyBtn.textContent;
+                    copyBtn.textContent = '✅ Copiado!';
+                    setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+                };
+            }
+
+            if (typeTag) {
+                if (pType === 'direct') {
+                    typeTag.textContent = '🌐 Enlace Directo CRM';
+                    typeTag.style.color = '#38bdf8';
+                } else if (pType === 'live') {
+                    typeTag.textContent = '🌐 Live Site + Path';
+                    typeTag.style.color = '#34d399';
+                } else if (pType === 'cms') {
+                    typeTag.textContent = '🛠️ CMS Dealer + Path';
+                    typeTag.style.color = '#fbbf24';
+                } else {
+                    typeTag.textContent = '';
+                }
+            }
+
+            // CMS Alternative Row (show if cmsUrl exists and differs from primaryUrl)
+            if (cmsUrl && cmsUrl !== primaryUrl) {
+                if (cmsRow) cmsRow.style.display = 'block';
+                if (cmsLink) {
+                    cmsLink.href = formatHref(cmsUrl);
+                    cmsLink.textContent = cmsUrl;
+                }
+                if (openCmsBtn) {
+                    openCmsBtn.href = formatHref(cmsUrl);
+                }
+                if (copyCmsBtn) {
+                    copyCmsBtn.onclick = () => {
+                        navigator.clipboard.writeText(cmsUrl);
+                        const orig = copyCmsBtn.textContent;
+                        copyCmsBtn.textContent = '✅ Copiado!';
+                        setTimeout(() => { copyCmsBtn.textContent = orig; }, 1500);
+                    };
+                }
+            } else {
+                if (cmsRow) cmsRow.style.display = 'none';
+            }
+
+            // Live Alternative Row (show if liveUrl exists and differs from primaryUrl)
+            if (liveUrl && liveUrl !== primaryUrl) {
+                if (liveRow) liveRow.style.display = 'block';
+                if (liveLink) {
+                    liveLink.href = formatHref(liveUrl);
+                    liveLink.textContent = liveUrl;
+                }
+                if (openLiveBtn) {
+                    openLiveBtn.href = formatHref(liveUrl);
+                }
+                if (copyLiveBtn) {
+                    copyLiveBtn.onclick = () => {
+                        navigator.clipboard.writeText(liveUrl);
+                        const orig = copyLiveBtn.textContent;
+                        copyLiveBtn.textContent = '✅ Copiado!';
+                        setTimeout(() => { copyLiveBtn.textContent = orig; }, 1500);
+                    };
+                }
+            } else {
+                if (liveRow) liveRow.style.display = 'none';
+            }
+        }
+        renderPageExample(data);
 
         // Inventory Validation Logic
         const invCard = document.getElementById('inventory-card');
@@ -2650,7 +2793,7 @@ function renderToolBugsList(items) {
 }
 
 // Bookmarklet Modal Controller
-const DYNAMICS_BOOKMARKLET_CODE = `javascript:(function(){var DYNAMICS_ICON_REGEX=/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F\\u200B-\\u200D\\u202A-\\u202E\\u2500-\\u25FF\\u2600-\\u27BF\\uE000-\\uF8FF\\uFFF0-\\uFFFF]/g;function cleanFieldText(val){if(!val)return '';return val.replace(DYNAMICS_ICON_REGEX,'').trim();}function cleanCtaPayload(val){if(!val)return '';var cleaned=val.replace(DYNAMICS_ICON_REGEX,' ').trim();var lines=cleaned.split(/[\\r\\n]+/).map(function(l){var trimmed=l.replace(/^[•\\-\\u002A\\s\\u25A1\\u25A0\\u2022\\u00A0]+/g,'').trim();trimmed=trimmed.replace(/\\b(calls\\s*to\\s*action|links|ctas(\\s*and\\s*links)?)\\b/gi,'').trim();trimmed=trimmed.replace(/^[:\\-\\s\\t]+|[:\\-\\s\\t]+$/g,'').trim();return trimmed;}).filter(function(l){return l&&/[a-zA-Z0-9]/.test(l);});return lines.join('\\n');}function getF(keys,excludeKeys){excludeKeys=excludeKeys||[];for(var i=0;i<keys.length;i++){var els=document.querySelectorAll('[data-id*=\"'+keys[i]+'\"]');for(var j=0;j<els.length;j++){var el=els[j];var dataId=(el.getAttribute('data-id')||'').toLowerCase();var shouldExclude=false;for(var k=0;k<excludeKeys.length;k++){if(dataId.indexOf(excludeKeys[k].toLowerCase())!==-1){shouldExclude=true;break;}}if(shouldExclude)continue;var txt=el.innerText||el.textContent||'';var input=el.querySelector('input, textarea, [contenteditable=\"true\"]');var val=(input&&(input.value||input.innerText))||txt;if(val&&val.trim())return val.trim();}}return '';}function getDetailsField(){var selectors=['ddcms_details.fieldControl','ddcms_details','details.fieldControl','details','specialinstructions'];return getF(selectors,['copywriting']);}var delId=cleanFieldText(getF(['deliverablenumber.fieldControl','deliverableid.fieldControl','ticketnumber.fieldControl','deliverableid','deliverable_number']));if(!delId){var params=new URLSearchParams(window.location.search);var rawId=params.get('id')||'';if(rawId)delId=rawId.split('-')[0].toUpperCase();}var title=cleanFieldText(getF(['ddcms_name.fieldControl','ddcms_name','ddcms_h1','ddcms_title','h1title.fieldControl','targeth1.fieldControl','pagetitle.fieldControl','h1','name.fieldControl'],['account','customer','parentaccount','owner','createdby','modifiedby','header_crmformheader','dealer']));var copy=cleanFieldText(getF(['completedcopy.fieldControl','completedcopy']));var url=cleanFieldText(getF(['completedpageurl.fieldControl','completedpageurl']));var matchUrl=url.match(/https?:\\/\\/[^\\s\\)\\'\\"]+/i);if(matchUrl)url=matchUrl[0];var ctas=cleanCtaPayload(getF(['callstoaction.fieldControl','callstoaction']));var links=cleanCtaPayload(getF(['links.fieldControl','links']));var combinedCtas=[];if(ctas)combinedCtas.push(ctas);if(links)combinedCtas.push(links);var details=cleanFieldText(getDetailsField());var payload={deliverable_id:delId,title:title,completed_copy:copy,completed_page_url:url,ctas_and_links:combinedCtas.join('\\n'),special_instructions:details,source:'bookmarklet',timestamp:Date.now()};var qaUrl='https://qa-tool-brown.vercel.app';var jsonStr=JSON.stringify(payload);try{fetch('http://127.0.0.1:5000/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).catch(function(){});}catch(e){}fetch(qaUrl+'/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).then(function(){window.open(qaUrl,'_blank');}).catch(function(){window.open(qaUrl,'_blank');});})();`;
+const DYNAMICS_BOOKMARKLET_CODE = `javascript:(function(){var DYNAMICS_ICON_REGEX=/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F\\u200B-\\u200D\\u202A-\\u202E\\u2500-\\u25FF\\u2600-\\u27BF\\uE000-\\uF8FF\\uFFF0-\\uFFFF]/g;function cleanFieldText(val){if(!val)return '';return val.replace(DYNAMICS_ICON_REGEX,'').trim();}function cleanCtaPayload(val){if(!val)return '';var cleaned=val.replace(DYNAMICS_ICON_REGEX,' ').trim();var lines=cleaned.split(/[\\r\\n]+/).map(function(l){var trimmed=l.replace(/^[•\\-\\u002A\\s\\u25A1\\u25A0\\u2022\\u00A0]+/g,'').trim();trimmed=trimmed.replace(/\\b(calls\\s*to\\s*action|links|ctas(\\s*and\\s*links)?)\\b/gi,'').trim();trimmed=trimmed.replace(/^[:\\-\\s\\t]+|[:\\-\\s\\t]+$/g,'').trim();return trimmed;}).filter(function(l){return l&&/[a-zA-Z0-9]/.test(l);});return lines.join('\\n');}function getF(keys,excludeKeys,labelTexts){excludeKeys=excludeKeys||[];for(var i=0;i<keys.length;i++){var els=document.querySelectorAll('[data-id*=\"'+keys[i]+'\"]');for(var j=0;j<els.length;j++){var el=els[j];var dataId=(el.getAttribute('data-id')||'').toLowerCase();var shouldExclude=false;for(var k=0;k<excludeKeys.length;k++){if(dataId.indexOf(excludeKeys[k].toLowerCase())!==-1){shouldExclude=true;break;}}if(shouldExclude)continue;var txt=el.innerText||el.textContent||'';var input=el.querySelector('input, textarea, a, [contenteditable=\"true\"]');var val=(input&&(input.value||input.innerText||(input.tagName==='A'?input.getAttribute('href'):'')))||txt;if(val&&val.trim())return val.trim();}}if(labelTexts&&labelTexts.length>0){var allLabels=document.querySelectorAll('label, [role=\"presentation\"], span');for(var l=0;l<allLabels.length;l++){var lbl=allLabels[l];var t=(lbl.innerText||lbl.textContent||'').trim().toLowerCase();for(var m=0;m<labelTexts.length;m++){var target=labelTexts[m].toLowerCase();if(t===target||(t.indexOf(target)===0&&t.length<target.length+5)){var cont=lbl.closest('[data-id]')||lbl.parentElement;if(cont){var inp=cont.querySelector('input, textarea, a, [contenteditable=\"true\"]');var v=(inp&&(inp.value||inp.innerText||inp.href))||cont.innerText||'';v=v.replace(new RegExp('^'+target,'i'),'').trim();if(v&&v.toLowerCase()!==target)return v;}}}}}return '';}function getDetailsField(){var selectors=['ddcms_details.fieldControl','ddcms_details','details.fieldControl','details','specialinstructions'];return getF(selectors,['copywriting']);}function getPathFromUrl(str){if(!str)return '/';var s=str.trim();var idx=s.indexOf('://');if(idx!==-1){s=s.substring(idx+3);if(s.indexOf('/')===0)return s;var slashIdx=s.indexOf('/');return slashIdx!==-1?s.substring(slashIdx):'/';}return s.indexOf('/')===0?s:('/'+s);}function isDirectUrl(str){if(!str)return false;var s=str.trim();var idx=s.indexOf('://');if(idx===-1)return false;var rest=s.substring(idx+3);if(rest.indexOf('/')===0)return false;var host=rest.split('/')[0].split('?')[0];return host.indexOf('.')!==-1;}function cleanHost(str){if(!str)return '';var s=str.trim();var idx=s.indexOf('://');if(idx!==-1)s=s.substring(idx+3);return s.split('/')[0].split('?')[0].trim();}function cleanId(str){if(!str)return '';return str.trim().split(/\\s+/)[0].replace(/[^a-zA-Z0-9_\\-]/g,'');}var delId=cleanFieldText(getF(['deliverablenumber.fieldControl','deliverableid.fieldControl','ticketnumber.fieldControl','deliverableid','deliverable_number']));if(!delId){var params=new URLSearchParams(window.location.search);var rawId=params.get('id')||'';if(rawId)delId=rawId.split('-')[0].toUpperCase();}var title=cleanFieldText(getF(['ddcms_name.fieldControl','ddcms_name','ddcms_h1','ddcms_title','h1title.fieldControl','targeth1.fieldControl','pagetitle.fieldControl','h1','name.fieldControl'],['account','customer','parentaccount','owner','createdby','modifiedby','header_crmformheader','dealer']));var copy=cleanFieldText(getF(['completedcopy.fieldControl','completedcopy']));var url=cleanFieldText(getF(['completedpageurl.fieldControl','completedpageurl']));var matchUrl=url.match(/https?:\\/\\/[^\\s\\)\\'\\"]+/i);if(matchUrl)url=matchUrl[0];var ctas=cleanCtaPayload(getF(['callstoaction.fieldControl','callstoaction']));var links=cleanCtaPayload(getF(['links.fieldControl','links']));var combinedCtas=[];if(ctas)combinedCtas.push(ctas);if(links)combinedCtas.push(links);var details=cleanFieldText(getDetailsField());var rawPageEx=cleanFieldText(getF(['ddcms_pageexample.fieldControl','ddcms_pageexample','pageexample.fieldControl','pageexample'],[],['Page Example']));var rawWebsite=cleanFieldText(getF(['websiteurl.fieldControl','websiteurl','website.fieldControl','website','ddcms_websiteurl'],[],['Website']));var rawSiteId=cleanFieldText(getF(['ddcms_productfulfillmentaccountid.fieldControl','ddcms_productfulfillmentaccountid','productfulfillmentaccount.fieldControl','productfulfillmentaccount'],[],['Product Fulfillment Account']));var isDirect=isDirectUrl(rawPageEx);var path=getPathFromUrl(rawPageEx);var host=cleanHost(rawWebsite);var siteId=cleanId(rawSiteId);var liveUrl=host?('https://'+host+path):'';var cmsUrl=siteId?('https://'+siteId+'.cms.dealer.com'+path):'';var primaryUrl='';var pType='';if(isDirect){primaryUrl=rawPageEx.trim();pType='direct';}else if(liveUrl){primaryUrl=liveUrl;pType='live';}else if(cmsUrl){primaryUrl=cmsUrl;pType='cms';}else if(path&&path!=='/'){primaryUrl=path;pType='path';}var payload={deliverable_id:delId,title:title,completed_copy:copy,completed_page_url:url,ctas_and_links:combinedCtas.join('\\n'),special_instructions:details,page_example_raw:rawPageEx,page_example_url:primaryUrl,page_example_live_url:liveUrl,page_example_cms_url:cmsUrl,page_example_path:path,page_example_type:pType,website:rawWebsite,product_fulfillment_account:rawSiteId,source:'bookmarklet',timestamp:Date.now()};var qaUrl='https://qa-tool-brown.vercel.app';var jsonStr=JSON.stringify(payload);try{fetch('http://127.0.0.1:5000/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).catch(function(){});}catch(e){}fetch(qaUrl+'/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).then(function(){window.open(qaUrl,'_blank');}).catch(function(){window.open(qaUrl,'_blank');});})();`;
 
 function initBookmarkletModal() {
     const bookmarkletBtn = document.getElementById('bookmarklet-btn');

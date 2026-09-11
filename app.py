@@ -3320,8 +3320,26 @@ def extract_h1():
         special_instructions = data.get('special_instructions', '').strip()
         custom_rules = data.get('custom_rules', '').strip()
         case_id = data.get('case_number', '').strip()
+        page_example_url = data.get('page_example_url', '').strip()
+        page_example_cms_url = data.get('page_example_cms_url', '').strip()
+        page_example_live_url = data.get('page_example_live_url', '').strip()
+        page_example_raw = data.get('page_example_raw', '').strip()
+        page_example_type = data.get('page_example_type', '').strip()
     else:
         url = request.args.get('url')
+        page_example_url = request.args.get('page_example_url', '').strip()
+        page_example_cms_url = request.args.get('page_example_cms_url', '').strip()
+        page_example_live_url = request.args.get('page_example_live_url', '').strip()
+        page_example_raw = request.args.get('page_example_raw', '').strip()
+        page_example_type = request.args.get('page_example_type', '').strip()
+
+    if not page_example_url and LATEST_DYNAMICS_STORE:
+        if not case_id or LATEST_DYNAMICS_STORE.get('deliverable_id') == case_id:
+            page_example_url = LATEST_DYNAMICS_STORE.get('page_example_url', '')
+            page_example_cms_url = LATEST_DYNAMICS_STORE.get('page_example_cms_url', '')
+            page_example_live_url = LATEST_DYNAMICS_STORE.get('page_example_live_url', '')
+            page_example_raw = LATEST_DYNAMICS_STORE.get('page_example_raw', '')
+            page_example_type = LATEST_DYNAMICS_STORE.get('page_example_type', '')
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
@@ -4466,7 +4484,12 @@ def extract_h1():
             'bugs': bugs,
             'sections_and_widgets': sections_and_widgets,
             'url': url,
-            'case_id': case_id
+            'case_id': case_id,
+            'page_example_url': page_example_url,
+            'page_example_cms_url': page_example_cms_url,
+            'page_example_live_url': page_example_live_url,
+            'page_example_raw': page_example_raw,
+            'page_example_type': page_example_type
         })
         
     except Exception as e:
@@ -4704,13 +4727,72 @@ def extract_dynamics_deliverable(url):
             if (rawCtas) combinedCtasLinks.push(rawCtas);
             if (rawLinks) combinedCtasLinks.push(rawLinks);
 
+            let rawPageEx = cleanFieldText(getFieldText(['ddcms_pageexample.fieldControl', 'ddcms_pageexample', 'pageexample.fieldControl', 'pageexample']));
+            let rawWebsite = cleanFieldText(getFieldText(['websiteurl.fieldControl', 'websiteurl', 'website.fieldControl', 'website', 'ddcms_websiteurl', 'ddcms_website']));
+            let rawSiteId = cleanFieldText(getFieldText(['ddcms_productfulfillmentaccountid.fieldControl', 'ddcms_productfulfillmentaccountid', 'productfulfillmentaccount.fieldControl', 'productfulfillmentaccount', 'ddcms_productfulfillmentaccount']));
+
+            let cleanWebsite = rawWebsite.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
+            let cleanSiteId = rawSiteId.replace(/[^a-zA-Z0-9_\-]/g, '').trim();
+
+            let pageExUrl = '';
+            let pageExLiveUrl = '';
+            let pageExCmsUrl = '';
+            let pageExPath = '';
+            let pageExType = '';
+
+            if (rawPageEx) {
+                let directMatch = rawPageEx.match(/^https?:\/\/([^\/\s:]+)(.*)$/i);
+                let isDirect = false;
+                if (directMatch) {
+                    let host = directMatch[1];
+                    if (host && host.indexOf('.') !== -1 && !host.startsWith('/')) {
+                        isDirect = true;
+                        pageExPath = directMatch[2] || '/';
+                    }
+                }
+                if (!isDirect) {
+                    let cleanP = rawPageEx.replace(/^https?:\/\/*/i, '');
+                    pageExPath = cleanP.startsWith('/') ? cleanP : ('/' + cleanP);
+                }
+                if (!pageExPath.startsWith('/')) pageExPath = '/' + pageExPath;
+
+                if (cleanWebsite) {
+                    pageExLiveUrl = 'https://' + cleanWebsite + pageExPath;
+                }
+                if (cleanSiteId) {
+                    pageExCmsUrl = 'https://' + cleanSiteId + '.cms.dealer.com' + pageExPath;
+                }
+
+                if (isDirect) {
+                    pageExUrl = rawPageEx;
+                    pageExType = 'direct';
+                } else if (pageExLiveUrl) {
+                    pageExUrl = pageExLiveUrl;
+                    pageExType = 'live';
+                } else if (pageExCmsUrl) {
+                    pageExUrl = pageExCmsUrl;
+                    pageExType = 'cms';
+                } else {
+                    pageExUrl = pageExPath;
+                    pageExType = 'path';
+                }
+            }
+
             return {
                 deliverable_id: deliverableId,
                 title: title,
                 completed_copy: completedCopy,
                 completed_page_url: completedPageUrl,
                 ctas_and_links: combinedCtasLinks.join('\\n'),
-                special_instructions: details
+                special_instructions: details,
+                page_example_raw: rawPageEx,
+                page_example_url: pageExUrl,
+                page_example_live_url: pageExLiveUrl,
+                page_example_cms_url: pageExCmsUrl,
+                page_example_path: pageExPath,
+                page_example_type: pageExType,
+                website: rawWebsite,
+                product_fulfillment_account: rawSiteId
             };
         """)
 
