@@ -3108,6 +3108,7 @@ def api_save_correction():
     
     try:
         record = inventory_learner.save_correction(url, filter_url, source='manual_correction')
+        return jsonify({'status': 'success', 'record': record})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
@@ -3144,15 +3145,43 @@ def extract_sections_and_widgets(soup, url: str = ""):
         c_low = cleaned.lower()
         if c_low == 'title':
             return 'Page Title'
+        if c_low == 'slideshow':
+            return 'Slideshow'
+        if 'seo-content' in c_low or 'seo' in c_low:
+            return 'Additional SEO Content'
         if c_low == 'inventory-search-results':
             return 'Inventory Search Results'
         if c_low == 'content-centered':
             return 'Content Centered'
         if c_low == 'content-wide':
             return 'Content Wide'
+        if c_low == 'content-background-image-right':
+            return 'Content w/ Image Right'
+        if c_low == 'content-background-image-left':
+            return 'Content w/ Image Left'
+        if c_low == 'content-thirds':
+            return 'Content Thirds'
+        if c_low == 'content-left-over-background-image':
+            return 'Content Left Over Background Image'
+        if c_low == 'content-right-over-background-image':
+            return 'Content Right Over Background Image'
+        if c_low in ['map-hours', 'map']:
+            return 'Contact and Map'
         if c_low in ['primary-banner', 'hero-banner', 'hero']:
             return 'Hero Banner'
         return cleaned.replace('-', ' ').replace('_', ' ').title()
+
+    def find_section_image(sec_node):
+        for img in sec_node.find_all('img'):
+            src = img.get('data-src') or img.get('src') or img.get('data-original') or ''
+            if src and not src.startswith('data:image/gif') and not src.startswith('data:image/svg'):
+                return src
+        for target in [sec_node] + sec_node.find_all(True):
+            st = target.get('style', '')
+            m = re.search(r'url\([\"\']?(https?://[^\"\'\)]+)[\"\']?\)', st)
+            if m:
+                return m.group(1)
+        return None
 
     # Find top-level sections
     all_sec = soup.find_all(lambda el: el.name in ['section'] or (el.name == 'div' and 'page-section' in el.get('class', [])))
@@ -3215,6 +3244,14 @@ def extract_sections_and_widgets(soup, url: str = ""):
             w_type = 'data-bus'
         elif any(k in w_name_low for k in ['placeholder', 'tps']):
             w_type = 'placeholder'
+        elif any(k in w_name_low for k in ['links', 'link']):
+            w_type = 'navigation'
+        elif any(k in w_name_low for k in ['map']):
+            w_type = 'map'
+        elif any(k in w_name_low for k in ['contact']):
+            w_type = 'contact'
+        elif any(k in w_name_low for k in ['hours']):
+            w_type = 'hours'
         else:
             w_type = 'general'
 
@@ -3231,6 +3268,18 @@ def extract_sections_and_widgets(soup, url: str = ""):
         elif 'disclaimer' in w_name_low:
             display_title = f'Disclaimer ({w_id})'
             subtext = 'Widget for dynamically pulling in disclaimer text.'
+        elif 'links' in w_name_low:
+            display_title = f'Quick Links ({w_id})'
+            subtext = f'Navigation Links ({len(links)} links)'
+        elif 'map' in w_name_low:
+            display_title = f'Dynamic Map ({w_id})'
+            subtext = 'Google Maps dealership location'
+        elif 'contact' in w_name_low:
+            display_title = f'Contact Info ({w_id})'
+            subtext = 'Dealership contact information'
+        elif 'hours' in w_name_low:
+            display_title = f'Dealership Hours ({w_id})'
+            subtext = 'Operating hours schedule'
         elif 'content' in w_name_low:
             display_title = f'Content ({w_id})'
             subtext = 'Space for entering in WYSIWYG content.'
@@ -3258,9 +3307,42 @@ def extract_sections_and_widgets(soup, url: str = ""):
     sections_tree = []
     total_widgets_count = 0
 
+    # Detect if standard DDC sections are hidden from view in the page template (Image 1)
+    dom_sec_names = [clean_section_title(s.get('data-name', '')) for s in top_sections]
+    template_hidden_sections = []
+    if 'Page Title' not in dom_sec_names:
+        template_hidden_sections.append(('page-title-hidden', 'Page Title', 'Hidden from view in page template'))
+    if 'Slideshow' not in dom_sec_names and any('inventory' in n.lower() or 'image' in n.lower() for n in dom_sec_names):
+        template_hidden_sections.append(('slideshow-hidden', 'Slideshow', 'Hidden from view in page template'))
+    if 'Additional SEO Content' not in dom_sec_names and any('inventory' in n.lower() or 'content' in n.lower() for n in dom_sec_names):
+        template_hidden_sections.append(('seo-content-hidden', 'Additional SEO Content', 'Hidden from view in page template'))
+
+    for h_id, h_title, h_reason in template_hidden_sections:
+        sections_tree.append({
+            "section_id": h_id,
+            "raw_name": h_id,
+            "name": h_title,
+            "title": h_title,
+            "is_hidden": True,
+            "hidden_reason": h_reason,
+            "has_bg_image": False,
+            "image_url": None,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": None,
+            "containers": []
+        })
+
     for idx, sec in enumerate(top_sections, start=1):
         raw_sec_name = sec.get('data-name') or sec.get('data-section-name') or f'section-{idx}'
         sec_title = clean_section_title(raw_sec_name)
+        sec_classes = sec.get('class', [])
+        sec_style = sec.get('style', '')
+
+        is_hidden = ('d-none' in sec_classes) or ('hide' in sec_classes) or ('display: none' in sec_style) or ('display:none' in sec_style) or sec.has_attr('hidden')
+        sec_image = find_section_image(sec)
+        has_bg_image = 'background-image' in raw_sec_name or 'over-background-image' in raw_sec_name or ('background-image' in sec_style and not sec_style.startswith('data:image'))
 
         # Collect unique widgets
         all_widget_nodes = sec.find_all(lambda w: w.has_attr('data-widget-id') or w.has_attr('data-widget-name') or ('ddc-content' in w.get('class', [])))
@@ -3277,38 +3359,84 @@ def extract_sections_and_widgets(soup, url: str = ""):
         sec_widgets = [parse_widget_node(wn) for wn in unique_nodes]
         total_widgets_count += len(sec_widgets)
 
-        # Check for multi-column combined layout (e.g. inventory-search-results combined facets + listing)
+        # Detect layout type and multi-column architecture
+        layout_type = 'standard'
         columns_layout = None
-        combined_c = sec.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['combined', 'two-column', 'split']))
-        if combined_c:
-            facets_c = combined_c.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['facet', 'filter', 'left']))
-            listing_c = combined_c.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['listing', 'result', 'right']))
-            if facets_c and listing_c:
-                facets_w_nodes = [wn for wn in unique_nodes if wn in facets_c.find_all() or wn == facets_c]
-                listing_w_nodes = [wn for wn in unique_nodes if wn in listing_c.find_all() or wn == listing_c]
-                other_w_nodes = [wn for wn in unique_nodes if wn not in facets_w_nodes and wn not in listing_w_nodes]
+        raw_low = raw_sec_name.lower()
 
-                left_title = "ws-inv-facets (Inventory-facets1)"
-                if facets_w_nodes:
-                    left_title = parse_widget_node(facets_w_nodes[0])['display_title']
+        if 'image-right' in raw_low:
+            layout_type = 'image-right'
+            columns_layout = {
+                'layout_type': 'image-right',
+                'left_column': {'type': 'content', 'title': 'Content Column', 'widgets': sec_widgets},
+                'right_column': {'type': 'image', 'title': 'Image Column', 'image_url': sec_image}
+            }
+        elif 'image-left' in raw_low:
+            layout_type = 'image-left'
+            columns_layout = {
+                'layout_type': 'image-left',
+                'left_column': {'type': 'image', 'title': 'Image Column', 'image_url': sec_image},
+                'right_column': {'type': 'content', 'title': 'Content Column', 'widgets': sec_widgets}
+            }
+        elif 'thirds' in raw_low:
+            layout_type = 'thirds'
+            c_first = sec.find(attrs={'data-name': re.compile(r'first')})
+            c_second = sec.find(attrs={'data-name': re.compile(r'second')})
+            c_third = sec.find(attrs={'data-name': re.compile(r'third')})
 
-                right_title = "ws-inv-listing (Inventory-results1)"
-                if listing_w_nodes:
-                    right_title = parse_widget_node(listing_w_nodes[0])['display_title']
+            w_col1 = [parse_widget_node(wn) for wn in unique_nodes if c_first and wn in c_first.find_all()]
+            w_col2 = [parse_widget_node(wn) for wn in unique_nodes if c_second and wn in c_second.find_all()]
+            w_col3 = [parse_widget_node(wn) for wn in unique_nodes if c_third and wn in c_third.find_all()]
 
-                columns_layout = {
-                    'top_widgets': [parse_widget_node(wn) for wn in other_w_nodes],
-                    'left_column': {
-                        'title': left_title,
-                        'name': facets_c.get('data-name', 'facets-column'),
-                        'widgets': [parse_widget_node(wn) for wn in facets_w_nodes]
-                    },
-                    'right_column': {
-                        'title': right_title,
-                        'name': listing_c.get('data-name', 'listing-column'),
-                        'widgets': [parse_widget_node(wn) for wn in listing_w_nodes]
+            if not w_col1 and not w_col2 and not w_col3 and len(sec_widgets) >= 3:
+                w_col1 = [sec_widgets[0]]
+                w_col2 = [sec_widgets[1]]
+                w_col3 = sec_widgets[2:]
+
+            columns_layout = {
+                'layout_type': 'thirds',
+                'columns': [
+                    {'title': 'Content 1 (Left)', 'widgets': w_col1},
+                    {'title': 'Content 2 (Center)', 'widgets': w_col2},
+                    {'title': 'Content 3 (Right)', 'widgets': w_col3}
+                ]
+            }
+        elif 'over-background-image' in raw_low:
+            layout_type = 'over-background-image'
+            has_bg_image = True
+        elif 'inventory-search-results' in raw_low:
+            layout_type = 'inventory-search-results'
+            combined_c = sec.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['combined', 'two-column', 'split']))
+            if combined_c:
+                facets_c = combined_c.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['facet', 'filter', 'left']))
+                listing_c = combined_c.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['listing', 'result', 'right']))
+                if facets_c and listing_c:
+                    facets_w_nodes = [wn for wn in unique_nodes if wn in facets_c.find_all() or wn == facets_c]
+                    listing_w_nodes = [wn for wn in unique_nodes if wn in listing_c.find_all() or wn == listing_c]
+                    other_w_nodes = [wn for wn in unique_nodes if wn not in facets_w_nodes and wn not in listing_w_nodes]
+
+                    left_title = "ws-inv-facets (Inventory-facets1)"
+                    if facets_w_nodes:
+                        left_title = parse_widget_node(facets_w_nodes[0])['display_title']
+
+                    right_title = "ws-inv-listing (Inventory-results1)"
+                    if listing_w_nodes:
+                        right_title = parse_widget_node(listing_w_nodes[0])['display_title']
+
+                    columns_layout = {
+                        'layout_type': 'srp',
+                        'top_widgets': [parse_widget_node(wn) for wn in other_w_nodes],
+                        'left_column': {
+                            'title': left_title,
+                            'name': facets_c.get('data-name', 'facets-column'),
+                            'widgets': [parse_widget_node(wn) for wn in facets_w_nodes]
+                        },
+                        'right_column': {
+                            'title': right_title,
+                            'name': listing_c.get('data-name', 'listing-column'),
+                            'widgets': [parse_widget_node(wn) for wn in listing_w_nodes]
+                        }
                     }
-                }
 
         # Backwards compatible container hierarchy
         containers_tree = [{
@@ -3322,6 +3450,10 @@ def extract_sections_and_widgets(soup, url: str = ""):
             "raw_name": raw_sec_name,
             "name": sec_title,
             "title": sec_title,
+            "is_hidden": is_hidden,
+            "has_bg_image": has_bg_image,
+            "image_url": sec_image,
+            "layout_type": layout_type,
             "total_widgets": len(sec_widgets),
             "widgets_count": len(sec_widgets),
             "widgets": sec_widgets,

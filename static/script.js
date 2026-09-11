@@ -1901,11 +1901,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span style="font-family: monospace; font-size: 0.7rem; color: #64748b;">${escapeHTML(w.id)}</span>
                     </div>
                 `).join('');
+            } else if (sec.is_hidden) {
+                subitemsHtml = `<div style="font-size: 0.72rem; color: #f87171; font-style: italic; padding: 0.3rem 0.5rem;">Section disabled / hidden in template</div>`;
             }
+
+            const hiddenIcon = sec.is_hidden ? `<span title="Hidden from view in page template" style="color: #9ca3af; font-size: 0.85rem; margin-left: 0.3rem;">🚫</span>` : '';
+            const bgIcon = sec.has_bg_image ? `<span title="Contains Background Image" style="font-size: 0.85rem; margin-left: 0.3rem;">🖼️</span>` : '';
+            const badgeText = sec.is_hidden ? 'Hidden' : `${sec.widgets_count || (sec.widgets ? sec.widgets.length : 0)} widgets`;
 
             designerItemsHtml += `
                 <div class="ddc-designer-item" id="designer-item-${secId}">
-                    <div class="ddc-designer-item-header" onclick="
+                    <div class="ddc-designer-item-header ${sec.is_hidden ? 'is-hidden-header' : ''}" onclick="
                         const isExp = this.classList.toggle('expanded');
                         const sl = document.getElementById('designer-sublist-${secId}');
                         if (sl) sl.style.display = isExp ? 'flex' : 'none';
@@ -1919,9 +1925,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="ddc-designer-item-title-group">
                             <span class="ddc-designer-chevron">›</span>
                             <strong>${escapeHTML(sec.title || sec.name)}</strong>
+                            ${hiddenIcon}
+                            ${bgIcon}
                         </div>
                         <div class="ddc-designer-item-meta">
-                            <span class="ddc-designer-item-badge">${sec.widgets_count || (sec.widgets ? sec.widgets.length : 0)} widgets</span>
+                            <span class="ddc-designer-item-badge" style="${sec.is_hidden ? 'color: #fca5a5; background: rgba(239,68,68,0.15);' : ''}">${badgeText}</span>
                             <span class="ddc-designer-drag-handle">☰</span>
                         </div>
                     </div>
@@ -1965,40 +1973,89 @@ document.addEventListener('DOMContentLoaded', () => {
         swData.sections.forEach((sec, sIdx) => {
             const secId = sec.section_id || `section-${sIdx + 1}`;
             let innerContentHtml = '';
+            let sectionExtraClasses = sec.is_hidden ? 'is-hidden' : '';
+            let badgeExtraClass = sec.is_hidden ? 'hidden-badge' : '';
+            let badgeText = sec.is_hidden ? `${sec.title || sec.name} 🚫 (Hidden from View)` : (sec.title || sec.name);
 
-            // If multi-column SRP layout (Facets on left, Listing + Paging + Disclaimer on right - Image 3 & 4)
-            if (sec.columns_layout) {
-                const colLayout = sec.columns_layout;
-                let topWidgetsHtml = '';
-                if (colLayout.top_widgets && colLayout.top_widgets.length > 0) {
-                    topWidgetsHtml = colLayout.top_widgets.map(w => renderWidgetCardHtml(w)).join('');
-                }
-
-                let leftWidgetsHtml = '';
-                if (colLayout.left_column && colLayout.left_column.widgets) {
-                    leftWidgetsHtml = colLayout.left_column.widgets.map(w => renderWidgetCardHtml(w)).join('');
-                }
-
-                let rightWidgetsHtml = '';
-                if (colLayout.right_column && colLayout.right_column.widgets) {
-                    rightWidgetsHtml = colLayout.right_column.widgets.map(w => renderWidgetCardHtml(w)).join('');
-                }
-
+            if (sec.is_hidden) {
                 innerContentHtml = `
-                    <div class="ddc-composer-section-widgets">
-                        ${topWidgetsHtml}
-                        <div class="ddc-columns-container">
-                            <div class="ddc-column-facets">
-                                <span class="ddc-column-label">Left Facets Column</span>
-                                ${leftWidgetsHtml}
-                            </div>
-                            <div class="ddc-column-listing">
-                                <span class="ddc-column-label">Right Listing Column</span>
-                                ${rightWidgetsHtml}
-                            </div>
-                        </div>
+                    <div class="ddc-hidden-notice">
+                        <span>🚫</span>
+                        <span><strong>${escapeHTML(sec.title || sec.name)}</strong>: ${escapeHTML(sec.hidden_reason || 'This section is hidden from view in the Page Designer / template.')}</span>
                     </div>
                 `;
+            } else if (sec.columns_layout) {
+                const colLayout = sec.columns_layout;
+
+                if (colLayout.layout_type === 'image-right') {
+                    // Content on Left, Image on Right (Image 2)
+                    let contentWidgetsHtml = (colLayout.left_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+                    let imgHtml = colLayout.right_column.image_url ? `
+                        <img class="ddc-split-image-preview" src="${escapeHTML(colLayout.right_column.image_url)}" alt="Subaru Preview" />
+                    ` : `<div class="ddc-no-image-placeholder">📷 Image Right Container</div>`;
+
+                    innerContentHtml = `
+                        <div class="ddc-image-split-container">
+                            <div class="ddc-split-content-col">
+                                ${contentWidgetsHtml}
+                            </div>
+                            <div class="ddc-split-image-col">
+                                ${imgHtml}
+                            </div>
+                        </div>
+                    `;
+                } else if (colLayout.layout_type === 'image-left') {
+                    // Image on Left, Content on Right (Image 3)
+                    let imgHtml = colLayout.left_column.image_url ? `
+                        <img class="ddc-split-image-preview" src="${escapeHTML(colLayout.left_column.image_url)}" alt="Subaru Fleet Preview" />
+                    ` : `<div class="ddc-no-image-placeholder">📷 Image Left Container</div>`;
+                    let contentWidgetsHtml = (colLayout.right_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+
+                    innerContentHtml = `
+                        <div class="ddc-image-split-container">
+                            <div class="ddc-split-image-col">
+                                ${imgHtml}
+                            </div>
+                            <div class="ddc-split-content-col">
+                                ${contentWidgetsHtml}
+                            </div>
+                        </div>
+                    `;
+                } else if (colLayout.layout_type === 'thirds') {
+                    // 3 Columns Side-by-Side (Images 4 & 5)
+                    let thirdsColsHtml = (colLayout.columns || []).map(c => `
+                        <div class="ddc-third-col">
+                            ${(c.widgets || []).map(w => renderWidgetCardHtml(w)).join('')}
+                        </div>
+                    `).join('');
+
+                    innerContentHtml = `
+                        <div class="ddc-thirds-container">
+                            ${thirdsColsHtml}
+                        </div>
+                    `;
+                } else {
+                    // Standard SRP multi-column (Facets left, Listing right)
+                    let topWidgetsHtml = (colLayout.top_widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+                    let leftWidgetsHtml = (colLayout.left_column && colLayout.left_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+                    let rightWidgetsHtml = (colLayout.right_column && colLayout.right_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+
+                    innerContentHtml = `
+                        <div class="ddc-composer-section-widgets">
+                            ${topWidgetsHtml}
+                            <div class="ddc-columns-container">
+                                <div class="ddc-column-facets">
+                                    <span class="ddc-column-label">Left Facets Column</span>
+                                    ${leftWidgetsHtml}
+                                </div>
+                                <div class="ddc-column-listing">
+                                    <span class="ddc-column-label">Right Listing Column</span>
+                                    ${rightWidgetsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             } else {
                 // Standard section with sequential widgets
                 let widgetsHtml = '';
@@ -2008,16 +2065,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     widgetsHtml = `<div style="color: var(--text-muted); font-style: italic; padding: 0.5rem;">No widgets detected</div>`;
                 }
 
-                innerContentHtml = `
-                    <div class="ddc-composer-section-widgets">
-                        ${widgetsHtml}
-                    </div>
-                `;
+                if (sec.has_bg_image && sec.image_url) {
+                    innerContentHtml = `
+                        <div class="ddc-bg-image-section" style="background-image: url('${escapeHTML(sec.image_url)}');">
+                            <div class="ddc-bg-image-overlay">
+                                <span class="ddc-bg-indicator-badge">🖼️ Background Image Overlaid</span>
+                                <div class="ddc-composer-section-widgets">
+                                    ${widgetsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    innerContentHtml = `
+                        <div class="ddc-composer-section-widgets">
+                            ${widgetsHtml}
+                        </div>
+                    `;
+                }
             }
 
             sectionsCanvasHtml += `
-                <div class="ddc-composer-section" id="composer-sec-${secId}">
-                    <div class="ddc-composer-section-badge">${escapeHTML(sec.title || sec.name)}</div>
+                <div class="ddc-composer-section ${sectionExtraClasses}" id="composer-sec-${secId}">
+                    <div class="ddc-composer-section-badge ${badgeExtraClass}">${escapeHTML(badgeText)}</div>
                     ${innerContentHtml}
                 </div>
             `;

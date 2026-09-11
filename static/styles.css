@@ -1641,6 +1641,143 @@ h2 .source-badge {
     color: #cbd5e1;
 }
 
+/* Hidden Section Styling (Image 1) */
+.ddc-composer-section.is-hidden {
+    opacity: 0.65;
+    border-style: dotted;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.ddc-composer-section-badge.hidden-badge {
+    background: #451a1a;
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.ddc-hidden-notice {
+    padding: 0.75rem 1rem;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px dashed rgba(239, 68, 68, 0.3);
+    border-radius: 4px;
+    color: #fca5a5;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Image Split Layout (Images 2 & 3: Content w/ Image Right & Left) */
+.ddc-image-split-container {
+    display: flex;
+    gap: 1.2rem;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 850px) {
+    .ddc-image-split-container {
+        flex-direction: column;
+    }
+}
+
+.ddc-split-content-col {
+    flex: 1;
+    min-width: 0;
+    border: 1.5px dashed rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+    padding: 0.8rem;
+    background: rgba(15, 23, 42, 0.25);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.ddc-split-image-col {
+    flex: 1;
+    min-width: 0;
+    border: 1.5px dashed rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 240px;
+    max-height: 380px;
+}
+
+.ddc-split-image-preview {
+    max-width: 100%;
+    max-height: 360px;
+    width: auto;
+    height: auto;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.ddc-no-image-placeholder {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-family: monospace;
+    text-align: center;
+    padding: 2rem;
+}
+
+/* Content Thirds Layout (Images 4 & 5) */
+.ddc-thirds-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 950px) {
+    .ddc-thirds-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ddc-third-col {
+    border: 1.5px dashed rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+    padding: 0.8rem;
+    background: rgba(15, 23, 42, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Over Background Image Section */
+.ddc-bg-image-section {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+}
+
+.ddc-bg-image-overlay {
+    background: linear-gradient(270deg, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.65) 100%);
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.ddc-bg-indicator-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    background: rgba(99, 102, 241, 0.25);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    margin-bottom: 0.6rem;
+}
+
 /* Dynamics 365 Deliverable Auto-Fill Styling */
 .dynamics-import-card {
     background: rgba(30, 41, 59, 0.7);
