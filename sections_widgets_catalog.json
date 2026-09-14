@@ -14107,6 +14107,2742 @@
           }
         ]
       }
+    },
+    "https://www.baldhilldodgechrysler.net/new-ram/1500-inventory-warwick.htm": {
+      "analyzed_at": "2026-09-14T00:27:42.556556",
+      "summary": {
+        "page_path": "/new-ram/1500-inventory-warwick.htm",
+        "page_alias": "SITEBUILDER_RAM_1500_JOHNSTON_RI_2",
+        "total_sections": 10,
+        "total_widgets": 19,
+        "sections": [
+          {
+            "section_id": "slideshow-hidden",
+            "raw_name": "slideshow-hidden",
+            "name": "Slideshow",
+            "title": "Slideshow",
+            "is_hidden": true,
+            "hidden_reason": "Hidden from view in page template",
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": null,
+            "containers": []
+          },
+          {
+            "section_id": "seo-content-hidden",
+            "raw_name": "seo-content-hidden",
+            "name": "Additional SEO Content",
+            "title": "Additional SEO Content",
+            "is_hidden": true,
+            "hidden_reason": "Hidden from view in page template",
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": null,
+            "containers": []
+          },
+          {
+            "section_id": "section-1",
+            "raw_name": "title.1-1-1",
+            "name": "Page Title",
+            "title": "Page Title",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://pictures.dealer.com/b/baldhilldodgechryslercllc/1234/3a0a79e821db4a4d8b3d0702734354e7.jpeg?impolicy=downsize_bkpt&w=1440",
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "page-title2",
+                "widget_name": "content-page-title",
+                "name": "Content Page Title",
+                "display_title": "v9.widgets.content.page-title.a1 (page-title2)",
+                "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:page-title2",
+                "type": "title",
+                "headings": [
+                  {
+                    "tag": "H1",
+                    "text": "New Ram 1500 Trucks For Sale In Warwick, RI Serving Providence, RI and East Providence, RI"
+                  }
+                ],
+                "text_snippet": "New Ram 1500 Trucks For Sale In Warwick, RI Serving Providence, RI and East Providence, RI",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-page-title bg-transparent"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "title.1-1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "page-title2",
+                    "widget_name": "content-page-title",
+                    "name": "Content Page Title",
+                    "display_title": "v9.widgets.content.page-title.a1 (page-title2)",
+                    "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:page-title2",
+                    "type": "title",
+                    "headings": [
+                      {
+                        "tag": "H1",
+                        "text": "New Ram 1500 Trucks For Sale In Warwick, RI Serving Providence, RI and East Providence, RI"
+                      }
+                    ],
+                    "text_snippet": "New Ram 1500 Trucks For Sale In Warwick, RI Serving Providence, RI and East Providence, RI",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-page-title bg-transparent"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "raw_name": "content-centered.1-4",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 2,
+            "widgets_count": 2,
+            "widgets": [
+              {
+                "id": "content10",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content10)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H2",
+                    "text": "2026 Ram 1500 for Sale in Warwick, RI"
+                  }
+                ],
+                "text_snippet": "2026 Ram 1500 for Sale in Warwick, RI Discover the powerful 2026 Ram 1500 at Bald Hill Dodge Chrysler Jeep Ram, your premier truck destination serving Warwick, Providence, and all points in between. This exceptional full-size pickup combines legendary capability with cutting-edge",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-default"
+              },
+              {
+                "id": "links2",
+                "widget_name": "links-list",
+                "name": "Links List",
+                "display_title": "Quick Links (links2)",
+                "subtext": "Navigation Links (3 links)",
+                "type": "navigation",
+                "headings": [],
+                "text_snippet": "View Inventory New Specials Finance Application",
+                "has_content": true,
+                "links_count": 3,
+                "classes": "links-list ddc-content"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-4",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content10",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content10)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H2",
+                        "text": "2026 Ram 1500 for Sale in Warwick, RI"
+                      }
+                    ],
+                    "text_snippet": "2026 Ram 1500 for Sale in Warwick, RI Discover the powerful 2026 Ram 1500 at Bald Hill Dodge Chrysler Jeep Ram, your premier truck destination serving Warwick, Providence, and all points in between. This exceptional full-size pickup combines legendary capability with cutting-edge",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-default"
+                  },
+                  {
+                    "id": "links2",
+                    "widget_name": "links-list",
+                    "name": "Links List",
+                    "display_title": "Quick Links (links2)",
+                    "subtext": "Navigation Links (3 links)",
+                    "type": "navigation",
+                    "headings": [],
+                    "text_snippet": "View Inventory New Specials Finance Application",
+                    "has_content": true,
+                    "links_count": 3,
+                    "classes": "links-list ddc-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "raw_name": "content-background-image-left.1-1",
+            "name": "Content w/ Image Left",
+            "title": "Content w/ Image Left",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://pictures.dealer.com/b/baldhilldodgechryslercllc/1234/55382abe69484d43a21ea81a853d0b39.jpeg?impolicy=downsize_bkpt&w=1440",
+            "layout_type": "image-left",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content4",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content4)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H2",
+                    "text": "Available Trims"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Tradesman"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Big Horn/Lone star"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Rebel"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Laramie"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Limited & Limited Longhorn"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Tungsten & RHO"
+                  }
+                ],
+                "text_snippet": "Available Trims The Ram 1500 features\u00a0 11 distinct trims for Cranston, RI area drivers to pick from: Tradesman Heavy Duty Vinyl seating built for durability 8.4-inch Uconnect5 display Class IV towing equipment Big Horn/Lone star Cloth bucket seats with full carpet flooring Front ",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "p-10 m-0 ddc-content content-default"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "image-left",
+              "left_column": {
+                "type": "image",
+                "title": "Image Column",
+                "image_url": "https://pictures.dealer.com/b/baldhilldodgechryslercllc/1234/55382abe69484d43a21ea81a853d0b39.jpeg?impolicy=downsize_bkpt&w=1440"
+              },
+              "right_column": {
+                "type": "content",
+                "title": "Content Column",
+                "widgets": [
+                  {
+                    "id": "content4",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content4)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H2",
+                        "text": "Available Trims"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Tradesman"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Big Horn/Lone star"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Rebel"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Laramie"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Limited & Limited Longhorn"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Tungsten & RHO"
+                      }
+                    ],
+                    "text_snippet": "Available Trims The Ram 1500 features\u00a0 11 distinct trims for Cranston, RI area drivers to pick from: Tradesman Heavy Duty Vinyl seating built for durability 8.4-inch Uconnect5 display Class IV towing equipment Big Horn/Lone star Cloth bucket seats with full carpet flooring Front ",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            },
+            "containers": [
+              {
+                "name": "content-background-image-left.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content4",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content4)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H2",
+                        "text": "Available Trims"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Tradesman"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Big Horn/Lone star"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Rebel"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Laramie"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Limited & Limited Longhorn"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Tungsten & RHO"
+                      }
+                    ],
+                    "text_snippet": "Available Trims The Ram 1500 features\u00a0 11 distinct trims for Cranston, RI area drivers to pick from: Tradesman Heavy Duty Vinyl seating built for durability 8.4-inch Uconnect5 display Class IV towing equipment Big Horn/Lone star Cloth bucket seats with full carpet flooring Front ",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "raw_name": "content-fifty-fifty.1-1",
+            "name": "Content Fifty Fifty",
+            "title": "Content Fifty Fifty",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 2,
+            "widgets_count": 2,
+            "widgets": [
+              {
+                "id": "content11",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content11)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H2",
+                    "text": "Performance & Towing"
+                  }
+                ],
+                "text_snippet": "Performance & Towing The 2026 Ram 1500 delivers outstanding performance with three advanced powertrain options. The available 3.0-liter Hurricane Twin Turbocharged I-6 engine produces up to 540 horsepower, while the proven 5.7-liter V8 HEMI eTorque delivers 395 horsepower with en",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-default"
+              },
+              {
+                "id": "content12",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content12)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H2",
+                    "text": "Interior & Technology"
+                  }
+                ],
+                "text_snippet": "Interior & Technology Step inside the 2026 Ram 1500 to experience premium comfort and connectivity. The available UConnect5 system features up to a 14.4-inch touchscreen display with integrated navigation, Apple CarPlay, and Android Auto. Audiophiles in Johnston will love the the",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-fifty-fifty.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content11",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content11)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H2",
+                        "text": "Performance & Towing"
+                      }
+                    ],
+                    "text_snippet": "Performance & Towing The 2026 Ram 1500 delivers outstanding performance with three advanced powertrain options. The available 3.0-liter Hurricane Twin Turbocharged I-6 engine produces up to 540 horsepower, while the proven 5.7-liter V8 HEMI eTorque delivers 395 horsepower with en",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-default"
+                  },
+                  {
+                    "id": "content12",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content12)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H2",
+                        "text": "Interior & Technology"
+                      }
+                    ],
+                    "text_snippet": "Interior & Technology Step inside the 2026 Ram 1500 to experience premium comfort and connectivity. The available UConnect5 system features up to a 14.4-inch touchscreen display with integrated navigation, Apple CarPlay, and Android Auto. Audiophiles in Johnston will love the the",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-5",
+            "raw_name": "content-centered.1-5",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content13",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content13)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": ". Visit Bald Hill Dodge Chrysler Jeep Ram at 1035 Bald Hill Road in Warwick to explore the remarkable 2026 Ram 1500 lineup and take a test drive today.",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-5",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content13",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content13)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": ". Visit Bald Hill Dodge Chrysler Jeep Ram at 1035 Bald Hill Road in Warwick to explore the remarkable 2026 Ram 1500 lineup and take a test drive today.",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-6",
+            "raw_name": "inventory-search-results.1-1-1",
+            "name": "Inventory Search Results",
+            "title": "Inventory Search Results",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "inventory-search-results",
+            "total_widgets": 8,
+            "widgets_count": 8,
+            "widgets": [
+              {
+                "id": "inventory-data-bus3",
+                "widget_name": "inventory-listing-ws-inv-data-service",
+                "name": "Inventory Listing Inv Data Service",
+                "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus3)",
+                "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-data-bus3",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+              },
+              {
+                "id": "inventory-data-bus4",
+                "widget_name": "ws-inv-data",
+                "name": "Inv Data",
+                "display_title": "ws-inv-data (Inventory-data-bus4)",
+                "subtext": "ws-inv-data - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-data-bus4",
+                "type": "data-bus",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-data spacing-reset d-none"
+              },
+              {
+                "id": "inventory-search2",
+                "widget_name": "ws-inv-text-search",
+                "name": "Inv Text Search",
+                "display_title": "ws-inv-text-search (Inventory-search2)",
+                "subtext": "ws-inv-text-search - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-search2",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+              },
+              {
+                "id": "inventory-filters2",
+                "widget_name": "ws-inv-filters",
+                "name": "Inv Filters",
+                "display_title": "ws-inv-filters (Inventory-filters2)",
+                "subtext": "ws-inv-filters - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-filters2",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+              },
+              {
+                "id": "inventory-facets2",
+                "widget_name": "ws-inv-facets",
+                "name": "Inv Facets",
+                "display_title": "ws-inv-facets (Inventory-facets2)",
+                "subtext": "ws-inv-facets - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-facets2",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-facets"
+              },
+              {
+                "id": "inventory-results2",
+                "widget_name": "ws-inv-listing",
+                "name": "Inv Listing",
+                "display_title": "ws-inv-listing (Inventory-results2)",
+                "subtext": "ws-inv-listing - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-results2",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "More Details",
+                "has_content": false,
+                "links_count": 1,
+                "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+              },
+              {
+                "id": "inventory-paging2",
+                "widget_name": "ws-inv-paging",
+                "name": "Inv Paging",
+                "display_title": "ws-inv-paging (Inventory-paging2)",
+                "subtext": "ws-inv-paging - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-paging2",
+                "type": "paging",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-paging"
+              },
+              {
+                "id": "disclaimer3",
+                "widget_name": "content-disclaimer",
+                "name": "Content Disclaimer",
+                "display_title": "Disclaimer (disclaimer3)",
+                "subtext": "Widget for dynamically pulling in disclaimer text.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "* The advertised price does not include sales tax, vehicle registration fees, other fees required by law, finance charges. Dealer documentation fee of $395 is additional. A negotiable administration fee, up to $115, may be added to the price of the vehicle. * Images, prices, and ",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "srp",
+              "top_widgets": [
+                {
+                  "id": "inventory-data-bus3",
+                  "widget_name": "inventory-listing-ws-inv-data-service",
+                  "name": "Inventory Listing Inv Data Service",
+                  "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus3)",
+                  "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-data-bus3",
+                  "type": "listing",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                },
+                {
+                  "id": "inventory-data-bus4",
+                  "widget_name": "ws-inv-data",
+                  "name": "Inv Data",
+                  "display_title": "ws-inv-data (Inventory-data-bus4)",
+                  "subtext": "ws-inv-data - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-data-bus4",
+                  "type": "data-bus",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                },
+                {
+                  "id": "inventory-search2",
+                  "widget_name": "ws-inv-text-search",
+                  "name": "Inv Text Search",
+                  "display_title": "ws-inv-text-search (Inventory-search2)",
+                  "subtext": "ws-inv-text-search - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-search2",
+                  "type": "content",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                },
+                {
+                  "id": "inventory-filters2",
+                  "widget_name": "ws-inv-filters",
+                  "name": "Inv Filters",
+                  "display_title": "ws-inv-filters (Inventory-filters2)",
+                  "subtext": "ws-inv-filters - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-filters2",
+                  "type": "filters",
+                  "headings": [],
+                  "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                  "has_content": true,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                }
+              ],
+              "left_column": {
+                "title": "ws-inv-facets (Inventory-facets2)",
+                "name": "inventory-search-results-facets-1-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets2",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets2)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-facets2",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  }
+                ]
+              },
+              "right_column": {
+                "title": "ws-inv-facets (Inventory-facets2)",
+                "name": "inventory-search-results-combined-inner-1-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets2",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets2)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-facets2",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "inventory-results2",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results2)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-results2",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "More Details",
+                    "has_content": false,
+                    "links_count": 1,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging2",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging2)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-paging2",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer3",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer3)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "* The advertised price does not include sales tax, vehicle registration fees, other fees required by law, finance charges. Dealer documentation fee of $395 is additional. A negotiable administration fee, up to $115, may be added to the price of the vehicle. * Images, prices, and ",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            },
+            "containers": [
+              {
+                "name": "inventory-search-results.1-1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "inventory-data-bus3",
+                    "widget_name": "inventory-listing-ws-inv-data-service",
+                    "name": "Inventory Listing Inv Data Service",
+                    "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus3)",
+                    "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-data-bus3",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                  },
+                  {
+                    "id": "inventory-data-bus4",
+                    "widget_name": "ws-inv-data",
+                    "name": "Inv Data",
+                    "display_title": "ws-inv-data (Inventory-data-bus4)",
+                    "subtext": "ws-inv-data - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-data-bus4",
+                    "type": "data-bus",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                  },
+                  {
+                    "id": "inventory-search2",
+                    "widget_name": "ws-inv-text-search",
+                    "name": "Inv Text Search",
+                    "display_title": "ws-inv-text-search (Inventory-search2)",
+                    "subtext": "ws-inv-text-search - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-search2",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                  },
+                  {
+                    "id": "inventory-filters2",
+                    "widget_name": "ws-inv-filters",
+                    "name": "Inv Filters",
+                    "display_title": "ws-inv-filters (Inventory-filters2)",
+                    "subtext": "ws-inv-filters - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-filters2",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                  },
+                  {
+                    "id": "inventory-facets2",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets2)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-facets2",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "inventory-results2",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results2)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-results2",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "More Details",
+                    "has_content": false,
+                    "links_count": 1,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging2",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging2)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_RAM_1500_JOHNSTON_RI_2:inventory-paging2",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer3",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer3)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "* The advertised price does not include sales tax, vehicle registration fees, other fees required by law, finance charges. Dealer documentation fee of $395 is additional. A negotiable administration fee, up to $115, may be added to the price of the vehicle. * Images, prices, and ",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-7",
+            "raw_name": "form-centered.1-1",
+            "name": "Form Centered",
+            "title": "Form Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "contact3",
+                "widget_name": "contact-form",
+                "name": "Contact Form",
+                "display_title": "Contact Info (contact3)",
+                "subtext": "Dealership contact information",
+                "type": "contact",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "How can we help?"
+                  }
+                ],
+                "text_snippet": "How can we help? * Indicates a required field First Name * Last Name * Contact Me by * Email Phone Email Phone Zip Code * Comments Submit By submitting your contact information, you consent to be contacted by telephone and/or email.",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "contact-form ddc-content"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "form-centered.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "contact3",
+                    "widget_name": "contact-form",
+                    "name": "Contact Form",
+                    "display_title": "Contact Info (contact3)",
+                    "subtext": "Dealership contact information",
+                    "type": "contact",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "How can we help?"
+                      }
+                    ],
+                    "text_snippet": "How can we help? * Indicates a required field First Name * Last Name * Contact Me by * Email Phone Email Phone Zip Code * Comments Submit By submitting your contact information, you consent to be contacted by telephone and/or email.",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "contact-form ddc-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-8",
+            "raw_name": "map-hours.2-1",
+            "name": "Contact and Map",
+            "title": "Contact and Map",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 3,
+            "widgets_count": 3,
+            "widgets": [
+              {
+                "id": "map1",
+                "widget_name": "map-dynamic",
+                "name": "Map Dynamic",
+                "display_title": "Dynamic Map (map1)",
+                "subtext": "Google Maps dealership location",
+                "type": "map",
+                "headings": [],
+                "text_snippet": "Bald Hill Dodge Chrysler Jeep Ram 1035 Bald Hill Rd Warwick , RI 02886-0723 Sales : (401) 828-3700 Visit us at:  1035 Bald Hill Rd Warwick, RI 02886-0723 Loading Map...",
+                "has_content": true,
+                "links_count": 1,
+                "classes": "map-dynamic ddc-content"
+              },
+              {
+                "id": "contact4",
+                "widget_name": "contact-info",
+                "name": "Contact Info",
+                "display_title": "Contact Info (contact4)",
+                "subtext": "Dealership contact information",
+                "type": "contact",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Get in Touch"
+                  }
+                ],
+                "text_snippet": "Get in Touch Contact our Sales Department at : (401) 828-3700",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content text-center contact-info"
+              },
+              {
+                "id": "hours2",
+                "widget_name": "ws-hours",
+                "name": "Hours",
+                "display_title": "Dealership Hours (hours2)",
+                "subtext": "Operating hours schedule",
+                "type": "hours",
+                "headings": [],
+                "text_snippet": "Monday 09:00AM - 07:00PM Tuesday 09:00AM - 07:00PM Wednesday 09:00AM - 07:00PM Thursday 09:00AM - 07:00PM Friday 09:00AM - 06:00PM Saturday 09:00AM - 05:00PM Sunday Closed See All Department Hours",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content ws-hours"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "map-hours.2-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "map1",
+                    "widget_name": "map-dynamic",
+                    "name": "Map Dynamic",
+                    "display_title": "Dynamic Map (map1)",
+                    "subtext": "Google Maps dealership location",
+                    "type": "map",
+                    "headings": [],
+                    "text_snippet": "Bald Hill Dodge Chrysler Jeep Ram 1035 Bald Hill Rd Warwick , RI 02886-0723 Sales : (401) 828-3700 Visit us at:  1035 Bald Hill Rd Warwick, RI 02886-0723 Loading Map...",
+                    "has_content": true,
+                    "links_count": 1,
+                    "classes": "map-dynamic ddc-content"
+                  },
+                  {
+                    "id": "contact4",
+                    "widget_name": "contact-info",
+                    "name": "Contact Info",
+                    "display_title": "Contact Info (contact4)",
+                    "subtext": "Dealership contact information",
+                    "type": "contact",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Get in Touch"
+                      }
+                    ],
+                    "text_snippet": "Get in Touch Contact our Sales Department at : (401) 828-3700",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content text-center contact-info"
+                  },
+                  {
+                    "id": "hours2",
+                    "widget_name": "ws-hours",
+                    "name": "Hours",
+                    "display_title": "Dealership Hours (hours2)",
+                    "subtext": "Operating hours schedule",
+                    "type": "hours",
+                    "headings": [],
+                    "text_snippet": "Monday 09:00AM - 07:00PM Tuesday 09:00AM - 07:00PM Wednesday 09:00AM - 07:00PM Thursday 09:00AM - 07:00PM Friday 09:00AM - 06:00PM Saturday 09:00AM - 05:00PM Sunday Closed See All Department Hours",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-hours"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "https://www.sheabuickgmc.com/bargain-inventory/index.htm": {
+      "analyzed_at": "2026-09-14T10:57:06.091134",
+      "summary": {
+        "page_path": "/bargain-inventory/index.htm",
+        "page_alias": "SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1",
+        "total_sections": 19,
+        "total_widgets": 28,
+        "sections": [
+          {
+            "section_id": "page-title-hidden",
+            "raw_name": "page-title-hidden",
+            "name": "Page Title",
+            "title": "Page Title",
+            "is_hidden": true,
+            "hidden_reason": "Hidden from view in page template",
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": null,
+            "containers": []
+          },
+          {
+            "section_id": "slideshow-hidden",
+            "raw_name": "slideshow-hidden",
+            "name": "Slideshow",
+            "title": "Slideshow",
+            "is_hidden": true,
+            "hidden_reason": "Hidden from view in page template",
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": null,
+            "containers": []
+          },
+          {
+            "section_id": "seo-content-hidden",
+            "raw_name": "seo-content-hidden",
+            "name": "Additional SEO Content",
+            "title": "Additional SEO Content",
+            "is_hidden": true,
+            "hidden_reason": "Hidden from view in page template",
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": null,
+            "containers": []
+          },
+          {
+            "section_id": "section-1",
+            "raw_name": "background-page-title.1-1",
+            "name": "Background Page Title",
+            "title": "Background Page Title",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/2023/_Lineups/2023-GMC-Lineups-L01.jpg?id=380788c1-57ff-41c8-822b-2bb7c5b62e28?impolicy=downsize_bkpt&w=1440",
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "page-title2",
+                "widget_name": "content-page-title",
+                "name": "Content Page Title",
+                "display_title": "v9.widgets.content.page-title.a1 (page-title2)",
+                "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:page-title2",
+                "type": "title",
+                "headings": [
+                  {
+                    "tag": "H1",
+                    "text": "BARGAIN INVENTORY AT SHEA BUICK GMC"
+                  }
+                ],
+                "text_snippet": "BARGAIN INVENTORY AT SHEA BUICK GMC",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-page-title bg-transparent"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "background-page-title.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "page-title2",
+                    "widget_name": "content-page-title",
+                    "name": "Content Page Title",
+                    "display_title": "v9.widgets.content.page-title.a1 (page-title2)",
+                    "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:page-title2",
+                    "type": "title",
+                    "headings": [
+                      {
+                        "tag": "H1",
+                        "text": "BARGAIN INVENTORY AT SHEA BUICK GMC"
+                      }
+                    ],
+                    "text_snippet": "BARGAIN INVENTORY AT SHEA BUICK GMC",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-page-title bg-transparent"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "raw_name": "content-centered.1-1",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 2,
+            "widgets_count": 2,
+            "widgets": [
+              {
+                "id": "links1",
+                "widget_name": "links-list",
+                "name": "Links List",
+                "display_title": "Quick Links (links1)",
+                "subtext": "Navigation Links (3 links)",
+                "type": "navigation",
+                "headings": [],
+                "text_snippet": "View Inventory Finance Center Take a Test Drive",
+                "has_content": true,
+                "links_count": 3,
+                "classes": "links-list ddc-content"
+              },
+              {
+                "id": "content1",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content1)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H2",
+                    "text": "Discover Our Quality Bargain Inventory at Shea Buick GMC in Flint"
+                  }
+                ],
+                "text_snippet": "Discover Our Quality Bargain Inventory at Shea Buick GMC in Flint Finding a reliable vehicle on a budget is easier than you think. Shea Buick GMC offers an impressive selection of bargain-priced used vehicles here in Flint. Our selection includes small sedans, hatchbacks, and com",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "links1",
+                    "widget_name": "links-list",
+                    "name": "Links List",
+                    "display_title": "Quick Links (links1)",
+                    "subtext": "Navigation Links (3 links)",
+                    "type": "navigation",
+                    "headings": [],
+                    "text_snippet": "View Inventory Finance Center Take a Test Drive",
+                    "has_content": true,
+                    "links_count": 3,
+                    "classes": "links-list ddc-content"
+                  },
+                  {
+                    "id": "content1",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content1)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H2",
+                        "text": "Discover Our Quality Bargain Inventory at Shea Buick GMC in Flint"
+                      }
+                    ],
+                    "text_snippet": "Discover Our Quality Bargain Inventory at Shea Buick GMC in Flint Finding a reliable vehicle on a budget is easier than you think. Shea Buick GMC offers an impressive selection of bargain-priced used vehicles here in Flint. Our selection includes small sedans, hatchbacks, and com",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "raw_name": "inventory-search-results-ws-specials.1-1",
+            "name": "Inventory Search Results Ws Specials",
+            "title": "Inventory Search Results Ws Specials",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "inventory-search-results",
+            "total_widgets": 10,
+            "widgets_count": 10,
+            "widgets": [
+              {
+                "id": "inventory-data-bus1",
+                "widget_name": "inventory-listing-ws-inv-data-service",
+                "name": "Inventory Listing Inv Data Service",
+                "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-data-bus1",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+              },
+              {
+                "id": "inventory-data-bus2",
+                "widget_name": "ws-inv-data",
+                "name": "Inv Data",
+                "display_title": "ws-inv-data (Inventory-data-bus2)",
+                "subtext": "ws-inv-data - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-data-bus2",
+                "type": "data-bus",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-data spacing-reset d-none"
+              },
+              {
+                "id": "placeholder1",
+                "widget_name": "ws-tps-placeholder",
+                "name": "Tps Placeholder",
+                "display_title": "Third Party API Placement (placeholder1)",
+                "subtext": "Third Party API Placement (placeholder1)",
+                "type": "placeholder",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-tps-placeholder p-5 hide"
+              },
+              {
+                "id": "inventory-search1",
+                "widget_name": "ws-inv-text-search",
+                "name": "Inv Text Search",
+                "display_title": "ws-inv-text-search (Inventory-search1)",
+                "subtext": "ws-inv-text-search - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-search1",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+              },
+              {
+                "id": "inventory-filters1",
+                "widget_name": "ws-inv-filters",
+                "name": "Inv Filters",
+                "display_title": "ws-inv-filters (Inventory-filters1)",
+                "subtext": "ws-inv-filters - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-filters1",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+              },
+              {
+                "id": "inventory-facets1",
+                "widget_name": "ws-inv-facets",
+                "name": "Inv Facets",
+                "display_title": "ws-inv-facets (Inventory-facets1)",
+                "subtext": "ws-inv-facets - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-facets1",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-facets"
+              },
+              {
+                "id": "specials1",
+                "widget_name": "ws-specials",
+                "name": "Specials",
+                "display_title": "ws-specials (specials1)",
+                "subtext": "ws-specials - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:specials1",
+                "type": "general",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-specials pb-4 px-0 m-0"
+              },
+              {
+                "id": "inventory-results1",
+                "widget_name": "ws-inv-listing",
+                "name": "Inv Listing",
+                "display_title": "ws-inv-listing (Inventory-results1)",
+                "subtext": "ws-inv-listing - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-results1",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+              },
+              {
+                "id": "inventory-paging1",
+                "widget_name": "ws-inv-paging",
+                "name": "Inv Paging",
+                "display_title": "ws-inv-paging (Inventory-paging1)",
+                "subtext": "ws-inv-paging - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-paging1",
+                "type": "paging",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-paging"
+              },
+              {
+                "id": "disclaimer1",
+                "widget_name": "content-disclaimer",
+                "name": "Content Disclaimer",
+                "display_title": "Disclaimer (disclaimer1)",
+                "subtext": "Widget for dynamically pulling in disclaimer text.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "Disclaimer:\nThe Manufacturer\u2019s Suggested Retail Price excludes tax, title, license, dealer fees and optional equipment. Dealer sets final price. 1 Dealer Discount applied to everyone",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "srp",
+              "top_widgets": [
+                {
+                  "id": "inventory-data-bus1",
+                  "widget_name": "inventory-listing-ws-inv-data-service",
+                  "name": "Inventory Listing Inv Data Service",
+                  "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                  "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-data-bus1",
+                  "type": "listing",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                },
+                {
+                  "id": "inventory-data-bus2",
+                  "widget_name": "ws-inv-data",
+                  "name": "Inv Data",
+                  "display_title": "ws-inv-data (Inventory-data-bus2)",
+                  "subtext": "ws-inv-data - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-data-bus2",
+                  "type": "data-bus",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                },
+                {
+                  "id": "placeholder1",
+                  "widget_name": "ws-tps-placeholder",
+                  "name": "Tps Placeholder",
+                  "display_title": "Third Party API Placement (placeholder1)",
+                  "subtext": "Third Party API Placement (placeholder1)",
+                  "type": "placeholder",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                },
+                {
+                  "id": "inventory-search1",
+                  "widget_name": "ws-inv-text-search",
+                  "name": "Inv Text Search",
+                  "display_title": "ws-inv-text-search (Inventory-search1)",
+                  "subtext": "ws-inv-text-search - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-search1",
+                  "type": "content",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                },
+                {
+                  "id": "inventory-filters1",
+                  "widget_name": "ws-inv-filters",
+                  "name": "Inv Filters",
+                  "display_title": "ws-inv-filters (Inventory-filters1)",
+                  "subtext": "ws-inv-filters - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-filters1",
+                  "type": "filters",
+                  "headings": [],
+                  "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                  "has_content": true,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                }
+              ],
+              "left_column": {
+                "title": "ws-inv-facets (Inventory-facets1)",
+                "name": "inventory-search-results-facets-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  }
+                ]
+              },
+              "right_column": {
+                "title": "ws-inv-facets (Inventory-facets1)",
+                "name": "inventory-search-results-combined-inner-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "specials1",
+                    "widget_name": "ws-specials",
+                    "name": "Specials",
+                    "display_title": "ws-specials (specials1)",
+                    "subtext": "ws-specials - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:specials1",
+                    "type": "general",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-specials pb-4 px-0 m-0"
+                  },
+                  {
+                    "id": "inventory-results1",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results1)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-results1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging1",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging1)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-paging1",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer1",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer1)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Disclaimer:\nThe Manufacturer\u2019s Suggested Retail Price excludes tax, title, license, dealer fees and optional equipment. Dealer sets final price. 1 Dealer Discount applied to everyone",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            },
+            "containers": [
+              {
+                "name": "inventory-search-results-ws-specials.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "inventory-data-bus1",
+                    "widget_name": "inventory-listing-ws-inv-data-service",
+                    "name": "Inventory Listing Inv Data Service",
+                    "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                    "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-data-bus1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                  },
+                  {
+                    "id": "inventory-data-bus2",
+                    "widget_name": "ws-inv-data",
+                    "name": "Inv Data",
+                    "display_title": "ws-inv-data (Inventory-data-bus2)",
+                    "subtext": "ws-inv-data - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-data-bus2",
+                    "type": "data-bus",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                  },
+                  {
+                    "id": "placeholder1",
+                    "widget_name": "ws-tps-placeholder",
+                    "name": "Tps Placeholder",
+                    "display_title": "Third Party API Placement (placeholder1)",
+                    "subtext": "Third Party API Placement (placeholder1)",
+                    "type": "placeholder",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                  },
+                  {
+                    "id": "inventory-search1",
+                    "widget_name": "ws-inv-text-search",
+                    "name": "Inv Text Search",
+                    "display_title": "ws-inv-text-search (Inventory-search1)",
+                    "subtext": "ws-inv-text-search - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-search1",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                  },
+                  {
+                    "id": "inventory-filters1",
+                    "widget_name": "ws-inv-filters",
+                    "name": "Inv Filters",
+                    "display_title": "ws-inv-filters (Inventory-filters1)",
+                    "subtext": "ws-inv-filters - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-filters1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                  },
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "specials1",
+                    "widget_name": "ws-specials",
+                    "name": "Specials",
+                    "display_title": "ws-specials (specials1)",
+                    "subtext": "ws-specials - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:specials1",
+                    "type": "general",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-specials pb-4 px-0 m-0"
+                  },
+                  {
+                    "id": "inventory-results1",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results1)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-results1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging1",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging1)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_BARGAIN_INVENTORY_AT_SHEA_BUICK_GMC_1:inventory-paging1",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer1",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer1)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Disclaimer:\nThe Manufacturer\u2019s Suggested Retail Price excludes tax, title, license, dealer fees and optional equipment. Dealer sets final price. 1 Dealer Discount applied to everyone",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "raw_name": "content-centered.1-2",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content3",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content3)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Why Choose Bargain Inventory?"
+                  }
+                ],
+                "text_snippet": "Why Choose Bargain Inventory?",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-2",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content3",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content3)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Why Choose Bargain Inventory?"
+                      }
+                    ],
+                    "text_snippet": "Why Choose Bargain Inventory?",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-5",
+            "raw_name": "content-centered.1-3",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content4",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content4)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "Smart shoppers know the value of pre-owned vehicles. Buying used allows you to get more features for your budget. You avoid the steep depreciation that comes with brand-new purchases. Plus, today's vehicles are built to last longer than ever before. Our bargain inventory is perfe",
+                "has_content": true,
+                "links_count": 1,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-3",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content4",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content4)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Smart shoppers know the value of pre-owned vehicles. Buying used allows you to get more features for your budget. You avoid the steep depreciation that comes with brand-new purchases. Plus, today's vehicles are built to last longer than ever before. Our bargain inventory is perfe",
+                    "has_content": true,
+                    "links_count": 1,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-6",
+            "raw_name": "content-background-image-left.1-1",
+            "name": "Content w/ Image Left",
+            "title": "Content w/ Image Left",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/2023/Terrain/SLT/SUV/2023-GMC-Terrain-SLT-SUV-L01.jpg?id=d70a2214-f4a4-47d6-b103-22175a6b0ef0",
+            "layout_type": "image-left",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content5",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content5)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Types of Vehicles in Our Bargain Selection"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "Small Sedans"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "Hatchbacks"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "Compact SUVs"
+                  }
+                ],
+                "text_snippet": "Types of Vehicles in Our Bargain Selection Our bargain inventory features a wide variety of vehicle types. We focus on practical, reliable options that serve everyday needs. Small Sedans Compact sedans are perfect for daily commuting. They offer excellent fuel economy. These vehi",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "p-10 m-0 ddc-content content-default"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "image-left",
+              "left_column": {
+                "type": "image",
+                "title": "Image Column",
+                "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/2023/Terrain/SLT/SUV/2023-GMC-Terrain-SLT-SUV-L01.jpg?id=d70a2214-f4a4-47d6-b103-22175a6b0ef0"
+              },
+              "right_column": {
+                "type": "content",
+                "title": "Content Column",
+                "widgets": [
+                  {
+                    "id": "content5",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content5)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Types of Vehicles in Our Bargain Selection"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Small Sedans"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Hatchbacks"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Compact SUVs"
+                      }
+                    ],
+                    "text_snippet": "Types of Vehicles in Our Bargain Selection Our bargain inventory features a wide variety of vehicle types. We focus on practical, reliable options that serve everyday needs. Small Sedans Compact sedans are perfect for daily commuting. They offer excellent fuel economy. These vehi",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            },
+            "containers": [
+              {
+                "name": "content-background-image-left.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content5",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content5)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Types of Vehicles in Our Bargain Selection"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Small Sedans"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Hatchbacks"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Compact SUVs"
+                      }
+                    ],
+                    "text_snippet": "Types of Vehicles in Our Bargain Selection Our bargain inventory features a wide variety of vehicle types. We focus on practical, reliable options that serve everyday needs. Small Sedans Compact sedans are perfect for daily commuting. They offer excellent fuel economy. These vehi",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-7",
+            "raw_name": "content-background-image-right.1-1",
+            "name": "Content w/ Image Right",
+            "title": "Content w/ Image Right",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/Chevrolet/2024/Malibu/RS/Sedan/2024-Chevrolet-Malibu-RS-Sedan-L03.jpg?id=9029c963-fe33-4c29-a7e4-8d6246953a76",
+            "layout_type": "image-right",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content6",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content6)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Multiple Brands to Choose From"
+                  }
+                ],
+                "text_snippet": "Multiple Brands to Choose From Unlike some dealerships, we stock used vehicles from many manufacturers. This variety gives you more options. You can compare different brands side by side. Our team helps you find the right fit for your lifestyle. Benefits of our multi-brand select",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "p-10 m-0 ddc-content content-default"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "image-right",
+              "left_column": {
+                "type": "content",
+                "title": "Content Column",
+                "widgets": [
+                  {
+                    "id": "content6",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content6)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Multiple Brands to Choose From"
+                      }
+                    ],
+                    "text_snippet": "Multiple Brands to Choose From Unlike some dealerships, we stock used vehicles from many manufacturers. This variety gives you more options. You can compare different brands side by side. Our team helps you find the right fit for your lifestyle. Benefits of our multi-brand select",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              },
+              "right_column": {
+                "type": "image",
+                "title": "Image Column",
+                "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/Chevrolet/2024/Malibu/RS/Sedan/2024-Chevrolet-Malibu-RS-Sedan-L03.jpg?id=9029c963-fe33-4c29-a7e4-8d6246953a76"
+              }
+            },
+            "containers": [
+              {
+                "name": "content-background-image-right.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content6",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content6)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Multiple Brands to Choose From"
+                      }
+                    ],
+                    "text_snippet": "Multiple Brands to Choose From Unlike some dealerships, we stock used vehicles from many manufacturers. This variety gives you more options. You can compare different brands side by side. Our team helps you find the right fit for your lifestyle. Benefits of our multi-brand select",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-8",
+            "raw_name": "content-background-image-left.1-1-1",
+            "name": "Content w/ Image Left",
+            "title": "Content w/ Image Left",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/_Fixed Ops/Service/GMC-Service-04.jpg?id=9d7755e1-53d2-4cd5-ae02-31f359a15567",
+            "layout_type": "image-left",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content7",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content7)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Quality You Can Trust"
+                  }
+                ],
+                "text_snippet": "Quality You Can Trust Every vehicle in our bargain inventory undergoes a thorough inspection. Our trained technicians examine each car carefully. We check mechanical components, safety features, and overall condition. You can shop with confidence knowing our standards are high. O",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "p-10 m-0 ddc-content content-default"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "image-left",
+              "left_column": {
+                "type": "image",
+                "title": "Image Column",
+                "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/_Fixed Ops/Service/GMC-Service-04.jpg?id=9d7755e1-53d2-4cd5-ae02-31f359a15567"
+              },
+              "right_column": {
+                "type": "content",
+                "title": "Content Column",
+                "widgets": [
+                  {
+                    "id": "content7",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content7)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Quality You Can Trust"
+                      }
+                    ],
+                    "text_snippet": "Quality You Can Trust Every vehicle in our bargain inventory undergoes a thorough inspection. Our trained technicians examine each car carefully. We check mechanical components, safety features, and overall condition. You can shop with confidence knowing our standards are high. O",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            },
+            "containers": [
+              {
+                "name": "content-background-image-left.1-1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content7",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content7)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Quality You Can Trust"
+                      }
+                    ],
+                    "text_snippet": "Quality You Can Trust Every vehicle in our bargain inventory undergoes a thorough inspection. Our trained technicians examine each car carefully. We check mechanical components, safety features, and overall condition. You can shop with confidence knowing our standards are high. O",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-9",
+            "raw_name": "content-background-image-right.1-1-1",
+            "name": "Content w/ Image Right",
+            "title": "Content w/ Image Right",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/Acura/_Lifestyle/Acura-Lifestyle-68.jpg?id=3b10c28c-afd6-40d7-aa0b-2654b8e0b29e",
+            "layout_type": "image-right",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content8",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content8)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Easy Financing Options Available"
+                  }
+                ],
+                "text_snippet": "Easy Financing Options Available Purchasing a vehicle should be straightforward. Our finance department works with multiple lenders. We help customers with a range of credit situations. Our goal is to find a payment plan that works for your budget. Explore our auto financing opti",
+                "has_content": true,
+                "links_count": 1,
+                "classes": "p-10 m-0 text-inverse ddc-content content-default"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "image-right",
+              "left_column": {
+                "type": "content",
+                "title": "Content Column",
+                "widgets": [
+                  {
+                    "id": "content8",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content8)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Easy Financing Options Available"
+                      }
+                    ],
+                    "text_snippet": "Easy Financing Options Available Purchasing a vehicle should be straightforward. Our finance department works with multiple lenders. We help customers with a range of credit situations. Our goal is to find a payment plan that works for your budget. Explore our auto financing opti",
+                    "has_content": true,
+                    "links_count": 1,
+                    "classes": "p-10 m-0 text-inverse ddc-content content-default"
+                  }
+                ]
+              },
+              "right_column": {
+                "type": "image",
+                "title": "Image Column",
+                "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/Acura/_Lifestyle/Acura-Lifestyle-68.jpg?id=3b10c28c-afd6-40d7-aa0b-2654b8e0b29e"
+              }
+            },
+            "containers": [
+              {
+                "name": "content-background-image-right.1-1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content8",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content8)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Easy Financing Options Available"
+                      }
+                    ],
+                    "text_snippet": "Easy Financing Options Available Purchasing a vehicle should be straightforward. Our finance department works with multiple lenders. We help customers with a range of credit situations. Our goal is to find a payment plan that works for your budget. Explore our auto financing opti",
+                    "has_content": true,
+                    "links_count": 1,
+                    "classes": "p-10 m-0 text-inverse ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-10",
+            "raw_name": "content-background-image-left.1-1-1-1",
+            "name": "Content Background Image Left 1",
+            "title": "Content Background Image Left 1",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/2023/Sierra 1500/AT4/Crew Cab/Short Box/Truck/2023-GMC-Sierra1500-AT4-CrewCab-ShortBox-Truck-L01.jpg?id=329e7236-c60b-4b52-9dd3-a7df3295df06",
+            "layout_type": "image-left",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content11",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content11)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Looking Beyond Bargain Inventory?"
+                  }
+                ],
+                "text_snippet": "Looking Beyond Bargain Inventory? While our used vehicle selection offers incredible value, some shoppers prefer the latest models. Check out our new Buick and GMC model lineup if you want to explore additional options. We have something for every preference at Shea Buick GMC.",
+                "has_content": true,
+                "links_count": 1,
+                "classes": "p-10 m-0 ddc-content content-default"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "image-left",
+              "left_column": {
+                "type": "image",
+                "title": "Image Column",
+                "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/2023/Sierra 1500/AT4/Crew Cab/Short Box/Truck/2023-GMC-Sierra1500-AT4-CrewCab-ShortBox-Truck-L01.jpg?id=329e7236-c60b-4b52-9dd3-a7df3295df06"
+              },
+              "right_column": {
+                "type": "content",
+                "title": "Content Column",
+                "widgets": [
+                  {
+                    "id": "content11",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content11)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Looking Beyond Bargain Inventory?"
+                      }
+                    ],
+                    "text_snippet": "Looking Beyond Bargain Inventory? While our used vehicle selection offers incredible value, some shoppers prefer the latest models. Check out our new Buick and GMC model lineup if you want to explore additional options. We have something for every preference at Shea Buick GMC.",
+                    "has_content": true,
+                    "links_count": 1,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            },
+            "containers": [
+              {
+                "name": "content-background-image-left.1-1-1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content11",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content11)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Looking Beyond Bargain Inventory?"
+                      }
+                    ],
+                    "text_snippet": "Looking Beyond Bargain Inventory? While our used vehicle selection offers incredible value, some shoppers prefer the latest models. Check out our new Buick and GMC model lineup if you want to explore additional options. We have something for every preference at Shea Buick GMC.",
+                    "has_content": true,
+                    "links_count": 1,
+                    "classes": "p-10 m-0 ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-11",
+            "raw_name": "content-background-image-right.1-1-1-1",
+            "name": "Content Background Image Right 1",
+            "title": "Content Background Image Right 1",
+            "is_hidden": false,
+            "has_bg_image": true,
+            "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/_Fixed Ops/Service/GMC-Service-12.jpg?id=0b45dfbd-b345-4524-9d68-05d0969310f8",
+            "layout_type": "image-right",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content12",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content12)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Convenient Location for Surrounding Communities"
+                  }
+                ],
+                "text_snippet": "Convenient Location for Surrounding Communities Our central location in Flint makes us accessible to many surrounding communities. Customers from Davison enjoy an easy drive to our dealership. We welcome shoppers from across the region. Our dealership offers: Ample parking for ea",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "p-10 m-0 text-inverse ddc-content content-default"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "image-right",
+              "left_column": {
+                "type": "content",
+                "title": "Content Column",
+                "widgets": [
+                  {
+                    "id": "content12",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content12)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Convenient Location for Surrounding Communities"
+                      }
+                    ],
+                    "text_snippet": "Convenient Location for Surrounding Communities Our central location in Flint makes us accessible to many surrounding communities. Customers from Davison enjoy an easy drive to our dealership. We welcome shoppers from across the region. Our dealership offers: Ample parking for ea",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 text-inverse ddc-content content-default"
+                  }
+                ]
+              },
+              "right_column": {
+                "type": "image",
+                "title": "Image Column",
+                "image_url": "https://images.dealer.com/dbcreative/global/Automotive Brands/GMC/_Fixed Ops/Service/GMC-Service-12.jpg?id=0b45dfbd-b345-4524-9d68-05d0969310f8"
+              }
+            },
+            "containers": [
+              {
+                "name": "content-background-image-right.1-1-1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content12",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content12)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Convenient Location for Surrounding Communities"
+                      }
+                    ],
+                    "text_snippet": "Convenient Location for Surrounding Communities Our central location in Flint makes us accessible to many surrounding communities. Customers from Davison enjoy an easy drive to our dealership. We welcome shoppers from across the region. Our dealership offers: Ample parking for ea",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "p-10 m-0 text-inverse ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-12",
+            "raw_name": "empty-one.1-1",
+            "name": "Empty One",
+            "title": "Empty One",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "accordion-content1",
+                "widget_name": "ws-accordion-content",
+                "name": "Accordion Content",
+                "display_title": "Content (accordion-content1)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Frequently Asked Questions"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "What types of vehicles are in the bargain inventory?"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "Are the used vehicles inspected before sale?"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "Can I get financing for a bargain inventory vehicle?"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "Do you offer vehicles from brands other than Buick and GMC?"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "Where is Shea Buick GMC located?"
+                  },
+                  {
+                    "tag": "H4",
+                    "text": "What should I bring when shopping for a used vehicle?"
+                  }
+                ],
+                "text_snippet": "Frequently Asked Questions What types of vehicles are in the bargain inventory? Our bargain inventory primarily features small sedans, hatchbacks, and compact SUVs. These pre-owned vehicles come from various manufacturers. We focus on practical, reliable options for everyday use.",
+                "has_content": true,
+                "links_count": 6,
+                "classes": "ddc-content ws-accordion-content"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "empty-one.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "accordion-content1",
+                    "widget_name": "ws-accordion-content",
+                    "name": "Accordion Content",
+                    "display_title": "Content (accordion-content1)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Frequently Asked Questions"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "What types of vehicles are in the bargain inventory?"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Are the used vehicles inspected before sale?"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Can I get financing for a bargain inventory vehicle?"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Do you offer vehicles from brands other than Buick and GMC?"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "Where is Shea Buick GMC located?"
+                      },
+                      {
+                        "tag": "H4",
+                        "text": "What should I bring when shopping for a used vehicle?"
+                      }
+                    ],
+                    "text_snippet": "Frequently Asked Questions What types of vehicles are in the bargain inventory? Our bargain inventory primarily features small sedans, hatchbacks, and compact SUVs. These pre-owned vehicles come from various manufacturers. We focus on practical, reliable options for everyday use.",
+                    "has_content": true,
+                    "links_count": 6,
+                    "classes": "ddc-content ws-accordion-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-13",
+            "raw_name": "content-centered.1-4",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content9",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content9)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Visit Shea Buick GMC Today"
+                  }
+                ],
+                "text_snippet": "Visit Shea Buick GMC Today Finding an affordable, reliable vehicle is within reach. Our bargain inventory offers quality pre-owned options for every need. From fuel-efficient sedans to versatile compact SUVs, we have choices waiting for you. Stop by Shea Buick GMC today. Our frie",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-4",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content9",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content9)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Visit Shea Buick GMC Today"
+                      }
+                    ],
+                    "text_snippet": "Visit Shea Buick GMC Today Finding an affordable, reliable vehicle is within reach. Our bargain inventory offers quality pre-owned options for every need. From fuel-efficient sedans to versatile compact SUVs, we have choices waiting for you. Stop by Shea Buick GMC today. Our frie",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-14",
+            "raw_name": "form-centered.1-1",
+            "name": "Form Centered",
+            "title": "Form Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "contact1",
+                "widget_name": "contact-form",
+                "name": "Contact Form",
+                "display_title": "Contact Info (contact1)",
+                "subtext": "Dealership contact information",
+                "type": "contact",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "How Can We Help?"
+                  }
+                ],
+                "text_snippet": "How Can We Help? * Indicates a required field First Name * Last Name * Contact Me by * Email Phone Email Phone Comments Send Message",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "contact-form ddc-content"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "form-centered.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "contact1",
+                    "widget_name": "contact-form",
+                    "name": "Contact Form",
+                    "display_title": "Contact Info (contact1)",
+                    "subtext": "Dealership contact information",
+                    "type": "contact",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "How Can We Help?"
+                      }
+                    ],
+                    "text_snippet": "How Can We Help? * Indicates a required field First Name * Last Name * Contact Me by * Email Phone Email Phone Comments Send Message",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "contact-form ddc-content"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-15",
+            "raw_name": "content-centered.1-5",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content10",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content10)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "Browse Our Buick & GMC Models: Buick: Encore GX Enclave Envision Envista GMC: Acadia Canyon Hummer EV Pickup Hummer EV Savana 2500 Savanna 3500 Sierra 1500 Sierra 2500 HD Sierra 3500 HD Terrain Yukon Yukon XL",
+                "has_content": true,
+                "links_count": 16,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-5",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content10",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content10)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Browse Our Buick & GMC Models: Buick: Encore GX Enclave Envision Envista GMC: Acadia Canyon Hummer EV Pickup Hummer EV Savana 2500 Savanna 3500 Sierra 1500 Sierra 2500 HD Sierra 3500 HD Terrain Yukon Yukon XL",
+                    "has_content": true,
+                    "links_count": 16,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-16",
+            "raw_name": "map-hours.2-1",
+            "name": "Contact and Map",
+            "title": "Contact and Map",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 3,
+            "widgets_count": 3,
+            "widgets": [
+              {
+                "id": "map1",
+                "widget_name": "map-dynamic",
+                "name": "Map Dynamic",
+                "display_title": "Dynamic Map (map1)",
+                "subtext": "Google Maps dealership location",
+                "type": "map",
+                "headings": [],
+                "text_snippet": "Shea Buick GMC 5111 Corunna Rd Flint , MI 48532 Sales : (810) 447-0979 Visit us at:  5111 Corunna Rd Flint, MI 48532 Loading Map...",
+                "has_content": true,
+                "links_count": 1,
+                "classes": "map-dynamic ddc-content"
+              },
+              {
+                "id": "contact2",
+                "widget_name": "contact-info",
+                "name": "Contact Info",
+                "display_title": "Contact Info (contact2)",
+                "subtext": "Dealership contact information",
+                "type": "contact",
+                "headings": [
+                  {
+                    "tag": "H3",
+                    "text": "Get in Touch"
+                  }
+                ],
+                "text_snippet": "Get in Touch Contact our Sales Department at : (810) 447-0979",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content text-center contact-info"
+              },
+              {
+                "id": "hours1",
+                "widget_name": "ws-hours",
+                "name": "Hours",
+                "display_title": "Dealership Hours (hours1)",
+                "subtext": "Operating hours schedule",
+                "type": "hours",
+                "headings": [],
+                "text_snippet": "Monday 8:30 am - 8:00 pm Tuesday 8:30 am - 6:00 pm Wednesday 8:30 am - 6:00 pm Thursday 8:30 am - 8:00 pm Friday 8:30 am - 6:00 pm Saturday 9:00 am - 4:00 pm Sunday Closed See All Department Hours",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content ws-hours"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "map-hours.2-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "map1",
+                    "widget_name": "map-dynamic",
+                    "name": "Map Dynamic",
+                    "display_title": "Dynamic Map (map1)",
+                    "subtext": "Google Maps dealership location",
+                    "type": "map",
+                    "headings": [],
+                    "text_snippet": "Shea Buick GMC 5111 Corunna Rd Flint , MI 48532 Sales : (810) 447-0979 Visit us at:  5111 Corunna Rd Flint, MI 48532 Loading Map...",
+                    "has_content": true,
+                    "links_count": 1,
+                    "classes": "map-dynamic ddc-content"
+                  },
+                  {
+                    "id": "contact2",
+                    "widget_name": "contact-info",
+                    "name": "Contact Info",
+                    "display_title": "Contact Info (contact2)",
+                    "subtext": "Dealership contact information",
+                    "type": "contact",
+                    "headings": [
+                      {
+                        "tag": "H3",
+                        "text": "Get in Touch"
+                      }
+                    ],
+                    "text_snippet": "Get in Touch Contact our Sales Department at : (810) 447-0979",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content text-center contact-info"
+                  },
+                  {
+                    "id": "hours1",
+                    "widget_name": "ws-hours",
+                    "name": "Hours",
+                    "display_title": "Dealership Hours (hours1)",
+                    "subtext": "Operating hours schedule",
+                    "type": "hours",
+                    "headings": [],
+                    "text_snippet": "Monday 8:30 am - 8:00 pm Tuesday 8:30 am - 6:00 pm Wednesday 8:30 am - 6:00 pm Thursday 8:30 am - 8:00 pm Friday 8:30 am - 6:00 pm Saturday 9:00 am - 4:00 pm Sunday Closed See All Department Hours",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-hours"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   }
 }

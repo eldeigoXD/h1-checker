@@ -38,16 +38,13 @@ Output JSON schema:
 {{
   "inventory_overrides": {{
     "inventory_type": "new" | "used" | "certified" | null,
-    "max_price": 30000 | null,
+    "max_price": null,
     "make": null,
     "model": null,
     "body_style": null,
     "layout": "Grid" | "List" | null
   }},
-  "rules": [
-    {{"type": "inventory_config", "element": "new vehicles under 30000", "original_text": "Please include new vehicles inventory config and filter by vehicles below $30,000"}},
-    {{"type": "presence", "element": "imagery", "original_text": "Please put content in sections with modern corresponding imagery"}}
-  ]
+  "rules": []
 }}
 
 Respond ONLY with valid JSON.
@@ -89,16 +86,31 @@ def parse_instructions(instructions: str) -> tuple[List[Dict], Dict]:
         timeout=20
     )
     
-    rules = []
+    raw_rules = []
     overrides = {}
     
     if isinstance(result, list):
-        rules = result
+        raw_rules = result
     elif isinstance(result, dict):
-        rules = result.get("rules", [])
+        raw_rules = result.get("rules", [])
         overrides = result.get("inventory_overrides", {})
         
-    return rules, overrides
+    # Strict validation: Filter out hallucinated rules that don't match the user's input text
+    valid_rules = []
+    inst_low = instructions.lower().strip()
+    
+    for r in raw_rules:
+        orig = (r.get("original_text") or "").lower().strip()
+        elem = (r.get("element") or "").lower().strip()
+        
+        # Check if words from rule exist in user input
+        if orig and any(w in inst_low for w in orig.split() if len(w) > 3):
+            valid_rules.append(r)
+        elif elem and any(w in inst_low for w in elem.split() if len(w) > 3):
+            valid_rules.append(r)
+
+    return valid_rules, overrides
+
 
 
 

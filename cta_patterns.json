@@ -938,18 +938,19 @@
     "certified pre-owned options": "/certified-inventory/index.htm",
     "contact our sales team": "/contact.htm",
     "finance or lease a new 2027 expedition": "/financing/index.htm",
-    "new featured vehicles": "/new-featured-vehicles.htm"
+    "new featured vehicles": "/new-featured-vehicles.htm",
+    "new buick and gmc model lineup": "/new-inventory/index.htm"
   },
   "by_url": {
     "/contact.htm": "Contact our team",
     "/financing/application.htm": "finance application",
     "https://www.hassettford.com/new-inventory/index.htm": "browse our new vehicle inventory",
-    "/new-inventory/index.htm": "New Inventory",
-    "/financing/index.htm": "financing center",
+    "/new-inventory/index.htm": "new Buick and GMC model lineup",
+    "/financing/index.htm": "Finance Center",
     "/promotions/new/index.htm": "current offers",
     "/new-ford/maverick-near-beardstown-il.htm": "new Ford Maverick",
     "/new-ford/trucks-trumann-ar.htm": "New Ford Trucks",
-    "/used-inventory/index.htm": "used inventory",
+    "/used-inventory/index.htm": "pre-owned selection",
     "/used/vehicles-for-sale-in-bay-minette-alabama.htm": "pre-owned vehicles",
     "/certified-inventory/index.htm": "certified pre-owned options",
     "/dealership/directions.htm": "located in Boyertown, PA",

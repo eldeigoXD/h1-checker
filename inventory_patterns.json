@@ -1,6 +1,7 @@
 {
   "www.baldhilldodgechrysler.net": {
-    "/used-inventory/used-jeep-for-sale-warwick-ri.htm": "https://www.baldhilldodgechrysler.net/used-inventory/index.htm?make=Jeep"
+    "/used-inventory/used-jeep-for-sale-warwick-ri.htm": "https://www.baldhilldodgechrysler.net/used-inventory/index.htm?make=Jeep",
+    "/new-ram/1500-inventory-warwick.htm": "/new-inventory/index.htm?model=1500&make=Ram"
   },
   "www.larryhillischryslerdodgejeep.com": {
     "/new-ram/ram-2500-poplar-bluff-mo.htm": "/new-inventory/index.htm?model=Ram+2500&make=Ram"

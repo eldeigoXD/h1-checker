@@ -1927,12 +1927,21 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             # If no vehicles on page, it's an informational/content page or just missing widget
             inventory_info['status'] = 'no_local_widget'
         elif curr_val != total_sum:
-            bugs.append(make_bug('inventory_mismatch', f"Inventory filter mismatch. Expected path: '{res}'"))
-            inventory_info['status'] = 'mismatch'
-            inventory_learner.confirm_correction(url, False)
+            is_bargain_path = 'bargain' in raw_path.lower()
+            has_valid_widget = any(c in ['auto-bargain', 'auto-used', 'auto-new'] for c in inventory_info.get('config_ids', []))
+            has_explicit_instruction = bool(instructions and any(k in instructions.lower() for k in ['below', 'under', 'max price', '$', 'less than']))
+            
+            if is_bargain_path and has_valid_widget and curr_val > 0 and not has_explicit_instruction:
+                inventory_info['status'] = 'match'
+                inventory_info['filter_count'] = str(curr_val)
+            else:
+                bugs.append(make_bug('inventory_mismatch', f"Inventory filter mismatch. Expected path: '{res}'"))
+                inventory_info['status'] = 'mismatch'
+                inventory_learner.confirm_correction(url, False)
         else:
             inventory_info['status'] = 'match'
             inventory_learner.confirm_correction(url, True)
+
             # --- Auto-Learning: Save successful match (only if no prior entry exists) ---
             existing_patterns = load_inventory_patterns()
             if not existing_patterns.get(domain, {}).get(raw_path):
