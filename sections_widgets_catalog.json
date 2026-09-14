@@ -13440,6 +13440,673 @@
           }
         ]
       }
+    },
+    "https://www.davesmith.com/new-inventory/chevrolet/silverado-2500.htm": {
+      "analyzed_at": "2026-09-14T00:21:00.318091",
+      "summary": {
+        "page_path": "/new-inventory/chevrolet/silverado-2500.htm",
+        "page_alias": "SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1",
+        "total_sections": 6,
+        "total_widgets": 12,
+        "sections": [
+          {
+            "section_id": "slideshow-hidden",
+            "raw_name": "slideshow-hidden",
+            "name": "Slideshow",
+            "title": "Slideshow",
+            "is_hidden": true,
+            "hidden_reason": "Hidden from view in page template",
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": null,
+            "containers": []
+          },
+          {
+            "section_id": "seo-content-hidden",
+            "raw_name": "seo-content-hidden",
+            "name": "Additional SEO Content",
+            "title": "Additional SEO Content",
+            "is_hidden": true,
+            "hidden_reason": "Hidden from view in page template",
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "hidden",
+            "widgets_count": 0,
+            "widgets": [],
+            "columns_layout": null,
+            "containers": []
+          },
+          {
+            "section_id": "section-1",
+            "raw_name": "title.2-1",
+            "name": "Page Title",
+            "title": "Page Title",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "page-title1",
+                "widget_name": "content-page-title",
+                "name": "Content Page Title",
+                "display_title": "v9.widgets.content.page-title.a1 (page-title1)",
+                "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:page-title1",
+                "type": "title",
+                "headings": [
+                  {
+                    "tag": "H1",
+                    "text": "New Chevrolet Silverado\u202f2500 HD for Sale at Dave Smith Motors"
+                  }
+                ],
+                "text_snippet": "New Chevrolet Silverado\u202f2500 HD for Sale at Dave Smith Motors",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content content-page-title bg-transparent"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "title.2-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "page-title1",
+                    "widget_name": "content-page-title",
+                    "name": "Content Page Title",
+                    "display_title": "v9.widgets.content.page-title.a1 (page-title1)",
+                    "subtext": "v9.widgets.content.page-title.a1 - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:page-title1",
+                    "type": "title",
+                    "headings": [
+                      {
+                        "tag": "H1",
+                        "text": "New Chevrolet Silverado\u202f2500 HD for Sale at Dave Smith Motors"
+                      }
+                    ],
+                    "text_snippet": "New Chevrolet Silverado\u202f2500 HD for Sale at Dave Smith Motors",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content content-page-title bg-transparent"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-2",
+            "raw_name": "inventory-search-results-ws-specials.1-1",
+            "name": "Inventory Search Results Ws Specials",
+            "title": "Inventory Search Results Ws Specials",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "inventory-search-results",
+            "total_widgets": 9,
+            "widgets_count": 9,
+            "widgets": [
+              {
+                "id": "inventory-data-bus1",
+                "widget_name": "inventory-listing-ws-inv-data-service",
+                "name": "Inventory Listing Inv Data Service",
+                "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-data-bus1",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+              },
+              {
+                "id": "inventory-data-bus2",
+                "widget_name": "ws-inv-data",
+                "name": "Inv Data",
+                "display_title": "ws-inv-data (Inventory-data-bus2)",
+                "subtext": "ws-inv-data - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-data-bus2",
+                "type": "data-bus",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-data spacing-reset d-none"
+              },
+              {
+                "id": "placeholder1",
+                "widget_name": "ws-tps-placeholder",
+                "name": "Tps Placeholder",
+                "display_title": "Third Party API Placement (placeholder1)",
+                "subtext": "Third Party API Placement (placeholder1)",
+                "type": "placeholder",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-tps-placeholder p-5 hide"
+              },
+              {
+                "id": "inventory-search1",
+                "widget_name": "ws-inv-text-search",
+                "name": "Inv Text Search",
+                "display_title": "ws-inv-text-search (Inventory-search1)",
+                "subtext": "ws-inv-text-search - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-search1",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+              },
+              {
+                "id": "inventory-filters1",
+                "widget_name": "ws-inv-filters",
+                "name": "Inv Filters",
+                "display_title": "ws-inv-filters (Inventory-filters1)",
+                "subtext": "ws-inv-filters - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-filters1",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+              },
+              {
+                "id": "inventory-facets1",
+                "widget_name": "ws-inv-facets",
+                "name": "Inv Facets",
+                "display_title": "ws-inv-facets (Inventory-facets1)",
+                "subtext": "ws-inv-facets - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-facets1",
+                "type": "filters",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-facets"
+              },
+              {
+                "id": "inventory-results1",
+                "widget_name": "ws-inv-listing",
+                "name": "Inv Listing",
+                "display_title": "ws-inv-listing (Inventory-results1)",
+                "subtext": "ws-inv-listing - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-results1",
+                "type": "listing",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+              },
+              {
+                "id": "inventory-paging1",
+                "widget_name": "ws-inv-paging",
+                "name": "Inv Paging",
+                "display_title": "ws-inv-paging (Inventory-paging1)",
+                "subtext": "ws-inv-paging - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-paging1",
+                "type": "paging",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "ddc-content ws-inv-paging"
+              },
+              {
+                "id": "disclaimer1",
+                "widget_name": "content-disclaimer",
+                "name": "Content Disclaimer",
+                "display_title": "Disclaimer (disclaimer1)",
+                "subtext": "Widget for dynamically pulling in disclaimer text.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "Price excludes required taxes, title, license, other governmental fees and includes a $549 dealer documentation service fee. We have taken reasonable efforts to ensure display of accurate data; however, the information shown may contain errors and omissions, may not reflect all v",
+                "has_content": true,
+                "links_count": 0,
+                "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+              }
+            ],
+            "columns_layout": {
+              "layout_type": "srp",
+              "top_widgets": [
+                {
+                  "id": "inventory-data-bus1",
+                  "widget_name": "inventory-listing-ws-inv-data-service",
+                  "name": "Inventory Listing Inv Data Service",
+                  "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                  "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-data-bus1",
+                  "type": "listing",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                },
+                {
+                  "id": "inventory-data-bus2",
+                  "widget_name": "ws-inv-data",
+                  "name": "Inv Data",
+                  "display_title": "ws-inv-data (Inventory-data-bus2)",
+                  "subtext": "ws-inv-data - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-data-bus2",
+                  "type": "data-bus",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                },
+                {
+                  "id": "placeholder1",
+                  "widget_name": "ws-tps-placeholder",
+                  "name": "Tps Placeholder",
+                  "display_title": "Third Party API Placement (placeholder1)",
+                  "subtext": "Third Party API Placement (placeholder1)",
+                  "type": "placeholder",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                },
+                {
+                  "id": "inventory-search1",
+                  "widget_name": "ws-inv-text-search",
+                  "name": "Inv Text Search",
+                  "display_title": "ws-inv-text-search (Inventory-search1)",
+                  "subtext": "ws-inv-text-search - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-search1",
+                  "type": "content",
+                  "headings": [],
+                  "text_snippet": "",
+                  "has_content": false,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                },
+                {
+                  "id": "inventory-filters1",
+                  "widget_name": "ws-inv-filters",
+                  "name": "Inv Filters",
+                  "display_title": "ws-inv-filters (Inventory-filters1)",
+                  "subtext": "ws-inv-filters - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-filters1",
+                  "type": "filters",
+                  "headings": [],
+                  "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                  "has_content": true,
+                  "links_count": 0,
+                  "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                }
+              ],
+              "left_column": {
+                "title": "ws-inv-facets (Inventory-facets1)",
+                "name": "inventory-search-results-facets-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  }
+                ]
+              },
+              "right_column": {
+                "title": "ws-inv-facets (Inventory-facets1)",
+                "name": "inventory-search-results-combined-inner-1",
+                "widgets": [
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "inventory-results1",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results1)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-results1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging1",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging1)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-paging1",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer1",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer1)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Price excludes required taxes, title, license, other governmental fees and includes a $549 dealer documentation service fee. We have taken reasonable efforts to ensure display of accurate data; however, the information shown may contain errors and omissions, may not reflect all v",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            },
+            "containers": [
+              {
+                "name": "inventory-search-results-ws-specials.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "inventory-data-bus1",
+                    "widget_name": "inventory-listing-ws-inv-data-service",
+                    "name": "Inventory Listing Inv Data Service",
+                    "display_title": "v9.newmodel.inventory-listing.ws-inv-data-service (inventory-data-bus1)",
+                    "subtext": "v9.newmodel.inventory-listing.ws-inv-data-service - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-data-bus1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "spacing-reset ddc-content inventory-listing-ws-inv-data-service"
+                  },
+                  {
+                    "id": "inventory-data-bus2",
+                    "widget_name": "ws-inv-data",
+                    "name": "Inv Data",
+                    "display_title": "ws-inv-data (Inventory-data-bus2)",
+                    "subtext": "ws-inv-data - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-data-bus2",
+                    "type": "data-bus",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-data spacing-reset d-none"
+                  },
+                  {
+                    "id": "placeholder1",
+                    "widget_name": "ws-tps-placeholder",
+                    "name": "Tps Placeholder",
+                    "display_title": "Third Party API Placement (placeholder1)",
+                    "subtext": "Third Party API Placement (placeholder1)",
+                    "type": "placeholder",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-tps-placeholder p-5 hide"
+                  },
+                  {
+                    "id": "inventory-search1",
+                    "widget_name": "ws-inv-text-search",
+                    "name": "Inv Text Search",
+                    "display_title": "ws-inv-text-search (Inventory-search1)",
+                    "subtext": "ws-inv-text-search - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-search1",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-text-search mx-0 mt-0 mb-4"
+                  },
+                  {
+                    "id": "inventory-filters1",
+                    "widget_name": "ws-inv-filters",
+                    "name": "Inv Filters",
+                    "display_title": "ws-inv-filters (Inventory-filters1)",
+                    "subtext": "ws-inv-filters - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-filters1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "Filter / Sort Sort by Sort by Mileage: Low to High",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-filters spacing-reset position-static"
+                  },
+                  {
+                    "id": "inventory-facets1",
+                    "widget_name": "ws-inv-facets",
+                    "name": "Inv Facets",
+                    "display_title": "ws-inv-facets (Inventory-facets1)",
+                    "subtext": "ws-inv-facets - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-facets1",
+                    "type": "filters",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-facets"
+                  },
+                  {
+                    "id": "inventory-results1",
+                    "widget_name": "ws-inv-listing",
+                    "name": "Inv Listing",
+                    "display_title": "ws-inv-listing (Inventory-results1)",
+                    "subtext": "ws-inv-listing - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-results1",
+                    "type": "listing",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-listing spacing-reset min-vh-100"
+                  },
+                  {
+                    "id": "inventory-paging1",
+                    "widget_name": "ws-inv-paging",
+                    "name": "Inv Paging",
+                    "display_title": "ws-inv-paging (Inventory-paging1)",
+                    "subtext": "ws-inv-paging - SITEBUILDER_NEW_CHEVROLET_SILVERADO_2500_HD_FOR_SALE_IN_IDAHO_1:inventory-paging1",
+                    "type": "paging",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "ddc-content ws-inv-paging"
+                  },
+                  {
+                    "id": "disclaimer1",
+                    "widget_name": "content-disclaimer",
+                    "name": "Content Disclaimer",
+                    "display_title": "Disclaimer (disclaimer1)",
+                    "subtext": "Widget for dynamically pulling in disclaimer text.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "Price excludes required taxes, title, license, other governmental fees and includes a $549 dealer documentation service fee. We have taken reasonable efforts to ensure display of accurate data; however, the information shown may contain errors and omissions, may not reflect all v",
+                    "has_content": true,
+                    "links_count": 0,
+                    "classes": "text-muted pt-5 border-top ddc-content content-disclaimer"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-3",
+            "raw_name": "content-centered.1-1",
+            "name": "Content Centered",
+            "title": "Content Centered",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "content2",
+                "widget_name": "content-default",
+                "name": "Content Default",
+                "display_title": "Content (content2)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [
+                  {
+                    "tag": "H1",
+                    "text": "New Chevrolet Silverado 2500 HD for Sale at Dave Smith Motors in Kellogg, Idaho"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "New Silverado 2500 HD Trims, Engines, and Heavy Duty Capability"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Why Buy Your Silverado 2500 HD at Dave Smith Motors?"
+                  },
+                  {
+                    "tag": "H2",
+                    "text": "Chevrolet Silverado 2500 HD Shopping FAQs"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Where can I find the best prices on a new Silverado 2500 HD near me?"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "What is the Chevrolet Silverado 2500 HD ZR2?"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "How much can a new Silverado 2500 HD tow?"
+                  },
+                  {
+                    "tag": "H3",
+                    "text": "Can I buy a new Silverado 2500 HD if I live out of state?"
+                  }
+                ],
+                "text_snippet": "Call (208) 943-9075 to secure your new Chevrolet Silverado 2500 HD at Dave Smith Motors! New Chevrolet Silverado 2500 HD for Sale at Dave Smith Motors in Kellogg, Idaho The new Chevrolet Silverado 2500 HD is a 3/4-ton heavy-duty workhorse built for serious work, towing, and off-r",
+                "has_content": true,
+                "links_count": 5,
+                "classes": "ddc-content content-default"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "content-centered.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "content2",
+                    "widget_name": "content-default",
+                    "name": "Content Default",
+                    "display_title": "Content (content2)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [
+                      {
+                        "tag": "H1",
+                        "text": "New Chevrolet Silverado 2500 HD for Sale at Dave Smith Motors in Kellogg, Idaho"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "New Silverado 2500 HD Trims, Engines, and Heavy Duty Capability"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Why Buy Your Silverado 2500 HD at Dave Smith Motors?"
+                      },
+                      {
+                        "tag": "H2",
+                        "text": "Chevrolet Silverado 2500 HD Shopping FAQs"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Where can I find the best prices on a new Silverado 2500 HD near me?"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "What is the Chevrolet Silverado 2500 HD ZR2?"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "How much can a new Silverado 2500 HD tow?"
+                      },
+                      {
+                        "tag": "H3",
+                        "text": "Can I buy a new Silverado 2500 HD if I live out of state?"
+                      }
+                    ],
+                    "text_snippet": "Call (208) 943-9075 to secure your new Chevrolet Silverado 2500 HD at Dave Smith Motors! New Chevrolet Silverado 2500 HD for Sale at Dave Smith Motors in Kellogg, Idaho The new Chevrolet Silverado 2500 HD is a 3/4-ton heavy-duty workhorse built for serious work, towing, and off-r",
+                    "has_content": true,
+                    "links_count": 5,
+                    "classes": "ddc-content content-default"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "section_id": "section-4",
+            "raw_name": "raw-content-area.1-1",
+            "name": "Raw Content Area",
+            "title": "Raw Content Area",
+            "is_hidden": false,
+            "has_bg_image": false,
+            "image_url": null,
+            "layout_type": "standard",
+            "total_widgets": 1,
+            "widgets_count": 1,
+            "widgets": [
+              {
+                "id": "raw-content1",
+                "widget_name": "content-raw",
+                "name": "Content Raw",
+                "display_title": "Content (raw-content1)",
+                "subtext": "Space for entering in WYSIWYG content.",
+                "type": "content",
+                "headings": [],
+                "text_snippet": "",
+                "has_content": false,
+                "links_count": 0,
+                "classes": "mod content-raw"
+              }
+            ],
+            "columns_layout": null,
+            "containers": [
+              {
+                "name": "raw-content-area.1-1",
+                "containers": [],
+                "widgets": [
+                  {
+                    "id": "raw-content1",
+                    "widget_name": "content-raw",
+                    "name": "Content Raw",
+                    "display_title": "Content (raw-content1)",
+                    "subtext": "Space for entering in WYSIWYG content.",
+                    "type": "content",
+                    "headings": [],
+                    "text_snippet": "",
+                    "has_content": false,
+                    "links_count": 0,
+                    "classes": "mod content-raw"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   }
 }

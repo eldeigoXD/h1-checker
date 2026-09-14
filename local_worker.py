@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-VERCEL_URL = os.getenv("VERCEL_URL", "").strip().rstrip("/")
+VERCEL_URL = os.getenv("VERCEL_URL", "https://qa-tool-brown.vercel.app").strip().rstrip("/")
 WORKER_SECRET = os.getenv("WORKER_SECRET_KEY", "h1-checker-secret-key-2026")
 LOCAL_FLASK_URL = os.getenv("LOCAL_FLASK_URL", "http://127.0.0.1:5000").rstrip("/")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "3"))  # seconds
@@ -33,15 +33,16 @@ def prompt_vercel_url():
         print("  H1 CHECKER - REMOTE WORKER SETUP")
         print("=======================================================")
         print("Please enter your Vercel app URL (or press Enter for default):")
-        print("Example: https://your-h1-checker.vercel.app")
+        print("Example: https://qa-tool-brown.vercel.app")
         user_input = input("Vercel URL: ").strip().rstrip("/")
         if user_input:
             VERCEL_URL = user_input
         else:
-            print("[WARN] No Vercel URL provided. Defaulting to http://localhost:3000 for local testing.")
-            VERCEL_URL = "http://localhost:3000"
+            print("[INFO] Using Vercel URL: https://qa-tool-brown.vercel.app")
+            VERCEL_URL = "https://qa-tool-brown.vercel.app"
     print(f"\n[CONFIG] Target Vercel URL: {VERCEL_URL}")
     print(f"[CONFIG] Local Backend URL: {LOCAL_FLASK_URL}")
+
 
 def check_local_backend():
     try:
