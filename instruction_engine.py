@@ -77,8 +77,27 @@ def parse_instructions(instructions: str) -> tuple[List[Dict], Dict]:
     """
     if not is_ollama_available() or not instructions.strip():
         return [], {}
+
+    import re
+    inst_low = instructions.lower().strip()
+    
+    # Filter out human developer meta-instructions (e.g. "mimic the example page")
+    META_INSTRUCTION_KEYWORDS = [
+        'mimic', 'example page', 'reference page', 'example url', 'reference url',
+        'copy example', 'duplicate example', 'follow example', 'see example', 'refer to example'
+    ]
+    
+    cleaned_instructions = inst_low
+    for kw in META_INSTRUCTION_KEYWORDS:
+        cleaned_instructions = re.sub(rf'\b{re.escape(kw)}\b', '', cleaned_instructions)
+
+    # If no technical rule words remain, return empty
+    words_left = [w for w in re.findall(r'\b[a-z]{3,}\b', cleaned_instructions) if w not in ['please', 'page', 'the', 'and', 'with', 'from', 'link', 'this', 'that', 'make']]
+    if not words_left:
+        return [], {}
         
     prompt = _PARSE_PROMPT.format(instructions=instructions)
+
     result = ask_ollama_json(
         prompt=prompt,
         system=_PARSE_SYSTEM,
