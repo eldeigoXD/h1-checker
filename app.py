@@ -3543,17 +3543,35 @@ def extract_h1():
     if not url.startswith('http://') and not url.startswith('https://'):
         url = 'https://' + url
 
+    response = None
+    _response_time_ms = 0
     try:
         session = requests.Session(impersonate='chrome', verify=False)
         _t0 = time.time()
-        response = session.get(url, timeout=30)
+        response = session.get(url, timeout=25)
         _response_time_ms = (time.time() - _t0) * 1000
-        
-        if response.status_code >= 400:
+    except Exception as curl_err:
+        print(f"DEBUG: curl_cffi session failed ({curl_err}). Retrying with standard requests...")
+        try:
+            import requests as standard_req
+            _t0 = time.time()
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+            response = standard_req.get(url, headers=headers, timeout=20, verify=False)
+            _response_time_ms = (time.time() - _t0) * 1000
+        except Exception as std_err:
+            print(f"DEBUG: Standard requests fallback also failed ({std_err}).")
             return jsonify({
                 'success': False,
-                'error': f'Failed to fetch content (HTTP Code: {response.status_code})'
+                'error': f"Could not connect to target website '{url}'. The server took too long to respond or refused the connection."
             }), 400
+
+    if not response or response.status_code >= 400:
+        status_code = response.status_code if response else 400
+        return jsonify({
+            'success': False,
+            'error': f'Failed to fetch content from target URL (HTTP Code: {status_code})'
+        }), 400
+
         
         soup = BeautifulSoup(response.text, 'html.parser')
         # Full page text — no character limit (used for SEO coverage check)
