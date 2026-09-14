@@ -23,6 +23,35 @@ from selenium.webdriver.chrome.options import Options
 import time
 import re
 
+DOH_GOOGLE = "https://dns.google/dns-query"
+DOH_CLOUDFLARE = "https://cloudflare-dns.com/dns-query"
+
+def curl_get_robust(url, timeout=25, headers=None, verify=False, **kwargs):
+    """
+    Robust HTTP GET using curl_cffi with DNS-over-HTTPS (Google & Cloudflare DoH)
+    to bypass ISP DNS failures or broken local CDN edges (e.g. Akamai edge nodes).
+    Falls back gracefully to standard requests if needed.
+    """
+    # Try 1: curl_cffi with Google DoH
+    try:
+        s = requests.Session(impersonate='chrome', verify=verify)
+        return s.get(url, timeout=timeout, headers=headers, doh_url=DOH_GOOGLE, **kwargs)
+    except Exception as e_google:
+        # Try 2: curl_cffi with Cloudflare DoH
+        try:
+            s = requests.Session(impersonate='chrome', verify=verify)
+            return s.get(url, timeout=timeout, headers=headers, doh_url=DOH_CLOUDFLARE, **kwargs)
+        except Exception as e_cf:
+            # Try 3: curl_cffi direct
+            try:
+                s = requests.Session(impersonate='chrome', verify=verify)
+                return s.get(url, timeout=timeout, headers=headers, **kwargs)
+            except Exception as e_direct:
+                # Try 4: Standard requests
+                import requests as standard_req
+                hdrs = headers or {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+                return standard_req.get(url, headers=hdrs, timeout=timeout, verify=verify)
+
 # Inventory Database helpers
 INVENTORY_DB = 'inventory_patterns.json'
 
@@ -57,32 +86,76 @@ def load_cta_patterns():
         return {'by_text': {}, 'by_url': {}}
     try:
         with open(CTA_DB, 'r') as f:
-            data = json.load(f)
-            if 'by_text' not in data: data = {'by_text': {}, 'by_url': {}}
-            return data
+            return json.load(f)
     except:
         return {'by_text': {}, 'by_url': {}}
 
-def save_cta_pattern(text, url):
-    if not text or not url: return
-    text_key = text.lower().strip()
-    url_key = url.strip()
+def save_cta_pattern(cta_text, cta_url, status, category):
     data = load_cta_patterns()
-    
     changed = False
-    if data['by_text'].get(text_key) != url_key:
-        data['by_text'][text_key] = url_key
-        changed = True
-    if data['by_url'].get(url_key) != text:
-        data['by_url'][url_key] = text
-        changed = True
-        
+    
+    if cta_text:
+        t_key = cta_text.strip().lower()
+        if t_key not in data.get('by_text', {}):
+            if 'by_text' not in data: data['by_text'] = {}
+            data['by_text'][t_key] = {'status': status, 'category': category}
+            changed = True
+            
+    if cta_url:
+        u_key = cta_url.strip().lower()
+        if u_key not in data.get('by_url', {}):
+            if 'by_url' not in data: data['by_url'] = {}
+            data['by_url'][u_key] = {'status': status, 'category': category}
+            changed = True
+            
     if changed:
         try:
             with open(CTA_DB, 'w') as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            print(f"Error saving CTA pattern: {e}")
+            print(f"Error saving cta pattern: {e}")
+
+# Persistent Cache for Dynamic Layout Detection
+# Maps cleaned deliverable_title -> Layout dict
+LAYOUT_CACHE_DB = 'layout_cache.json'
+
+def load_layout_cache():
+    if not os.path.exists(LAYOUT_CACHE_DB):
+        return {}
+    try:
+        with open(LAYOUT_CACHE_DB, 'r') as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_layout_cache(title_key, layout_dict):
+    if not title_key or not layout_dict:
+        return
+    data = load_layout_cache()
+    data[title_key] = layout_dict
+    try:
+        with open(LAYOUT_CACHE_DB, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"Error saving layout cache: {e}")
+
+def get_selenium_driver():
+    opts = Options()
+    opts.add_argument('--headless')
+    opts.add_argument('--log-level=3')
+    opts.add_argument('--disable-gpu')
+    opts.add_argument('--no-sandbox')
+    opts.add_argument('--disable-dev-shm-usage')
+    opts.page_load_strategy = 'none' 
+    opts.add_argument('--ignore-certificate-errors')
+    opts.add_argument('--window-size=1920,1080')
+    opts.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    opts.add_argument('--dns-over-https-mode=secure')
+    opts.add_argument('--dns-over-https-templates=https://dns.google/dns-query')
+    
+    driver = webdriver.Chrome(options=opts)
+    driver.set_page_load_timeout(30)
+    return driver
 
 # Audit History helpers
 HISTORY_DB = 'audit_history.json'
@@ -2892,8 +2965,8 @@ def validate_sitemap(url: str) -> dict:
         for candidate in xml_candidates:
             try:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-                xml_resp = requests.get(candidate, impersonate='chrome', timeout=15, headers=headers, verify=False)
-                if xml_resp.status_code == 200:
+                xml_resp = curl_get_robust(candidate, timeout=15, headers=headers, verify=False)
+                if xml_resp and xml_resp.status_code == 200:
                     xml_text = xml_resp.text
                     # Check for sitemap index
                     sitemap_locs = re.findall(r'<sitemap>.*?<loc>\s*(.*?)\s*</loc>.*?</sitemap>', xml_text, re.DOTALL | re.IGNORECASE)
@@ -2912,8 +2985,8 @@ def validate_sitemap(url: str) -> dict:
                         # Scan sub-sitemaps concurrently
                         def scan_sub(url):
                             try:
-                                r = requests.get(url, impersonate='chrome', timeout=10, headers=headers, verify=False)
-                                if r.status_code == 200:
+                                r = curl_get_robust(url, timeout=10, headers=headers, verify=False)
+                                if r and r.status_code == 200:
                                     return check_xml_sitemap_text(r.text, page_full_url)
                             except Exception as e:
                                 print(f"DEBUG: Failed to fetch sub-sitemap {url}: {e}")
@@ -2932,7 +3005,7 @@ def validate_sitemap(url: str) -> dict:
                         if xml_found:
                             break
                 else:
-                    print(f"DEBUG: XML sitemap {candidate} returned status {xml_resp.status_code}")
+                    print(f"DEBUG: XML sitemap {candidate} returned status {xml_resp.status_code if xml_resp else 'None'}")
             except Exception as e:
                 print(f"DEBUG: Error fetching XML sitemap {candidate}: {e}")
         info['xml_found'] = xml_found
@@ -2953,7 +3026,7 @@ def validate_sitemap(url: str) -> dict:
         
         for candidate_url in html_urls:
             try:
-                html_resp = requests.get(candidate_url, impersonate='chrome', timeout=15, verify=False)
+                html_resp = curl_get_robust(candidate_url, timeout=15, verify=False)
                 if html_resp.status_code == 200:
                     html_url_used = candidate_url
                     sm_soup = BeautifulSoup(html_resp.text, 'html.parser')
@@ -3546,25 +3619,16 @@ def extract_h1():
     try:
         response = None
         _response_time_ms = 0
+        _t0 = time.time()
         try:
-            session = requests.Session(impersonate='chrome', verify=False)
-            _t0 = time.time()
-            response = session.get(url, timeout=25)
+            response = curl_get_robust(url, timeout=25)
             _response_time_ms = (time.time() - _t0) * 1000
-        except Exception as curl_err:
-            print(f"DEBUG: curl_cffi session failed ({curl_err}). Retrying with standard requests...")
-            try:
-                import requests as standard_req
-                _t0 = time.time()
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-                response = standard_req.get(url, headers=headers, timeout=20, verify=False)
-                _response_time_ms = (time.time() - _t0) * 1000
-            except Exception as std_err:
-                print(f"DEBUG: Standard requests fallback also failed ({std_err}).")
-                return jsonify({
-                    'success': False,
-                    'error': f"Could not connect to target website '{url}'. The server took too long to respond or refused the connection."
-                }), 400
+        except Exception as fetch_err:
+            print(f"DEBUG: curl_get_robust failed ({fetch_err}).")
+            return jsonify({
+                'success': False,
+                'error': f"Could not connect to target website '{url}'. The server took too long to respond or refused the connection."
+            }), 400
 
         if not response or response.status_code >= 400:
             status_code = response.status_code if response else 400
