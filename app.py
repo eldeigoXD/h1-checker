@@ -3615,6 +3615,7 @@ def extract_h1():
         url = 'https://' + url
 
     try:
+        session = requests.Session(impersonate='chrome', verify=False)
         response = None
         _response_time_ms = 0
         _t0 = time.time()
@@ -4388,15 +4389,32 @@ def extract_h1():
                 new_query = urlencode(query_params)
                 mobile_url = urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
 
-                time.sleep(1.0)
                 mobile_resp = None
+                mobile_headers = {
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
+                }
                 try:
-                    # Simple fetch with the mobile renderer flag - usually sufficient for DDC
-                    mobile_resp = session.get(mobile_url, timeout=15)
+                    mobile_resp = curl_get_robust(mobile_url, timeout=20, headers=mobile_headers)
                 except Exception as me:
-                    print(f"DEBUG: Mobile fetch failed: {me}")
+                    print(f"DEBUG: Mobile fetch with curl_get_robust failed: {me}")
+
+                # Fallback to driver if fetch failed or returned error
+                if not mobile_resp or getattr(mobile_resp, 'status_code', 0) >= 400:
+                    try:
+                        if not driver:
+                            driver = get_selenium_driver()
+                        driver.set_window_size(375, 812)
+                        driver.get(mobile_url)
+                        time.sleep(2)
+                        m_html = driver.page_source
+                        class DummyResp:
+                            status_code = 200
+                            text = m_html
+                        mobile_resp = DummyResp()
+                    except Exception as de:
+                        print(f"DEBUG: Mobile Selenium fallback failed: {de}")
                 
-                if mobile_resp and mobile_resp.status_code < 400:
+                if mobile_resp and getattr(mobile_resp, 'status_code', 0) < 400:
                     mobile_soup = BeautifulSoup(mobile_resp.text, 'html.parser')
                     mobile_full_text = mobile_soup.get_text(separator=' ', strip=True)
                     norm_mobile = _norm(mobile_full_text)
@@ -4476,8 +4494,9 @@ def extract_h1():
         media_audit_mobile = {'status': 'skipped', 'dealer_id': None, 'offending_images': [], 'analyzed_images': [], 'bugs': []}
         try:
             mobile_url = url + ('&' if '?' in url else '?') + '_renderer=mobile'
-            response_mobile = session.get(mobile_url, timeout=30)
-            if response_mobile.status_code == 200:
+            m_hdrs = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15'}
+            response_mobile = curl_get_robust(mobile_url, timeout=25, headers=m_hdrs)
+            if response_mobile and response_mobile.status_code == 200:
                 soup_mobile = BeautifulSoup(response_mobile.text, 'html.parser')
                 media_audit_mobile = run_media_audit(mobile_url, response_mobile.text, soup_mobile)
         except Exception as e:
