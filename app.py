@@ -37,11 +37,13 @@ def curl_get_robust(url, timeout=25, headers=None, verify=False, **kwargs):
         s = requests.Session(impersonate='chrome', verify=verify)
         return s.get(url, timeout=timeout, headers=headers, doh_url=DOH_GOOGLE, **kwargs)
     except Exception as e_google:
+        print(f"DEBUG: Try 1 Google DoH failed: {e_google}")
         # Try 2: curl_cffi with Cloudflare DoH
         try:
             s = requests.Session(impersonate='chrome', verify=verify)
             return s.get(url, timeout=timeout, headers=headers, doh_url=DOH_CLOUDFLARE, **kwargs)
         except Exception as e_cf:
+            print(f"DEBUG: Try 2 CF DoH failed: {e_cf}")
             # Try 3: curl_cffi direct
             try:
                 s = requests.Session(impersonate='chrome', verify=verify)
@@ -1301,47 +1303,77 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
     # Match price or mileage filters (Bargain / Under X / Low Mileage / Custom Rule Price)
     is_mileage = any(k in slug for k in [' miles ', ' mile ', ' mileage ', ' low mileage', 'low-mileage', 'mileage-selection', 'low-miles'])
     inst_low = instructions.lower() if instructions else ""
-    
-    price_patterns = [
-        r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\$?\d+',
-        r'\bpriced?\s+(?:under|below|less\s+than)\s*\$?\d+',
-        r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\d+k',
-        r'\bmax\s*price\s*\$?\d+',
-        r'\bbudget\s*(?:under|below)\s*\$?\d+'
-    ]
-    has_slug_price = any(k in slug for k in [' bargain ', ' under ', ' 10k ', ' 15k ', ' 20k ', ' 30k ', ' 40k ', ' 50k '])
-    has_instruction_price = bool(instructions and any(re.search(p, inst_low) for p in price_patterns))
-    has_price_rule = has_slug_price or is_mileage or has_instruction_price
+    is_inst_mileage = any(k in inst_low for k in [' miles', ' mile', ' mileage', ' odometer'])
 
-    if has_price_rule:
-        limit = None
-        
-        # Check explicit numbers in instructions (e.g. "below $30,000" or "under 30k")
+    # Handle Mileage First (Odometer)
+    if is_mileage or is_inst_mileage:
+        limit_odom = None
         if instructions:
             import re
-            pr_m = re.search(r'(?:under|below|less than|max price|budget|\$)\s*\$?(\d{2,3})[,\.]?(\d{3})', inst_low)
-            pr_k = re.search(r'(?:under|below|less than|max price|budget)\s*\$?(\d{1,3})\s*k', inst_low)
+            m_m = re.search(r'(?:under|below|less than|max(?:imum)?\s*(?:mileage|miles)?)\s*(\d{2,3})[,\.]?(\d{3})\s*(?:miles?|mi)?', inst_low)
+            m_k = re.search(r'(?:under|below|less than|max(?:imum)?\s*(?:mileage|miles)?)\s*(\d{1,3})\s*k\s*(?:miles?|mi)?', inst_low)
+            if not m_m and not m_k:
+                m_m = re.search(r'\b(\d{2,3})[,\.]?(\d{3})\s*miles?\b', inst_low)
+                m_k = re.search(r'\b(\d{1,3})\s*k\s*miles?\b', inst_low)
+            if m_m:
+                limit_odom = m_m.group(1) + m_m.group(2)
+            elif m_k:
+                limit_odom = str(int(m_k.group(1)) * 1000)
 
-            if pr_m:
-                limit = pr_m.group(1) + pr_m.group(2)
-            elif pr_k:
-                limit = str(int(pr_k.group(1)) * 1000)
-
-        if not limit:
-            if ' 10k ' in slug or ' 10000 ' in slug: limit = '10000'
-            elif ' 15k ' in slug or ' 15000 ' in slug: limit = '15000'
-            elif ' 20k ' in slug or ' 20000 ' in slug: limit = '20000'
-            elif ' 30k ' in slug or ' 30000 ' in slug: limit = '30000'
-            elif ' 40k ' in slug or ' 40000 ' in slug: limit = '40000'
-            elif ' 50k ' in slug or ' 50000 ' in slug: limit = '50000'
-            elif has_slug_price or is_mileage:
-                limit = '30000' if is_mileage else '20000'
-
-        if limit:
-            if is_mileage:
-                params.append(f'odometer=0-{limit}')
+        if not limit_odom:
+            if ' 10k ' in slug or ' 10000 ' in slug: limit_odom = '10000'
+            elif ' 15k ' in slug or ' 15000 ' in slug: limit_odom = '15000'
+            elif ' 20k ' in slug or ' 20000 ' in slug: limit_odom = '20000'
+            elif ' 30k ' in slug or ' 30000 ' in slug: limit_odom = '30000'
+            elif ' 40k ' in slug or ' 40000 ' in slug: limit_odom = '40000'
+            elif ' 50k ' in slug or ' 50000 ' in slug: limit_odom = '50000'
+            elif ' 60k ' in slug or ' 60000 ' in slug: limit_odom = '60000'
             else:
-                params.append(f'internetPrice=1-{limit}')
+                limit_odom = '30000'
+
+        params.append(f'odometer=0-{limit_odom}')
+
+    # Handle Price (internetPrice) — ONLY when explicit price intent is present and not referring to miles
+    price_patterns = [
+        r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)(?:under|below|less\s+than)\s*\$?\d+',
+        r'\bpriced?\s+(?:under|below|less\s+than)\s*\$?\d+',
+        r'\b(?:under|below|less\s+than)\s*\$\d+',
+        r'\bmax\s*price\s*\$?\d+',
+        r'\bbudget\s*(?:under|below)\s*\$?\d+',
+        r'\b\$(\d{2,3})[,\.]?(\d{3})\b',
+        r'\b\$(\d{1,3})\s*k\b'
+    ]
+    has_slug_price = any(k in slug for k in [' bargain ', ' 10k ', ' 15k ', ' 20k ', ' 30k ', ' 40k ', ' 50k ']) and not is_mileage
+    if not is_mileage and ' under ' in slug:
+        has_slug_price = True
+    has_instruction_price = bool(instructions and any(re.search(p, inst_low) for p in price_patterns))
+
+    if has_slug_price or has_instruction_price:
+        limit_price = None
+        if instructions:
+            import re
+            pr_m = re.search(r'(?:under|below|less than|max price|budget|\$)\s*\$(\d{2,3})[,\.]?(\d{3})(?!\s*miles?)', inst_low)
+            pr_k = re.search(r'(?:under|below|less than|max price|budget|\$)\s*\$(\d{1,3})\s*k(?!\s*miles?)', inst_low)
+            if not pr_m and not pr_k:
+                pr_m = re.search(r'(?:priced?\s+(?:under|below|less than)|max price|budget)\s*\$?(\d{2,3})[,\.]?(\d{3})(?!\s*miles?)', inst_low)
+                pr_k = re.search(r'(?:priced?\s+(?:under|below|less than)|max price|budget)\s*\$?(\d{1,3})\s*k(?!\s*miles?)', inst_low)
+            if pr_m:
+                limit_price = pr_m.group(1) + pr_m.group(2)
+            elif pr_k:
+                limit_price = str(int(pr_k.group(1)) * 1000)
+
+        if not limit_price:
+            if ' 10k ' in slug or ' 10000 ' in slug: limit_price = '10000'
+            elif ' 15k ' in slug or ' 15000 ' in slug: limit_price = '15000'
+            elif ' 20k ' in slug or ' 20000 ' in slug: limit_price = '20000'
+            elif ' 30k ' in slug or ' 30000 ' in slug: limit_price = '30000'
+            elif ' 40k ' in slug or ' 40000 ' in slug: limit_price = '40000'
+            elif ' 50k ' in slug or ' 50000 ' in slug: limit_price = '50000'
+            elif has_slug_price:
+                limit_price = '20000'
+
+        if limit_price:
+            params.append(f'internetPrice=1-{limit_price}')
 
 
     for f in found_fuels:
@@ -1881,22 +1913,43 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
 
         is_manual = inventory_info.get('source') == 'manual_correction'
         if instructions and res and not res.startswith('SUM:') and not is_manual:
-            # Apply explicit user instructions (e.g. "below $30,000" or "new vehicles") to override DB/cached filters
+            # Apply explicit user instructions (e.g. "below $30,000" or "under 60,000 miles") to override DB/cached filters
             inst_low = instructions.lower()
             import re
             
+            # 1. Mileage override
+            is_inst_mileage = any(kw in inst_low for kw in ['mileage', 'miles', 'mile', 'odometer'])
+            if is_inst_mileage:
+                m_m = re.search(r'(?:under|below|less than|max(?:imum)?\s*(?:mileage|miles)?)\s*(\d{2,3})[,\.]?(\d{3})\s*(?:miles?|mi)?', inst_low)
+                m_k = re.search(r'(?:under|below|less than|max(?:imum)?\s*(?:mileage|miles)?)\s*(\d{1,3})\s*k\s*(?:miles?|mi)?', inst_low)
+                if not m_m and not m_k:
+                    m_m = re.search(r'\b(\d{2,3})[,\.]?(\d{3})\s*miles?\b', inst_low)
+                    m_k = re.search(r'\b(\d{1,3})\s*k\s*miles?\b', inst_low)
+                if m_m or m_k:
+                    req_odom = (m_m.group(1) + m_m.group(2)) if m_m else str(int(m_k.group(1)) * 1000)
+                    if 'odometer' in res.lower():
+                        res = re.sub(r'odometer=[^&]+', f'odometer=0-{req_odom}', res, flags=re.IGNORECASE)
+                    else:
+                        res = res + ('&' if '?' in res else '?') + f'odometer=0-{req_odom}'
+
+            # 2. Price override (ONLY if explicit price intent and not referring to miles)
             price_patterns = [
-                r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\$?\d+',
+                r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)(?:under|below|less\s+than)\s*\$?\d+',
                 r'\bpriced?\s+(?:under|below|less\s+than)\s*\$?\d+',
-                r'\b(?:inventory|vehicles?|cars?|trucks?|suvs?|filter)\s+(?:priced?\s+)?(?:under|below|less\s+than)\s*\d+k',
+                r'\b(?:under|below|less\s+than)\s*\$\d+',
                 r'\bmax\s*price\s*\$?\d+',
-                r'\bbudget\s*(?:under|below)\s*\$?\d+'
+                r'\bbudget\s*(?:under|below)\s*\$?\d+',
+                r'\b\$(\d{2,3})[,\.]?(\d{3})\b',
+                r'\b\$(\d{1,3})\s*k\b'
             ]
             has_price_intent = any(re.search(p, inst_low) for p in price_patterns)
             
             if has_price_intent:
-                pr_m = re.search(r'(?:under|below|less than|max price|budget)\s*\$?(\d{2,3})[,\.]?(\d{3})', inst_low)
-                pr_k = re.search(r'(?:under|below|less than|max price|budget)\s*\$?(\d{1,3})\s*k', inst_low)
+                pr_m = re.search(r'(?:under|below|less than|max price|budget|\$)\s*\$(\d{2,3})[,\.]?(\d{3})(?!\s*miles?)', inst_low)
+                pr_k = re.search(r'(?:under|below|less than|max price|budget|\$)\s*\$(\d{1,3})\s*k(?!\s*miles?)', inst_low)
+                if not pr_m and not pr_k:
+                    pr_m = re.search(r'(?:priced?\s+(?:under|below|less than)|max price|budget)\s*\$?(\d{2,3})[,\.]?(\d{3})(?!\s*miles?)', inst_low)
+                    pr_k = re.search(r'(?:priced?\s+(?:under|below|less than)|max price|budget)\s*\$?(\d{1,3})\s*k(?!\s*miles?)', inst_low)
                 if pr_m or pr_k:
                     req_price = (pr_m.group(1) + pr_m.group(2)) if pr_m else str(int(pr_k.group(1)) * 1000)
                     if 'internetprice' in res.lower():
@@ -3616,6 +3669,7 @@ def extract_h1():
 
     try:
         session = requests.Session(impersonate='chrome', verify=False)
+        driver = None
         response = None
         _response_time_ms = 0
         _t0 = time.time()
@@ -4380,14 +4434,11 @@ def extract_h1():
         seo_missing_chunks_mobile = []
         if expected_content and chunks:
             try:
-                # Robust mobile URL construction
-                parsed_url = urlparse(url)
-                from urllib.parse import parse_qsl, urlencode, urlunparse
-                query_params = parse_qsl(parsed_url.query)
-                # DDC standard mobile renderer flag
-                query_params.append(('_renderer', 'mobile'))
-                new_query = urlencode(query_params)
-                mobile_url = urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
+                # Robust mobile URL construction: Ensure ?_renderer=mobile is set
+                if '_renderer=' not in url:
+                    mobile_url = url + ('&' if '?' in url else '?') + '_renderer=mobile'
+                else:
+                    mobile_url = url
 
                 mobile_resp = None
                 mobile_headers = {
@@ -4416,9 +4467,16 @@ def extract_h1():
                 
                 if mobile_resp and getattr(mobile_resp, 'status_code', 0) < 400:
                     mobile_soup = BeautifulSoup(mobile_resp.text, 'html.parser')
+                    # Extract complete text from body and content widgets
                     mobile_full_text = mobile_soup.get_text(separator=' ', strip=True)
-                    norm_mobile = _norm(mobile_full_text)
-                    mobile_page_sentences = [s.strip() for s in _re.split(r'(?<=[.!?\n])\s+', mobile_full_text) if len(s.strip()) > 10]
+                    widget_texts = []
+                    for cw in mobile_soup.find_all(lambda tag: tag.has_attr('data-widget-name') or 'content' in (tag.get('class') or [])):
+                        cw_txt = cw.get_text(separator=' ', strip=True)
+                        if cw_txt:
+                            widget_texts.append(cw_txt)
+                    combined_mobile_text = mobile_full_text + " " + " ".join(widget_texts)
+                    norm_mobile = _norm(combined_mobile_text)
+                    mobile_page_sentences = [s.strip() for s in _re.split(r'(?<=[.!?\n])\s+', combined_mobile_text) if len(s.strip()) > 10]
                     found_mobile = 0
                     for chunk in chunks:
                         if _norm(chunk) in norm_mobile:
@@ -4429,7 +4487,7 @@ def extract_h1():
 
                     # Flag mobile missing content as a Critical bug
                     if seo_coverage_mobile < 80 and seo_coverage_mobile >= 0:
-                        bugs.append(make_bug('seo_coverage_low_mobile', 'M | Critical | Content | Content is missing on mobile view'))
+                        bugs.append(make_bug('seo_coverage_low_mobile', f'M | Critical | Content | Content coverage is only {seo_coverage_mobile}% on mobile view (?_renderer=mobile). Expected text is missing.'))
             except Exception as e:
                 print(f"Mobile coverage error: {e}")
 
