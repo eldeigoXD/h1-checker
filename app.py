@@ -90,30 +90,28 @@ def load_cta_patterns():
     except:
         return {'by_text': {}, 'by_url': {}}
 
-def save_cta_pattern(cta_text, cta_url, status, category):
+def save_cta_pattern(text, url, status=None, category=None):
+    if not text or not url: return
+    text_key = text.lower().strip()
+    url_key = url.strip()
     data = load_cta_patterns()
     changed = False
+    if 'by_text' not in data: data['by_text'] = {}
+    if 'by_url' not in data: data['by_url'] = {}
     
-    if cta_text:
-        t_key = cta_text.strip().lower()
-        if t_key not in data.get('by_text', {}):
-            if 'by_text' not in data: data['by_text'] = {}
-            data['by_text'][t_key] = {'status': status, 'category': category}
-            changed = True
-            
-    if cta_url:
-        u_key = cta_url.strip().lower()
-        if u_key not in data.get('by_url', {}):
-            if 'by_url' not in data: data['by_url'] = {}
-            data['by_url'][u_key] = {'status': status, 'category': category}
-            changed = True
-            
+    if data['by_text'].get(text_key) != url_key:
+        data['by_text'][text_key] = url_key
+        changed = True
+    if data['by_url'].get(url_key) != text:
+        data['by_url'][url_key] = text
+        changed = True
+        
     if changed:
         try:
-            with open(CTA_DB, 'w') as f:
+            with open(CTA_DB, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            print(f"Error saving cta pattern: {e}")
+            print(f"Error saving CTA pattern: {e}")
 
 # Persistent Cache for Dynamic Layout Detection
 # Maps cleaned deliverable_title -> Layout dict
