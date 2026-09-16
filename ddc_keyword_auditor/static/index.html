@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDC Keyword & Metadata Inspector | Migration QA Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=3.0">
+</head>
+<body>
+    <div class="background-mesh"></div>
+
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <div class="logo-badge">DDC</div>
+                <div class="logo-text">
+                    <h1>Keyword & Metadata <span>Inspector</span></h1>
+                    <p>Dealer.com Migration & Legacy Data Scrubber</p>
+                </div>
+            </div>
+            <div class="header-status">
+                <span class="pulse-indicator"></span>
+                <span class="status-badge">Stand-Alone Tool &bull; Port 5050</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Search & Control Panel -->
+        <section class="search-panel glass-card">
+            <div class="mode-tabs">
+                <button type="button" class="tab-btn active" id="single-mode-tab">
+                    <span class="tab-icon">🎯</span> Single Page Scan
+                </button>
+                <button type="button" class="tab-btn" id="batch-mode-tab">
+                    <span class="tab-icon">📑</span> Batch Migration URLs
+                </button>
+            </div>
+
+            <!-- Single URL Form -->
+            <form id="audit-form" class="audit-form" novalidate>
+                <div class="form-grid">
+                    <div class="input-group url-group">
+                        <label for="target-url">
+                            <span class="label-icon">🌐</span> Target DDC Page URL
+                        </label>
+                        <input type="text" id="target-url" placeholder="https://www.exampledealership.com/new-inventory/index.htm" required autocomplete="off">
+                    </div>
+
+                    <div class="input-group keyword-group">
+                        <label for="search-keyword">
+                            <span class="label-icon">🔍</span> Keyword or Dealer Name to Detect
+                        </label>
+                        <div class="keyword-input-wrapper">
+                            <input type="text" id="search-keyword" placeholder="e.g. Bubba" required autocomplete="off" value="Bubba">
+                            <button type="button" class="quick-chip-btn" id="chip-bubba">Bubba</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scope Selection Bar -->
+                <div class="scope-selection-box">
+                    <div class="scope-header">
+                        <span class="scope-title">🎯 Secciones a auditar:</span>
+                        <div class="scope-presets">
+                            <button type="button" class="preset-pill active" id="preset-seo-only">✨ Solo Title, Metadata & SEO</button>
+                            <button type="button" class="preset-pill" id="preset-all">🔍 Auditar Todo</button>
+                        </div>
+                    </div>
+                    <div class="scope-toggles">
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="scope-title" checked>
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🏷️ &lt;title&gt;</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="scope-metadata" checked>
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🧬 &lt;head&gt; Metadata (meta, og, canonical)</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="scope-content" checked>
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">📄 SEO Content (H1-H6, widgets & texto)</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="scope-images">
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🖼️ Imágenes (alt & title)</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="scope-links">
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🔗 CTAs & Enlaces</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="options-row">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="case-sensitive-toggle">
+                        <span class="checkbox-box"></span>
+                        <span class="checkbox-label">Case-sensitive match (e.g. "Bubba" ≠ "bubba")</span>
+                    </label>
+
+                    <div class="history-quick-select" id="history-container" style="display: none;">
+                        <span class="history-label">Recent:</span>
+                        <div id="recent-chips" class="recent-chips-list"></div>
+                    </div>
+                </div>
+
+                <div class="submit-row">
+                    <button type="button" id="submit-btn" class="primary-btn" onclick="window.triggerAudit && window.triggerAudit(event)">
+                        <span class="btn-text">Audit Page for Keyword</span>
+                        <span class="btn-spinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Batch URL Form (Hidden by default) -->
+            <form id="batch-form" class="audit-form" novalidate style="display: none;">
+                <div class="input-group">
+                    <label for="batch-urls">
+                        <span class="label-icon">📋</span> Paste URLs (one per line, up to 20):
+                    </label>
+                    <textarea id="batch-urls" rows="6" placeholder="https://www.dealer.com/index.htm&#10;https://www.dealer.com/used-inventory/index.htm&#10;https://www.dealer.com/contact.htm"></textarea>
+                </div>
+
+                <div class="form-grid" style="margin-top: 1rem;">
+                    <div class="input-group keyword-group">
+                        <label for="batch-keyword">
+                            <span class="label-icon">🔍</span> Keyword to Search Across All Pages
+                        </label>
+                        <input type="text" id="batch-keyword" placeholder="e.g. Bubba" required value="Bubba">
+                    </div>
+                    <div class="options-row" style="align-items: flex-end; padding-bottom: 0.5rem;">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="batch-case-toggle">
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">Case-sensitive</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Batch Scope Selection -->
+                <div class="scope-selection-box" style="margin-top: 0.75rem;">
+                    <div class="scope-header">
+                        <span class="scope-title">🎯 Secciones en lote:</span>
+                    </div>
+                    <div class="scope-toggles">
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="batch-scope-title" checked>
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🏷️ Title</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="batch-scope-metadata" checked>
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🧬 Metadata</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="batch-scope-content" checked>
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">📄 SEO Content</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="batch-scope-images">
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🖼️ Imágenes</span>
+                        </label>
+                        <label class="custom-checkbox scope-checkbox">
+                            <input type="checkbox" id="batch-scope-links">
+                            <span class="checkbox-box"></span>
+                            <span class="checkbox-label">🔗 CTAs / Links</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="submit-row" style="margin-top: 1.25rem;">
+                    <button type="button" id="batch-submit-btn" class="primary-btn" onclick="window.triggerBatchAudit && window.triggerBatchAudit(event)">
+                        <span class="btn-text">Start Batch Audit</span>
+                        <span class="btn-spinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Loading State Indicator -->
+        <div id="loading-indicator" class="loading-state glass-card" style="display: none;">
+            <div class="scanner-anim">
+                <div class="scanner-line"></div>
+            </div>
+            <h3>Inspecting DDC DOM & Metadata...</h3>
+            <p id="loading-subtext">Connecting through secure DoH to bypass ISP edge caching...</p>
+        </div>
+
+        <!-- Single Audit Results Container -->
+        <section id="results-section" class="results-section" style="display: none;">
+            <!-- Overall Health Banner -->
+            <div id="verdict-banner" class="verdict-banner clean">
+                <div class="verdict-icon" id="verdict-icon">✅</div>
+                <div class="verdict-info">
+                    <h2 id="verdict-title">Page is Clean!</h2>
+                    <p id="verdict-subtitle">No occurrences of "<span class="highlight-target-kw" id="verdict-kw">Bubba</span>" found in Title, Metadata, Headings or Content.</p>
+                </div>
+                <div class="verdict-metrics">
+                    <div class="metric-box">
+                        <span class="metric-val" id="metric-total-matches">0</span>
+                        <span class="metric-lbl">Total Matches</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-val" id="metric-response-time">0.0s</span>
+                        <span class="metric-lbl">Scan Time</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breakdown Grid -->
+            <div class="breakdown-grid">
+                <!-- 1. Title Tag Card -->
+                <div class="audit-card glass-card" id="card-title">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon">🏷️</span>
+                            <h3>Page &lt;title&gt;</h3>
+                        </div>
+                        <span class="badge" id="badge-title">0 matches</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-preview" id="preview-title">
+                            <span class="tag-name">&lt;title&gt;</span>
+                            <span id="text-title" class="preview-text">Scanning...</span>
+                            <span class="tag-name">&lt;/title&gt;</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Head Metadata Card -->
+                <div class="audit-card glass-card" id="card-metadata">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon">🧬</span>
+                            <h3>&lt;head&gt; Metadata & OpenGraph</h3>
+                        </div>
+                        <span class="badge" id="badge-metadata">0 matches</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="section-desc">Inspects <code>&lt;meta name="description"&gt;</code>, <code>og:title</code>, <code>og:description</code>, <code>canonical</code>, etc.</p>
+                        <div id="list-metadata" class="findings-list"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Headings Card -->
+                <div class="audit-card glass-card" id="card-headings">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon">📌</span>
+                            <h3>Headings (&lt;h1&gt; - &lt;h6&gt;)</h3>
+                        </div>
+                        <span class="badge" id="badge-headings">0 matches</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="list-headings" class="findings-list"></div>
+                    </div>
+                </div>
+
+                <!-- 4. SEO & Body Content Card -->
+                <div class="audit-card glass-card" id="card-content">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon">📄</span>
+                            <h3>SEO Content & DDC Widgets</h3>
+                        </div>
+                        <span class="badge" id="badge-content">0 matches</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="section-desc">Scans <code>content-default</code> widgets, paragraphs, lists, and visible text.</p>
+                        <div id="list-content" class="findings-list"></div>
+                    </div>
+                </div>
+
+                <!-- 5. Images Alt & Title Card -->
+                <div class="audit-card glass-card" id="card-images">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon">🖼️</span>
+                            <h3>Images (Alt & Title Attributes)</h3>
+                        </div>
+                        <span class="badge" id="badge-images">0 matches</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="list-images" class="findings-list"></div>
+                    </div>
+                </div>
+
+                <!-- 6. Links & Anchor Texts Card -->
+                <div class="audit-card glass-card" id="card-links">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon">🔗</span>
+                            <h3>Links & Anchor Texts</h3>
+                        </div>
+                        <span class="badge" id="badge-links">0 matches</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="list-links" class="findings-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="action-bar glass-card">
+                <button type="button" id="copy-report-btn" class="secondary-btn">
+                    <span>📋</span> Copy Summary to Clipboard
+                </button>
+                <button type="button" id="open-page-btn" class="secondary-btn">
+                    <span>↗</span> Open Target Page in Browser
+                </button>
+            </div>
+        </section>
+
+        <!-- Batch Results Section (Hidden by default) -->
+        <section id="batch-results-section" class="results-section" style="display: none;">
+            <div class="glass-card table-card">
+                <div class="card-header">
+                    <h3>Batch Migration Audit Summary</h3>
+                    <span class="badge" id="batch-summary-badge">0 Pages Scanned</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="batch-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>URL</th>
+                                <th>Total Matches</th>
+                                <th>Title</th>
+                                <th>Metadata</th>
+                                <th>Content</th>
+                                <th>Images</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batch-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>Built for Dealer.com Website Migrations &bull; Independent Companion Tool &bull; Powered by DeepMind Agent</p>
+    </footer>
+
+    <script src="script.js?v=3.0"></script>
+</body>
+</html>
