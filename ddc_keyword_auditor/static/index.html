@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=3.0">
+    <link rel="stylesheet" href="styles.css?v=4.0">
 </head>
 <body>
     <div class="background-mesh"></div>
@@ -199,6 +199,14 @@
 
         <!-- Single Audit Results Container -->
         <section id="results-section" class="results-section" style="display: none;">
+            <!-- Navigation banner when inspecting from batch -->
+            <div id="batch-back-nav" class="batch-back-nav" style="display: none;">
+                <button type="button" id="back-to-batch-btn" class="back-pill-btn">
+                    <span class="back-arrow">←</span> Volver a la Lista de URLs (Batch Results)
+                </button>
+                <span class="batch-nav-hint">🔍 Inspeccionando detalle de URL desde el lote</span>
+            </div>
+
             <!-- Overall Health Banner -->
             <div id="verdict-banner" class="verdict-banner clean">
                 <div class="verdict-icon" id="verdict-icon">✅</div>
@@ -313,6 +321,9 @@
 
             <!-- Action Bar -->
             <div class="action-bar glass-card">
+                <button type="button" id="bottom-back-to-batch-btn" class="back-pill-btn" style="display: none;">
+                    <span class="back-arrow">←</span> Volver a Lista Batch
+                </button>
                 <button type="button" id="copy-report-btn" class="secondary-btn">
                     <span>📋</span> Copy Summary to Clipboard
                 </button>
@@ -354,6 +365,6 @@
         <p>Built for Dealer.com Website Migrations &bull; Independent Companion Tool &bull; Powered by DeepMind Agent</p>
     </footer>
 
-    <script src="script.js?v=3.0"></script>
+    <script src="script.js?v=4.0"></script>
 </body>
 </html>

@@ -1,6 +1,8 @@
 // DDC Keyword & Metadata Inspector - Global Script
 (function () {
     let currentAuditData = null;
+    let currentBatchData = null;
+    let lastInspectedUrl = null;
 
     // --- Helper Functions ---
     function escapeHtml(str) {
@@ -431,6 +433,7 @@
                 return;
             }
 
+            currentBatchData = result;
             renderBatchResults(result);
             if (batchResultsSection) {
                 batchResultsSection.style.display = 'block';
@@ -442,6 +445,54 @@
         } finally {
             setButtonLoading(batchSubmitBtn, false);
             if (loadingIndicator) loadingIndicator.style.display = 'none';
+        }
+    };
+
+    // --- Return to Batch View Helper (Exposed Globally) ---
+    window.returnToBatchView = function () {
+        console.log('[DDC Auditor] Returning to batch view...');
+        const singleTab = document.getElementById('single-mode-tab');
+        const batchTab = document.getElementById('batch-mode-tab');
+        const singleForm = document.getElementById('audit-form');
+        const batchForm = document.getElementById('batch-form');
+        const resultsSection = document.getElementById('results-section');
+        const batchResultsSection = document.getElementById('batch-results-section');
+        const batchBackNav = document.getElementById('batch-back-nav');
+        const bottomBackToBatchBtn = document.getElementById('bottom-back-to-batch-btn');
+
+        if (batchBackNav) batchBackNav.style.display = 'none';
+        if (bottomBackToBatchBtn) bottomBackToBatchBtn.style.display = 'none';
+
+        if (batchTab) batchTab.classList.add('active');
+        if (singleTab) singleTab.classList.remove('active');
+        if (singleForm) singleForm.style.display = 'none';
+        if (batchForm) batchForm.style.display = 'block';
+        if (resultsSection) resultsSection.style.display = 'none';
+
+        if (batchResultsSection && currentBatchData) {
+            batchResultsSection.style.display = 'block';
+
+            // Highlight the inspected row in the table
+            if (lastInspectedUrl) {
+                const rows = document.querySelectorAll('#batch-table-body tr');
+                let foundRow = null;
+                rows.forEach(r => {
+                    const cell = r.querySelector('.url-cell');
+                    if (cell && cell.textContent.trim() === lastInspectedUrl.trim()) {
+                        r.classList.add('row-inspected');
+                        foundRow = r;
+                    } else {
+                        r.classList.remove('row-inspected');
+                    }
+                });
+                if (foundRow) {
+                    foundRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    batchResultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } else {
+                batchResultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     };
 
@@ -507,15 +558,35 @@
                 const inspectBtn = tr.querySelector('.inspect-row-btn');
                 if (inspectBtn) {
                     inspectBtn.addEventListener('click', () => {
+                        lastInspectedUrl = d.url;
+
+                        // Show Back to Batch banner and action button
+                        const batchBackNav = document.getElementById('batch-back-nav');
+                        const bottomBackToBatchBtn = document.getElementById('bottom-back-to-batch-btn');
+                        if (batchBackNav) batchBackNav.style.display = 'flex';
+                        if (bottomBackToBatchBtn) bottomBackToBatchBtn.style.display = 'inline-flex';
+
                         const singleTab = document.getElementById('single-mode-tab');
+                        const batchTab = document.getElementById('batch-mode-tab');
+                        const singleForm = document.getElementById('audit-form');
+                        const batchForm = document.getElementById('batch-form');
                         const targetUrlInput = document.getElementById('target-url');
                         const searchKeywordInput = document.getElementById('search-keyword');
                         const resultsSection = document.getElementById('results-section');
-                        if (singleTab) singleTab.click();
+                        const batchResultsSection = document.getElementById('batch-results-section');
+
                         if (targetUrlInput) targetUrlInput.value = d.url;
                         if (searchKeywordInput) searchKeywordInput.value = d.keyword;
+
                         currentAuditData = d;
                         renderSingleAuditResults(d);
+
+                        if (singleTab) singleTab.classList.add('active');
+                        if (batchTab) batchTab.classList.remove('active');
+                        if (singleForm) singleForm.style.display = 'block';
+                        if (batchForm) batchForm.style.display = 'none';
+                        if (batchResultsSection) batchResultsSection.style.display = 'none';
+
                         if (resultsSection) {
                             resultsSection.style.display = 'block';
                             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -577,6 +648,13 @@
         const resultsSection = document.getElementById('results-section');
         const batchResultsSection = document.getElementById('batch-results-section');
 
+        const backToBatchBtn = document.getElementById('back-to-batch-btn');
+        const bottomBackToBatchBtn = document.getElementById('bottom-back-to-batch-btn');
+        const batchBackNav = document.getElementById('batch-back-nav');
+
+        if (backToBatchBtn) backToBatchBtn.addEventListener('click', window.returnToBatchView);
+        if (bottomBackToBatchBtn) bottomBackToBatchBtn.addEventListener('click', window.returnToBatchView);
+
         if (singleTab && batchTab) {
             singleTab.addEventListener('click', () => {
                 singleTab.classList.add('active');
@@ -593,6 +671,13 @@
                 if (singleForm) singleForm.style.display = 'none';
                 if (batchForm) batchForm.style.display = 'block';
                 if (resultsSection) resultsSection.style.display = 'none';
+                if (batchBackNav) batchBackNav.style.display = 'none';
+                if (bottomBackToBatchBtn) bottomBackToBatchBtn.style.display = 'none';
+
+                // Automatically restore batch results if they were already loaded!
+                if (currentBatchData && batchResultsSection) {
+                    batchResultsSection.style.display = 'block';
+                }
             });
         }
 
