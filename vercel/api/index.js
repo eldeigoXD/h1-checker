@@ -96,8 +96,20 @@ module.exports = async (req, res) => {
 
   // 0. Bookmarklet Extracted Deliverable Store Endpoints
   if (pathname === '/api/save-extracted-dynamics') {
+    let payload = { ...body };
+    const compUrl = (payload.completed_page_url || '').trim();
+    let pageEx = (payload.page_example_url || payload.page_example_raw || '').trim();
+    if (pageEx && !/^https?:\/\//i.test(pageEx) && compUrl) {
+      try {
+        const u = compUrl.startsWith('http') ? compUrl : ('https://' + compUrl);
+        const origin = new URL(u).origin;
+        const normPath = pageEx.startsWith('/') ? pageEx : ('/' + pageEx);
+        payload.page_example_url = origin + normPath;
+        payload.page_example_live_url = origin + normPath;
+      } catch(e) {}
+    }
     latestExtractedDeliverable = {
-      ...body,
+      ...payload,
       updatedAt: Date.now()
     };
     return res.status(200).json({ success: true, message: 'Extracted deliverable saved successfully' });
@@ -265,7 +277,7 @@ module.exports = async (req, res) => {
     filtered.sort((a, b) => (b.use_count || 1) - (a.use_count || 1));
 
     const total = filtered.length;
-    const paginated = filtered.slice(offset, offset + limit);
+    const paginated = limit > 0 ? filtered.slice(offset, offset + limit) : filtered.slice(offset);
 
     return res.status(200).json({
       success: true,

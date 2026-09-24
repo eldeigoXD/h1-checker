@@ -56,16 +56,18 @@ def sync_image_bank_to_vercel():
     if not VERCEL_URL or "localhost" in VERCEL_URL:
         return
     try:
-        resp = requests.get(f"{LOCAL_FLASK_URL}/api/image-bank?limit=300", timeout=10)
+        resp = requests.get(f"{LOCAL_FLASK_URL}/api/image-bank?limit=0", timeout=20)
         if resp.status_code == 200:
             data = resp.json()
             assets = data.get("assets", [])
             if assets:
                 sync_url = f"{VERCEL_URL}/api/image-bank/sync?key={WORKER_SECRET}"
                 headers = {"X-Worker-Secret": WORKER_SECRET, "Content-Type": "application/json"}
-                r_sync = requests.post(sync_url, json={"assets": assets}, headers=headers, timeout=15)
+                r_sync = requests.post(sync_url, json={"assets": assets}, headers=headers, timeout=30)
                 if r_sync.status_code == 200:
-                    print(f"   [IMAGE BANK] Synced {len(assets)} local vehicle image assets to Vercel.")
+                    res_json = r_sync.json()
+                    total_db = res_json.get("total_in_db", len(assets))
+                    print(f"   [IMAGE BANK] Synced {len(assets)} local vehicle image assets to Vercel (Total in Bank: {total_db}).")
     except Exception as e:
         print(f"   [IMAGE BANK WARN] Could not sync Image Bank to Vercel: {e}")
 

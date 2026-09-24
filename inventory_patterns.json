@@ -1,4 +1,7 @@
 {
+  "tylertylerfordfd.cms.dealer.com": {
+    "/new-ford/trucks-tyler-tx.htm": "https://tylertylerfordfd.cms.dealer.com/new-inventory/index.htm?normalBodyStyle=Truck&make=Ford"
+  },
   "www.baldhilldodgechrysler.net": {
     "/used-inventory/used-jeep-for-sale-warwick-ri.htm": "https://www.baldhilldodgechrysler.net/used-inventory/index.htm?make=Jeep",
     "/new-ram/1500-inventory-warwick.htm": "/new-inventory/index.htm?model=1500&make=Ram"
@@ -52,7 +55,9 @@
   },
   "www.chevroletofalexandria.com": {
     "/used-chevy/trucks.htm": "/used-inventory/index.htm?accountId=ourismanchevroletbuickgmcofalex&normalBodyStyle=Truck&make=Chevrolet",
-    "/used-chevy/malibu-alexandria.htm": "/used-inventory/index.htm?accountId=ourismanchevroletbuickgmcofalex&make=Chevrolet&model=Malibu"
+    "/used-chevy/malibu-alexandria.htm": "/used-inventory/index.htm?accountId=ourismanchevroletbuickgmcofalex&make=Chevrolet&model=Malibu",
+    "/used-chevy/trax-alexandria.htm": "/used-inventory/index.htm?model=Trax&make=Chevrolet",
+    "/new-chevrolet/bolt-alexandria-va.htm": "/new-inventory/index.htm?model=Bolt&make=Chevrolet"
   },
   "wshealeychevroletbuickinc.cms.dealer.com": {
     "/compare/chevy-equinox-vs-toyota-rav4-newburgh-ny.htm": "/new-inventory/index.htm?model=Equinox"
@@ -83,7 +88,8 @@
   "www.fredbeansdodgechryslerjeep.com": {
     "/new-jeep/grand-wagoneer-doylestown-pa.htm": "/new-inventory/index.htm?make=Jeep&model=Grand%20Wagoneer",
     "/used-jeep/gladiator-doylestown-pa.htm": "/used-inventory/index.htm?model=Gladiator&make=Jeep",
-    "/used-ram/2500-doylestown-pa.htm": "/used-inventory/index.htm?model=Ram+2500&make=Ram"
+    "/used-ram/2500-doylestown-pa.htm": "/used-inventory/index.htm?model=Ram+2500&make=Ram",
+    "/new-ram/2500-doylestown-pa.htm": "/new-inventory/index.htm?model=2500&make=Ram"
   },
   "www.bakerchryslerdodgejeepramlowell.com": {
     "/new-ram/ram-lowell-mi.htm": "/new-inventory/index.htm?make=Ram&normalBodyStyle=Truck"
@@ -152,7 +158,8 @@
     "/new-mercedes-benz/luxury-suvs-glendale-ca.htm": "https://www.calstarmercedes.com/new-inventory/index.htm?normalBodyStyle=SUV&make=Mercedes-Benz"
   },
   "www.gerrylanechevrolet.com": {
-    "/new-inventory/blazer-baton-rouge-la.htm": "/new-inventory/index.htm?model=Blazer"
+    "/new-inventory/blazer-baton-rouge-la.htm": "/new-inventory/index.htm?model=Blazer",
+    "/new-inventory/index.htm": "https://www.gerrylanechevrolet.com/new-inventory/index.htm"
   },
   "www.andrewscadillacmtjuliet.com": {
     "/used-inventory/used-bmw.htm": "/used-inventory/index.htm?make=BMW"
@@ -166,7 +173,8 @@
   },
   "www.helmsmotor.com": {
     "/certified-inventory/index.htm": "/certified-inventory/index.htm",
-    "/all-inventory/index.htm": "/all-inventory/index.htm"
+    "/all-inventory/index.htm": "/all-inventory/index.htm",
+    "/new-jeep/gladiator.htm": "/new-inventory/index.htm?model=Gladiator&make=Jeep"
   },
   "macintyrecheoldcadbuiponinc.cms.dealer.com": {
     "/used-inventory/suvs.htm": "/used-inventory/index.htm?normalBodyStyle=SUV"
@@ -247,7 +255,8 @@
   },
   "www.aldermanchevrolet.com": {
     "/new-inventory/chevrolet-silverado-1500-rutland-vt.htm": "https://www.aldermanchevrolet.com/new-inventory/index.htm?model=Silverado%201500&make=Chevrolet",
-    "/new-inventory/chevrolet-traverse-rutland-vt.htm": "https://www.aldermanchevrolet.com/new-inventory/index.htm?model=Traverse&make=Chevrolet"
+    "/new-inventory/chevrolet-traverse-rutland-vt.htm": "https://www.aldermanchevrolet.com/new-inventory/index.htm?model=Traverse&make=Chevrolet",
+    "/new-inventory/chevrolet-bolt-rutland-vt.htm": "/new-inventory/index.htm?model=Bolt&make=Chevrolet"
   },
   "bradleyfordfd.cms.dealer.com": {
     "/used-inventory/ford-trucks-lake-havasu.htm": "https://bradleyfordfd.cms.dealer.com/used-inventory/index.htm?normalBodyStyle=Truck&make=Ford"
@@ -318,16 +327,21 @@
     "/used-inventory/used-hyundai.htm": "/used-inventory/index.htm?make=Hyundai"
   },
   "www.genesisoflongview.com": {
-    "/used-cars/genesis/longview-tx.htm": "https://www.genesisoflongview.com/used-inventory/index.htm?make=Genesis"
+    "/used-cars/genesis/longview-tx.htm": "https://www.genesisoflongview.com/used-inventory/index.htm?make=Genesis",
+    "/new/genesis-gv80-coupe-longview-tx.htm": "/new-inventory/index.htm?model=GV80%20Coupe&make=Genesis"
   },
   "jimpeachmotorsfordfd.cms.dealer.com": {
     "/used-inventory/index.htm": "https://jimpeachmotorsfordfd.cms.dealer.com/used-inventory/index.htm"
   },
   "www.cannonchryslerdodgejeepram.net": {
-    "/used-inventory/index.htm": "https://www.cannonchryslerdodgejeepram.net/used-inventory/index.htm"
+    "/used-inventory/index.htm": "https://www.cannonchryslerdodgejeepram.net/used-inventory/index.htm",
+    "/new-ram/1500-greenwood-ms.htm": "/new-inventory/index.htm?model=1500&make=Ram",
+    "/new-jeep/wrangler-greenwood-ms.htm": "/new-inventory/index.htm?model=Wrangler&make=Jeep"
   },
   "richarchboldfordfd.cms.dealer.com": {
-    "/new-inventory/ford-truck-model-lineup-archbold.htm": "https://richarchboldfordfd.cms.dealer.com/new-inventory/index.htm?normalBodyStyle=Truck&make=Ford"
+    "/new-inventory/ford-truck-model-lineup-archbold.htm": "https://richarchboldfordfd.cms.dealer.com/new-inventory/index.htm?normalBodyStyle=Truck&make=Ford",
+    "/used-inventory/index.htm": "/used-inventory/index.htm",
+    "/new/ford-explorer-suvs-archbold.htm": "/new-inventory/index.htm?model=Explorer&make=Ford"
   },
   "www.radleychevrolet.com": {
     "/used-inventory/index.htm": "https://www.radleychevrolet.com/used-inventory/index.htm"
@@ -345,9 +359,6 @@
     "/used-inventory/jeep-fort-payne-al.htm": "https://www.basswoodcdjr.com/used-inventory/index.htm?make=Jeep",
     "/used-inventory/trucks-fort-payne-al.htm": "https://www.basswoodcdjr.com/used-inventory/index.htm?normalBodyStyle=Truck",
     "/used-inventory/suv-for-sale-in-fort-payne.htm": "https://www.basswoodcdjr.com/used-inventory/index.htm?normalBodyStyle=SUV"
-  },
-  "tylertylerfordfd.cms.dealer.com": {
-    "/new-ford/trucks-tyler-tx.htm": "https://tylertylerfordfd.cms.dealer.com/new-inventory/index.htm?normalBodyStyle=Truck&make=Ford"
   },
   "www.pendarvischevy.com": {
     "/used-inventory/trucks-edgefield-sc.htm": "https://www.pendarvischevy.com/used-inventory/index.htm?normalBodyStyle=Truck"
@@ -369,7 +380,8 @@
     "/used-inventory/chevrolet-el-paso-tx.htm": "https://www.dickpoechryslerjeep.net/used-inventory/index.htm?make=Chevrolet"
   },
   "www.hudsontoyota.com": {
-    "/new/toyota-electric-vehicles-jersey-city.htm": "https://www.hudsontoyota.com/new-inventory/index.htm?make=Toyota&normalFuelType=Electric"
+    "/new/toyota-electric-vehicles-jersey-city.htm": "https://www.hudsontoyota.com/new-inventory/index.htm?make=Toyota&normalFuelType=Electric",
+    "/new/toyota-crown-signia-jersey-city.htm": "/new-inventory/index.htm?model=Crown%20Signia&make=Toyota"
   },
   "jeffsmithfordfd.cms.dealer.com": {
     "/new-inventory/trucks.htm": "https://jeffsmithfordfd.cms.dealer.com/new-inventory/index.htm?normalBodyStyle=Truck",
@@ -419,7 +431,8 @@
     "/used-hyundai/suv-roswell-nm.htm": "https://www.roswellhyundai.com/used-inventory/index.htm?normalBodyStyle=SUV&make=Hyundai"
   },
   "www.countrysidepre-owned.com": {
-    "/used-inventory/ford-trucks-for-sale-jackson-ga.htm": "https://www.countrysidepre-owned.com/used-inventory/index.htm?normalBodyStyle=Truck&make=Ford"
+    "/used-inventory/ford-trucks-for-sale-jackson-ga.htm": "https://www.countrysidepre-owned.com/used-inventory/index.htm?normalBodyStyle=Truck&make=Ford",
+    "/used-trucks-under-30k-jackson-ga.htm": "/used-inventory/index.htm?normalBodyStyle=Truck&internetPrice=1-30000"
   },
   "jensenslemarsfordfd.cms.dealer.com": {
     "/used-inventory/suvs-for-sale-in-le-mars.htm": "https://jensenslemarsfordfd.cms.dealer.com/used-inventory/index.htm?normalBodyStyle=SUV"
@@ -564,7 +577,8 @@
   },
   "billmarshfordfd.cms.dealer.com": {
     "/new-ford/bronco-sport-newtown-pa.htm": "/new-inventory/index.htm?model=Bronco+Sport&make=Ford",
-    "/new-ford/expedition-newtown-pa.htm": "/new-inventory/index.htm?model=Expedition&make=Ford"
+    "/new-ford/expedition-newtown-pa.htm": "/new-inventory/index.htm?model=Expedition&make=Ford",
+    "/new-ford/trucks-newtown-pa.htm": "/new-inventory/index.htm?normalBodyStyle=Truck&make=Ford"
   },
   "www.deanmccrarykia.com": {
     "/new-inventory/index.htm": "https://www.deanmccrarykia.com/new-inventory/index.htm"
@@ -841,7 +855,8 @@
     "/new-ram/ram-1500-towing-capacity-marianna-fl.htm": "/new-inventory/index.htm?model=1500&make=Ram"
   },
   "www.cannoncdjrofcleveland.com": {
-    "/used-cars/chevrolet/ms.htm": "https://www.cannoncdjrofcleveland.com/used-inventory/index.htm?make=Chevrolet"
+    "/used-cars/chevrolet/ms.htm": "https://www.cannoncdjrofcleveland.com/used-inventory/index.htm?make=Chevrolet",
+    "/new-ram/1500-ms.htm": "/new-inventory/index.htm?model=1500&make=Ram"
   },
   "www.perkinsmotorplex.com": {
     "/all-inventory/index.htm": "https://www.perkinsmotorplex.com/all-inventory/index.htm"
@@ -955,7 +970,8 @@
     "/used-ram/ram-2500.htm": "/used-inventory/index.htm?model=2500&make=Ram"
   },
   "www.gatorchrysler.net": {
-    "/new/ram-1500.htm": "/new-inventory/index.htm?model=1500&make=Ram"
+    "/new/ram-1500.htm": "/new-inventory/index.htm?model=1500&make=Ram",
+    "/used-cars/under-15k.htm": "/used-inventory/index.htm?internetPrice=1-15000"
   },
   "www.simmonsrockwellfordofhallstead.com": {
     "/used-inventory/chevy.htm": "https://www.simmonsrockwellfordofhallstead.com/used-inventory/index.htm?make=Chevrolet"
@@ -990,7 +1006,8 @@
   },
   "www.aldermangmc.com": {
     "/new-gmc/suvs/sale-rutland-vt.htm": "https://www.aldermangmc.com/new-inventory/index.htm?normalBodyStyle=SUV&make=GMC",
-    "/new-gmc/trucks/sale-rutland-vt.htm": "https://www.aldermangmc.com/new-inventory/index.htm?normalBodyStyle=Truck&make=GMC"
+    "/new-gmc/trucks/sale-rutland-vt.htm": "https://www.aldermangmc.com/new-inventory/index.htm?normalBodyStyle=Truck&make=GMC",
+    "/new-inventory/gmc-yukon-rutland-vt.htm": "/new-inventory/index.htm?model=Yukon&make=GMC"
   },
   "www.peachchrysler-brewton.com": {
     "/used-cars-for-sale-crestview-fl.htm": "/used-inventory/index.htm"
@@ -1005,7 +1022,8 @@
     "/used-inventory/index.htm": "https://www.mannchryslerdodgejeepofrichmond.com/used-inventory/index.htm"
   },
   "www.weathersmotors.com": {
-    "/used-inventory/suvs-media-pa.htm": "https://www.weathersmotors.com/used-inventory/index.htm?normalBodyStyle=SUV"
+    "/used-inventory/suvs-media-pa.htm": "https://www.weathersmotors.com/used-inventory/index.htm?normalBodyStyle=SUV",
+    "/used-inventory/trucks-media-pa.htm": "/used-inventory/index.htm?normalBodyStyle=Truck"
   },
   "www.plattevalleyauto.com": {
     "/used-inventory/used-trucks-lexington-ne.htm": "https://www.plattevalleyauto.com/used-inventory/index.htm?normalBodyStyle=Truck"
@@ -1234,7 +1252,8 @@
     "/used-inventory/suvs-hickory-nc.htm": "https://www.stevewhitemotors.net/used-inventory/index.htm?bodyStyle=SUV"
   },
   "www.glocknergmc.com": {
-    "/used-inventory/index.htm": "https://www.glocknergmc.com/used-inventory/index.htm"
+    "/used-inventory/index.htm": "https://www.glocknergmc.com/used-inventory/index.htm",
+    "/new-inventory/gmc-yukon.htm": "/new-inventory/index.htm?model=Yukon&make=GMC"
   },
   "guntercdjrmcllc.cms.dealer.com": {
     "/used-inventory/index.htm": "https://guntercdjrmcllc.cms.dealer.com/used-inventory/index.htm"
@@ -1348,5 +1367,218 @@
   },
   "www.pruittford.com": {
     "/new-inventory/ford-expedition-burkburnett-tx.htm": "/new-inventory/index.htm?model=Expedition&make=Ford"
+  },
+  "uniquefordfd.cms.dealer.com": {
+    "/used-inventory/used-ford-suvs-goffstown-nh.htm": "/used-inventory/index.htm?normalBodyStyle=SUV&make=Ford"
+  },
+  "vaughnchevroletbgmcbunkie.cms.dealer.com": {
+    "/new-chevy/blazer.htm": "/new-inventory/index.htm?model=Blazer&make=Chevrolet"
+  },
+  "montgomerymotorsfordfd.cms.dealer.com": {
+    "/new-ford/f150-troy-nc.htm": "/new-inventory/index.htm?model=F-150&make=Ford"
+  },
+  "countrysidegafordfd.cms.dealer.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
+  },
+  "www.autoparkcdjr.com": {
+    "/used-inventory/index.htm": "/used-inventory/index.htm"
+  },
+  "www.auto-mattox.com": {
+    "/used-inventory/volkswagen-for-sale-in-appomattox-virginia.htm": "/used-inventory/index.htm?make=Volkswagen"
+  },
+  "www.douglasssubaru.com": {
+    "/new-subaru/ascent-waco-texas.htm": "/new-inventory/index.htm?model=Ascent&make=Subaru"
+  },
+  "www.salemhyundai.com": {
+    "/new-hyundai-dealer/santa-fe-suv-trims-nashua-nh.htm": "/new-inventory/index.htm?model=Santa%20Fe&make=Hyundai"
+  },
+  "www.regalgmc.com": {
+    "/new-gmc/terrain-lakeland-fl.htm": "/new-inventory/index.htm?model=Terrain&make=GMC"
+  },
+  "www.fredbeansbuickgmcmechanicsburg.com": {
+    "/new-gmc/acadia-mechanicsburg-pa.htm": "/new-inventory/index.htm?model=Acadia&make=GMC"
+  },
+  "www.regalchevrolet.com": {
+    "/used-inventory/chevrolet/malibu.htm": "/used-inventory/index.htm?model=Malibu&make=Chevrolet"
+  },
+  "vaughncdjbunkiecllc.cms.dealer.com": {
+    "/new-jeep/grand-wagoneer.htm": "/new-inventory/index.htm?model=Grand%20Wagoneer&make=Jeep"
+  },
+  "antwerpenchevroleteldersburg.cms.dealer.com": {
+    "/chevy-dealer-near-frederick-md.htm": "/new-inventory/index.htm?make=Chevrolet"
+  },
+  "1stchoicemotors.cms.dealer.com": {
+    "/used-inventory/used-sedans-madison-heights-va.htm": "/used-cars/madison-heights-virginia.htm?normalBodyStyle=Sedan"
+  },
+  "aldermanschevygm.cms.dealer.com": {
+    "/new-inventory/chevrolet-silverado-2500-rutland-vt.htm": "/new-inventory/index.htm?model=Silverado%202500%20HD&make=Chevrolet"
+  },
+  "bmwofsouthamptonny.cms.dealer.com": {
+    "/new-bmw/suvs.htm": "/new-inventory/index.htm?normalBodyStyle=SUV&make=BMW"
+  },
+  "landroverfarmingtonhillslr.cms.dealer.com": {
+    "/dealership/serving-waterford-mi.htm": "SUM: /new-inventory/index.htm | /used-inventory/index.htm"
+  },
+  "fredbeansacuraabingtonadw.cms.dealer.com": {
+    "/used-inventory/acura-abington-pa.htm": "/used-inventory/index.htm?make=Acura"
+  },
+  "cleburnefordfd.cms.dealer.com": {
+    "/used-cars/ford/explorer-cleburne-tx.htm": "/used-inventory/index.htm?model=Explorer&make=Ford"
+  },
+  "www.genesisofnorthplainfield.com": {
+    "/new-genesis/gv70.htm": "/new-inventory/index.htm?model=GV70&make=Genesis"
+  },
+  "www.smithmercedesdealer.com": {
+    "/compare/mercedes-benz-gla-250-vs-other-luxury-suvs.htm": "/new-inventory/index.htm?model=GLA%20250&make=Mercedes-Benz"
+  },
+  "www.kenganleyvwbedford.com": {
+    "/new-inventory/volkswagen-lineup.htm": "/new-inventory/index.htm?make=Volkswagen"
+  },
+  "www.stanmcnabbcdjr.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
+  },
+  "www.tricitysubaru.com": {
+    "/certified-inventory/index.htm": "/certified-inventory/index.htm"
+  },
+  "www.danperkinssubaru.com": {
+    "/certified-inventory/index.htm": "/certified-inventory/index.htm"
+  },
+  "rameyprincetongmc.cms.dealer.com": {
+    "/new-inventory/gmc-acadia-in-princeton-wv.htm": "/new-inventory/index.htm?model=Acadia&make=GMC"
+  },
+  "www.michelleradleychevrolet.com": {
+    "/used-inventory/gmc-for-sale-leesburg-va.htm": "/used-inventory/index.htm?make=GMC"
+  },
+  "www.wolfchasetoyota.com": {
+    "/new/toyota-highlander-memphis.htm": "/new-inventory/index.htm?model=Highlander&make=Toyota"
+  },
+  "www.rameygmcprinceton.com": {
+    "/new-inventory/gmc-yukon-in-princeton-wv.htm": "/new-inventory/index.htm?model=Yukon&make=GMC"
+  },
+  "www.woodnissants.com": {
+    "/new-inventory/nissan-pathfinder-kansas-city-mo.htm": "/new-inventory/index.htm?model=Pathfinder&make=Nissan"
+  },
+  "reinekefindlayfordfd.cms.dealer.com": {
+    "/new/2026-ford-f150.htm": "/new-inventory/index.htm?model=F-150&make=Ford"
+  },
+  "www.schumacherlakepark.com": {
+    "/new-gmc/sierra-1500-north-palm-beach.htm": "/new-inventory/index.htm?model=Sierra%201500&make=GMC"
+  },
+  "schumachercdjrdelraycllc.cms.dealer.com": {
+    "/new-jeep/grand-cherokee-delray.htm": "/new-inventory/index.htm?model=Grand%20Cherokee&make=Jeep"
+  },
+  "www.ganleysubarueast.com": {
+    "/dealership/serving-lake-county-oh.htm": "SUM: /new-inventory/index.htm | /used-cars/wickliffe-ohio.htm"
+  },
+  "www.reinekefordfindlay.com": {
+    "/new/2026-ford-bronco.htm": "/new-inventory/index.htm?model=Bronco&make=Ford",
+    "/new/2026-ford-expedition.htm": "/new-inventory/index.htm?model=Expedition&make=Ford"
+  },
+  "www.communitychevy.net": {
+    "/used-inventory/index.htm": "/used-inventory/index.htm"
+  },
+  "www.driscollmotors.com": {
+    "/new-inventory/chevrolet-traverse-pontiac-il.htm": "/new-inventory/index.htm?model=Traverse&make=Chevrolet",
+    "/new-inventory/chevrolet-equinox-pontiac-il.htm": "/new-inventory/index.htm?model=Equinox&make=Chevrolet"
+  },
+  "www.kenganleylincoln.com": {
+    "/new-inventory/lincoln-lineup.htm": "/new-inventory/index.htm?make=Lincoln"
+  },
+  "www.steelechryslerlockhart.com": {
+    "/new-inventory/suvs-lockhart-tx.htm": "/new-inventory/index.htm?normalBodyStyle=SUV",
+    "/new-inventory/trucks-lockhart-tx.htm": "/new-inventory/index.htm?normalBodyStyle=Truck"
+  },
+  "www.beshorekollerford.com": {
+    "/new-inventory/trucks-manchester-pa.htm": "/new-inventory/index.htm?normalBodyStyle=Truck",
+    "/new-inventory/ford-f150-manchester-pa.htm": "/new-inventory/index.htm?model=F-150&make=Ford"
+  },
+  "www.yarkchevrolet.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm",
+    "/used-inventory/index.htm": "/used-inventory/index.htm"
+  },
+  "www.kandrautosales.com": {
+    "/used-inventory/jeep-auburn-me.htm": "/used-inventory/index.htm?make=Jeep",
+    "/used-inventory/suvs-auburn-me.htm": "/used-inventory/index.htm?normalBodyStyle=SUV"
+  },
+  "www.mbsacramento.com": {
+    "/used-inventory/index.htm": "/used-inventory/index.htm"
+  },
+  "www.wiesnerbuickgmc.com": {
+    "/used-cars/ram/conroe-tx.htm": "/used-inventory/index.htm?make=Ram"
+  },
+  "williamssubarusoa.cms.dealer.com": {
+    "/dealership/directions.htm": "SUM: /new-inventory/index.htm | /used-inventory/index.htm",
+    "/used-inventory/hybrid-and-electric-vehicles-lansing-mi.htm": "/used-inventory/index.htm?normalFuelType=Electric&normalFuelType=Hybrid"
+  },
+  "www.volvocarswesleychapel.com": {
+    "/new-volvo/xc40-wesley-chapel.htm": "/new-inventory/index.htm?model=XC40&make=Volvo",
+    "/new-volvo/ex90-wesley-chapel.htm": "/new-inventory/index.htm?model=EX90&make=Volvo"
+  },
+  "www.lansingsubaru.com": {
+    "/new-inventory/new-subaru-hybrid-vehicles-for-sale-in-lansing-mi-at-williams-subaru.htm": "/new-inventory/index.htm?make=Subaru&normalFuelType=Hybrid"
+  },
+  "www.cadillacofbirmingham.com": {
+    "/new-cadillac/optiq.htm": "/new-inventory/index.htm?model=OPTIQ",
+    "/new-cadillac/vistiq.htm": "/new-inventory/index.htm?model=VISTIQ"
+  },
+  "cutterfordfd.cms.dealer.com": {
+    "/new-ford/bronco-sport-aiea-hi.htm": "/new-inventory/index.htm?model=Bronco%20Sport&make=Ford"
+  },
+  "woodcitypreowned.cms.dealer.com": {
+    "/new-inventory/nissan.htm": "/new-inventory/index.htm?make=Nissan"
+  },
+  "www.keastgmc.com": {
+    "/used-inventory/gmc-harlan-ia.htm": "/used-inventory/index.htm?make=GMC"
+  },
+  "www.toyotasm.com": {
+    "/dealership/serving-arroyo-grande.htm": "SUM: /new-inventory/index.htm | /used-inventory/index.htm"
+  },
+  "www.louisthomassubaru.com": {
+    "/new-subaru/impreza-athens-oh.htm": "/new-inventory/index.htm?model=Impreza&make=Subaru"
+  },
+  "www.envisionhondaofmilpitas.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
+  },
+  "www.crippengmcars.com": {
+    "/2027-gmc-terrain.htm": "/new-inventory/index.htm?model=Terrain&make=GMC"
+  },
+  "www.patfischernissan.com": {
+    "/used-nissan/rogue-titusville-fl.htm": "/used-inventory/index.htm?model=Rogue&make=Nissan"
+  },
+  "www.fowlerhonda.com": {
+    "/new-honda/passport-for-sale-in-norman.htm": "/new-inventory/index.htm?model=Passport&make=Honda"
+  },
+  "rustywallacecadillacgmcmorristown.cms.dealer.com": {
+    "/compare/gmc-sierra-2500-vs-competition.htm": "/new-inventory/index.htm?model=Sierra%202500%20HD&make=GMC"
+  },
+  "www.andrewscadillac.com": {
+    "/new-cadillac/vistiq-brentwood-tn.htm": "/new-inventory/index.htm?model=VISTIQ"
+  },
+  "www.vwofwaco.com": {
+    "/new-volkswagen/suvs-waco-tx.htm": "/new-inventory/index.htm?normalBodyStyle=SUV&make=Volkswagen"
+  },
+  "www.kenganleysubarubedford.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
+  },
+  "www.fredbeanscadillac.com": {
+    "/new-cadillac/optiq-doylestown-pa.htm": "/new-inventory/index.htm?model=OPTIQ"
+  },
+  "cannoncadillacofoxford.cms.dealer.com": {
+    "/used-cars/bmw/mississippi.htm": "/used-inventory/index.htm?make=BMW"
+  },
+  "www.cannonchevroletcadillac.com": {
+    "/new-chevrolet/traverse-oxford-ms.htm": "/new-inventory/index.htm?model=Traverse&make=Chevrolet"
+  },
+  "toyotaofsanluisobispo.cms.dealer.com": {
+    "/used-inventory/used-car-buying-guide.htm": "/used-inventory/index.htm"
+  },
+  "www.kenganleyvwwilloughbyhills.com": {
+    "/used-cars/willoughby-hills-ohio.htm": "/used-inventory/index.htm"
+  },
+  "www.gabrieljordanford.net": {
+    "/used-inventory/suvs.htm": "/used-inventory/index.htm?normalBodyStyle=SUV"
+  },
+  "www.upstatechevyofattica.com": {
+    "/used-inventory/chevy-suvs-attica-ny.htm": "/used-inventory/index.htm?normalBodyStyle=SUV&make=Chevrolet"
   }
 }

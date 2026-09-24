@@ -158,10 +158,44 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
             details = "Page content/text detected on page." if found else "No significant page content found."
 
     elif "breadcrumb" in element:
+        import re as _re_bc
         has_schema = bool(soup.find(attrs={'itemtype': lambda x: x and 'BreadcrumbList' in x})) if soup else False
-        has_class = bool(soup.find(attrs={'class': lambda x: x and 'breadcrumb' in x.lower()})) if soup else False
+        has_class = bool(soup.select('.breadcrumb, .breadcrumbs, [class*="breadcrumb"], [id*="breadcrumb"], .ws-breadcrumbs')) if soup else False
         has_widget = bool(soup.find(attrs={'data-widget-name': lambda x: x and 'breadcrumb' in x.lower()})) if soup else False
-        found = has_schema or has_class or has_widget
+        has_aria = bool(soup.find(['nav', 'ol', 'ul', 'div'], attrs={'aria-label': _re_bc.compile(r'breadcrumb', _re_bc.I)})) if soup else False
+        has_json_ld = False
+        if soup:
+            for s in soup.find_all('script', type='application/ld+json'):
+                if s.string and 'BreadcrumbList' in s.string:
+                    has_json_ld = True
+                    break
+
+        has_inline_trail = False
+        if soup and not (has_schema or has_class or has_widget or has_aria or has_json_ld):
+            for el in soup.find_all(['ul', 'ol', 'nav', 'div', 'p']):
+                if el.name in ['header', 'footer'] or len(el.find_all(['ul', 'ol', 'section'])) > 1:
+                    continue
+                links = el.find_all('a')
+                if not (1 <= len(links) <= 8):
+                    continue
+                first_a = links[0]
+                first_txt = first_a.get_text(strip=True).lower()
+                first_h = (first_a.get('href') or '').strip().lower()
+                has_first_home = first_txt in ['home', 'inicio'] or (first_h in ['/', '/index.htm', '/index.html'] and len(first_txt) <= 10)
+                if not has_first_home:
+                    continue
+                el_text = el.get_text(separator=' ')
+                has_sep = any(sep in el_text for sep in [' > ', ' >', '> ', ' › ', ' » ', ' / '])
+                if not has_sep:
+                    for child in el.find_all(['li', 'span', 'i']):
+                        if child.get_text(strip=True) in ['>', '›', '»', '/', '|', '→']:
+                            has_sep = True
+                            break
+                if has_first_home and has_sep:
+                    has_inline_trail = True
+                    break
+
+        found = has_schema or has_class or has_widget or has_aria or has_json_ld or has_inline_trail
         details = "Breadcrumb component detected in DOM." if found else "No breadcrumb component found."
         
     elif "hero" in element:

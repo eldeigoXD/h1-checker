@@ -202,7 +202,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const cleanedPageEx = cleanFieldText(data.page_example_url || '');
+        let cleanedPageEx = cleanFieldText(data.page_example_url || data.page_example_raw || '');
+        const targetPageUrl = cleanFieldText(data.completed_page_url || (urlInput ? urlInput.value : ''));
+        if (cleanedPageEx && !/^https?:\/\//i.test(cleanedPageEx)) {
+            if (targetPageUrl) {
+                try {
+                    let u = targetPageUrl.startsWith('http') ? targetPageUrl : ('https://' + targetPageUrl);
+                    let origin = new URL(u).origin;
+                    let normPath = cleanedPageEx.startsWith('/') ? cleanedPageEx : ('/' + cleanedPageEx);
+                    cleanedPageEx = origin + normPath;
+                } catch(e) {
+                    let m = targetPageUrl.match(/^(https?:\/\/[^\/\?\#]+)/i);
+                    if (m) {
+                        let normPath = cleanedPageEx.startsWith('/') ? cleanedPageEx : ('/' + cleanedPageEx);
+                        cleanedPageEx = m[1] + normPath;
+                    }
+                }
+            }
+        }
         if (expectedPageExampleInput) {
             expectedPageExampleInput.value = cleanedPageEx;
             if (cleanedPageEx) {
@@ -214,6 +231,28 @@ document.addEventListener('DOMContentLoaded', () => {
         window.currentDynamicsData = data;
 
         showDynamicsStatus(`✅ Successfully imported ${filledCount} fields from Dynamics CRM! Form is ready for scan.`, 'success');
+    }
+
+    // Auto-resolve relative page example path when user leaves or changes input
+    function autoResolvePageExampleInput() {
+        const pageExInp = document.getElementById('expected-page-example-input');
+        const urlInp = document.getElementById('url-input');
+        if (!pageExInp || !urlInp) return;
+        let val = pageExInp.value.trim();
+        let pageUrl = urlInp.value.trim();
+        if (val && !/^https?:\/\//i.test(val) && pageUrl) {
+            try {
+                let u = pageUrl.startsWith('http') ? pageUrl : ('https://' + pageUrl);
+                let origin = new URL(u).origin;
+                let normPath = val.startsWith('/') ? val : ('/' + val);
+                pageExInp.value = origin + normPath;
+            } catch(e) {}
+        }
+    }
+    const expectedPageExampleInputEl = document.getElementById('expected-page-example-input');
+    if (expectedPageExampleInputEl) {
+        expectedPageExampleInputEl.addEventListener('blur', autoResolvePageExampleInput);
+        expectedPageExampleInputEl.addEventListener('change', autoResolvePageExampleInput);
     }
 
     // Dynamics CRM Import Handler
@@ -348,13 +387,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleValidLinks) {
         toggleValidLinks.addEventListener('click', () => {
             const container = document.getElementById('valid-links-container');
+            const pills = document.getElementById('links-filter-pills');
             const span = toggleValidLinks.querySelector('span');
-            if (container.style.display === 'none') {
+            if (container.style.display === 'none' || container.style.display === '') {
                 container.style.display = 'block';
+                if (pills) pills.style.display = 'flex';
                 span.textContent = '▲';
             } else {
                 container.style.display = 'none';
+                if (pills) pills.style.display = 'none';
                 span.textContent = '▼';
+            }
+        });
+    }
+
+    const linksFilterPills = document.getElementById('links-filter-pills');
+    if (linksFilterPills) {
+        linksFilterPills.addEventListener('click', (e) => {
+            const btn = e.target.closest('.link-filter-btn');
+            if (!btn) return;
+            linksFilterPills.querySelectorAll('.link-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const filterType = btn.getAttribute('data-filter') || 'all';
+            if (typeof window.renderAnalyzedLinksList === 'function') {
+                window.renderAnalyzedLinksList(filterType);
             }
         });
     }
@@ -417,7 +473,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const expectedContent = document.getElementById('expected-content-input')?.value.trim() || '';
         const specialInstructions = document.getElementById('special-instructions-input')?.value.trim() || '';
         const customRules = document.getElementById('custom-rules-input')?.value.trim() || '';
-        const pageExampleUrl = document.getElementById('expected-page-example-input')?.value.trim() || window.currentDynamicsData?.page_example_url || '';
+        let pageExampleUrl = document.getElementById('expected-page-example-input')?.value.trim() || window.currentDynamicsData?.page_example_url || '';
+        if (pageExampleUrl && !/^https?:\/\//i.test(pageExampleUrl) && url) {
+            try {
+                let u = url.startsWith('http') ? url : ('https://' + url);
+                let origin = new URL(u).origin;
+                let normPath = pageExampleUrl.startsWith('/') ? pageExampleUrl : ('/' + pageExampleUrl);
+                pageExampleUrl = origin + normPath;
+                const pageExInput = document.getElementById('expected-page-example-input');
+                if (pageExInput) pageExInput.value = pageExampleUrl;
+            } catch(e) {}
+        }
         const pageExampleCmsUrl = window.currentDynamicsData?.page_example_cms_url || '';
         const pageExampleLiveUrl = window.currentDynamicsData?.page_example_live_url || '';
         const pageExampleRaw = window.currentDynamicsData?.page_example_raw || '';
@@ -655,25 +721,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const copyBtn = document.getElementById('copy-page-example-btn');
             const typeTag = document.getElementById('page-example-type-tag');
 
-            const cmsRow = document.getElementById('page-example-cms-row');
-            const cmsLink = document.getElementById('page-example-cms-link');
-            const openCmsBtn = document.getElementById('open-page-example-cms-btn');
-            const copyCmsBtn = document.getElementById('copy-page-example-cms-btn');
-
-            const liveRow = document.getElementById('page-example-live-row');
-            const liveLink = document.getElementById('page-example-live-link');
-            const openLiveBtn = document.getElementById('open-page-example-live-btn');
-            const copyLiveBtn = document.getElementById('copy-page-example-live-btn');
-
             const formInputVal = document.getElementById('expected-page-example-input')?.value.trim() || '';
             const dyn = window.currentDynamicsData || {};
 
             let primaryUrl = data.page_example_url || formInputVal || dyn.page_example_url || '';
-            let cmsUrl = data.page_example_cms_url || dyn.page_example_cms_url || '';
-            let liveUrl = data.page_example_live_url || dyn.page_example_live_url || '';
-            let pType = data.page_example_type || dyn.page_example_type || '';
+            const targetPageUrl = data.url || document.getElementById('url-input')?.value.trim() || dyn.completed_page_url || '';
 
-            if (!primaryUrl && !cmsUrl && !liveUrl) {
+            if (primaryUrl && !/^https?:\/\//i.test(primaryUrl) && targetPageUrl) {
+                try {
+                    let u = targetPageUrl.startsWith('http') ? targetPageUrl : ('https://' + targetPageUrl);
+                    let origin = new URL(u).origin;
+                    let normPath = primaryUrl.startsWith('/') ? primaryUrl : ('/' + primaryUrl);
+                    primaryUrl = origin + normPath;
+                } catch(e) {}
+            }
+
+            if (!primaryUrl) {
                 card.style.display = 'none';
                 return;
             }
@@ -703,62 +766,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (typeTag) {
-                if (pType === 'direct') {
-                    typeTag.textContent = '🌐 Enlace Directo CRM';
-                    typeTag.style.color = '#38bdf8';
-                } else if (pType === 'live') {
-                    typeTag.textContent = '🌐 Live Site + Path';
-                    typeTag.style.color = '#34d399';
-                } else if (pType === 'cms') {
-                    typeTag.textContent = '🛠️ CMS Dealer + Path';
-                    typeTag.style.color = '#fbbf24';
-                } else {
-                    typeTag.textContent = '';
-                }
-            }
-
-            // CMS Alternative Row (show if cmsUrl exists and differs from primaryUrl)
-            if (cmsUrl && cmsUrl !== primaryUrl) {
-                if (cmsRow) cmsRow.style.display = 'block';
-                if (cmsLink) {
-                    cmsLink.href = formatHref(cmsUrl);
-                    cmsLink.textContent = cmsUrl;
-                }
-                if (openCmsBtn) {
-                    openCmsBtn.href = formatHref(cmsUrl);
-                }
-                if (copyCmsBtn) {
-                    copyCmsBtn.onclick = () => {
-                        navigator.clipboard.writeText(cmsUrl);
-                        const orig = copyCmsBtn.textContent;
-                        copyCmsBtn.textContent = '✅ Copiado!';
-                        setTimeout(() => { copyCmsBtn.textContent = orig; }, 1500);
-                    };
-                }
-            } else {
-                if (cmsRow) cmsRow.style.display = 'none';
-            }
-
-            // Live Alternative Row (show if liveUrl exists and differs from primaryUrl)
-            if (liveUrl && liveUrl !== primaryUrl) {
-                if (liveRow) liveRow.style.display = 'block';
-                if (liveLink) {
-                    liveLink.href = formatHref(liveUrl);
-                    liveLink.textContent = liveUrl;
-                }
-                if (openLiveBtn) {
-                    openLiveBtn.href = formatHref(liveUrl);
-                }
-                if (copyLiveBtn) {
-                    copyLiveBtn.onclick = () => {
-                        navigator.clipboard.writeText(liveUrl);
-                        const orig = copyLiveBtn.textContent;
-                        copyLiveBtn.textContent = '✅ Copiado!';
-                        setTimeout(() => { copyLiveBtn.textContent = orig; }, 1500);
-                    };
-                }
-            } else {
-                if (liveRow) liveRow.style.display = 'none';
+                typeTag.textContent = '🌐 Reference URL';
+                typeTag.style.color = '#38bdf8';
             }
         }
         renderPageExample(data);
@@ -1038,24 +1047,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 rulesCard.style.borderLeftColor = '#ff4d4d';
             }
 
+            // Consolidate duplicates if present (e.g. from historical data or re-evaluation)
+            const consolidatedEvals = [];
+            const seenEvals = new Map();
+            (evals || []).forEach(item => {
+                let key = (item.found_href || item.original || '').trim().toLowerCase();
+                try {
+                    if (key.startsWith('http')) key = new URL(key).pathname.toLowerCase().replace(/\/$/, '');
+                } catch(e) {}
+                key = key.replace(/\/$/, '');
+                if (!key) key = (item.original || '').trim().toLowerCase();
+
+                if (seenEvals.has(key)) {
+                    const existing = seenEvals.get(key);
+                    existing.repeat_count = (existing.repeat_count || 1) + (item.repeat_count || 1);
+                } else {
+                    const copy = { ...item, repeat_count: item.repeat_count || 1 };
+                    seenEvals.set(key, copy);
+                    consolidatedEvals.push(copy);
+                }
+            });
+
             let html = '<ul style="list-style:none; padding:0; margin:0;">';
-            evals.forEach(c => {
+            consolidatedEvals.forEach(c => {
                 const isSuccess = c.status === 'success';
                 const hasCoherenceWarn = isSuccess && c.coherence_warning;
+                const repeatCount = (c.repeat_count && c.repeat_count > 1) ? c.repeat_count : 1;
+                const repeatBadge = repeatCount > 1 
+                    ? `<span class="badge-repeat" style="display:inline-flex; align-items:center; gap:3px; font-size:0.73rem; font-weight:600; background:rgba(56, 189, 248, 0.12); border:1px solid rgba(56, 189, 248, 0.35); border-radius:6px; padding:1px 7px; margin-left:8px; color:#38bdf8; vertical-align:middle;" title="Solicitado ${repeatCount} veces en el request">🔁 Repetido ×${repeatCount}</span>` 
+                    : '';
 
                 let icon, color, msg, subMsg;
                 if (isSuccess && !hasCoherenceWarn) {
                     icon = '✅'; color = '#4caf50';
-                    msg = `Found CTA for "${escapeHTML(c.original)}"`;
+                    msg = `Found CTA for "${escapeHTML(c.original)}"${repeatBadge}`;
                     const foundText = c.found_text ? ` → Linked text: "${escapeHTML(c.found_text)}"` : '';
                     subMsg = `Resolved URL: ${escapeHTML(c.found_href || 'N/A')}${foundText}`;
                 } else if (isSuccess && hasCoherenceWarn) {
                     icon = '⚠️'; color = '#ffb74d';
-                    msg = `Path found for "${escapeHTML(c.original)}" but link text may be incoherent`;
+                    msg = `Path found for "${escapeHTML(c.original)}"${repeatBadge} but link text may be incoherent`;
                     subMsg = `${escapeHTML(c.coherence_warning)} — Resolved URL: ${escapeHTML(c.found_href || 'N/A')}, Actual text: "${escapeHTML(c.found_text || '')}"`;
                 } else {
                     icon = '❌'; color = '#ff7b72';
-                    msg = `Could not find CTA matching "${escapeHTML(c.original)}"`;
+                    msg = `Could not find CTA matching "${escapeHTML(c.original)}"${repeatBadge}`;
                     subMsg = `Please check if it exists on the page.`;
                 }
 
@@ -1358,6 +1392,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Links UI Logic
         const linksCard = document.getElementById('links-card');
         const countTxt = document.getElementById('total-links-count');
+        const linksSummaryBadge = document.getElementById('links-summary-badge');
+        const countRel = document.getElementById('count-rel');
+        const countAbs = document.getElementById('count-abs');
+        const countOk = document.getElementById('count-ok');
+        const countBroken = document.getElementById('count-broken');
+        const pillBroken = document.getElementById('pill-broken');
+
+        const absoluteLinksContainer = document.getElementById('absolute-links-container');
+        const absoluteLinksCount = document.getElementById('absolute-links-count');
+        const absoluteLinksList = document.getElementById('absolute-links-list');
+
+        const filterCountAll = document.getElementById('filter-count-all');
+        const filterCountRel = document.getElementById('filter-count-rel');
+        const filterCountAbs = document.getElementById('filter-count-abs');
+        const filterCountBroken = document.getElementById('filter-count-broken');
+
         const brokenLinksContainer = document.getElementById('broken-links-container');
         const brokenAnchorsContainer = document.getElementById('broken-anchors-container');
         const validLinksContainer = document.getElementById('valid-links-container');
@@ -1371,28 +1421,140 @@ document.addEventListener('DOMContentLoaded', () => {
         const coherenceLinksList = document.getElementById('coherence-links-list');
         const linksSuccessMsg = document.getElementById('links-success-msg');
 
+        function createEnhancedLinkItem(item, highlightAbsolute = false) {
+            const li = document.createElement('li');
+            const isBtn = item.type === 'button';
+            const isAbs = !!item.is_absolute;
+            const exists = item.exists !== false && (!item.status || item.status < 400);
+            const statusCode = item.status || (exists ? 200 : 404);
+
+            li.className = isAbs ? 'link-card-absolute' : 'link-card-relative';
+            li.style.display = 'flex';
+            li.style.flexDirection = 'column';
+            li.style.gap = '0.35rem';
+            li.style.padding = '0.65rem 0.85rem';
+            li.style.borderRadius = '6px';
+            li.style.marginBottom = '0.5rem';
+
+            const typeTag = `<span class="link-tag ${isBtn ? 'tag-btn' : 'tag-txt'}">${isBtn ? '🔘 Button CTA' : '🔗 Text CTA'}</span>`;
+            const pathTag = isAbs 
+                ? `<span class="link-tag tag-absolute">⚠️ Absoluto</span>` 
+                : `<span class="link-tag tag-relative">📂 Relativo</span>`;
+            const statusTag = exists
+                ? `<span class="link-tag tag-ok">✅ HTTP ${statusCode} OK (Existe)</span>`
+                : `<span class="link-tag tag-broken">❌ HTTP ${statusCode} (Roto)</span>`;
+
+            const ctaText = escapeHTML(item.text || 'Sin texto');
+            const displayHref = escapeHTML(item.raw_href || item.href || '');
+            const realHref = escapeHTML(item.href || item.raw_href || '#');
+            const widgetName = escapeHTML(item.widget || 'N/A');
+
+            let relSuggestionHtml = '';
+            if (isAbs && item.rel_path) {
+                relSuggestionHtml = `
+                    <div class="link-rel-suggestion" style="margin-top: 0.2rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <span style="font-weight: 600;">💡 Ruta Relativa Recomendada:</span>
+                        <code style="background: rgba(0,0,0,0.25); padding: 0.1rem 0.4rem; border-radius: 4px; color: #38bdf8;">${escapeHTML(item.rel_path)}</code>
+                    </div>
+                `;
+            }
+
+            li.innerHTML = `
+                <div class="link-item-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                        ${typeTag}
+                        <strong class="link-title" style="color: var(--text-color);">${ctaText}</strong>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                        ${pathTag}
+                        ${statusTag}
+                    </div>
+                </div>
+                <div class="link-url-row" style="font-size: 0.82rem; word-break: break-all; margin-top: 0.15rem;">
+                    <span style="color: var(--text-muted); font-size: 0.78rem;">Destino:</span>
+                    <a href="${realHref}" target="_blank" rel="noopener noreferrer" class="link-url-text" style="color: #60a5fa; text-decoration: underline; text-underline-offset: 2px;">${displayHref}</a>
+                </div>
+                ${relSuggestionHtml}
+                <div class="link-widget-row" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.1rem;">
+                    <span>📦 Widget: </span><span>${widgetName}</span>
+                </div>
+            `;
+
+            return li;
+        }
+
         if (data.total_links_analyzed !== undefined) {
             countTxt.textContent = data.total_links_analyzed || 0;
 
-            brokenLinksList.innerHTML = '';
-            brokenAnchorsList.innerHTML = '';
-            validLinksList.innerHTML = '';
-            popupLinksList.innerHTML = '';
-            coherenceLinksList.innerHTML = '';
+            if (brokenLinksList) brokenLinksList.innerHTML = '';
+            if (brokenAnchorsList) brokenAnchorsList.innerHTML = '';
+            if (validLinksList) validLinksList.innerHTML = '';
+            if (popupLinksList) popupLinksList.innerHTML = '';
+            if (coherenceLinksList) coherenceLinksList.innerHTML = '';
+            if (absoluteLinksList) absoluteLinksList.innerHTML = '';
 
-            brokenLinksContainer.style.display = 'none';
-            brokenAnchorsContainer.style.display = 'none';
-            validLinksContainer.style.display = 'none';
-            popupLinksContainer.style.display = 'none';
-            coherenceLinksContainer.style.display = 'none';
-            linksSuccessMsg.style.display = 'none';
+            if (brokenLinksContainer) brokenLinksContainer.style.display = 'none';
+            if (brokenAnchorsContainer) brokenAnchorsContainer.style.display = 'none';
+            if (validLinksContainer) validLinksContainer.style.display = 'none';
+            if (popupLinksContainer) popupLinksContainer.style.display = 'none';
+            if (coherenceLinksContainer) coherenceLinksContainer.style.display = 'none';
+            if (absoluteLinksContainer) absoluteLinksContainer.style.display = 'none';
+            if (linksSuccessMsg) linksSuccessMsg.style.display = 'none';
 
             let hasLinkErrors = false;
+
+            // Build combined and deduplicated list of all analyzed links
+            const combinedLinks = [];
+            const seenKey = new Set();
+            [...(data.valid_links || []), ...(data.broken_links || [])].forEach(item => {
+                const k = `${item.href || ''}|${item.text || ''}|${item.raw_href || ''}`;
+                if (!seenKey.has(k)) {
+                    seenKey.add(k);
+                    combinedLinks.push(item);
+                }
+            });
+            window.currentAnalyzedLinks = combinedLinks;
+
+            // Summary stats computation
+            const relCount = data.total_relative_links !== undefined ? data.total_relative_links : combinedLinks.filter(l => !l.is_absolute).length;
+            const absCount = data.total_absolute_links !== undefined ? data.total_absolute_links : combinedLinks.filter(l => !!l.is_absolute).length;
+            const brokenCount = data.total_broken_links !== undefined ? data.total_broken_links : combinedLinks.filter(l => l.exists === false || (l.status && l.status >= 400)).length;
+            const okCount = data.total_healthy_links !== undefined ? data.total_healthy_links : (combinedLinks.length - brokenCount);
+
+            if (linksSummaryBadge) linksSummaryBadge.textContent = `${data.total_links_analyzed || combinedLinks.length} Links`;
+            if (countRel) countRel.textContent = relCount;
+            if (countAbs) countAbs.textContent = absCount;
+            if (countOk) countOk.textContent = okCount;
+            if (countBroken) countBroken.textContent = brokenCount;
+            if (pillBroken) pillBroken.style.display = brokenCount > 0 ? 'inline-flex' : 'none';
+
+            // Filter counts on pills
+            if (filterCountAll) filterCountAll.textContent = combinedLinks.length;
+            if (filterCountRel) filterCountRel.textContent = relCount;
+            if (filterCountAbs) filterCountAbs.textContent = absCount;
+            if (filterCountBroken) filterCountBroken.textContent = brokenCount;
+
+            // Render Absolute Links Warning Section
+            const absLinks = (data.absolute_internal_links && data.absolute_internal_links.length > 0)
+                ? data.absolute_internal_links
+                : combinedLinks.filter(l => !!l.is_absolute);
+
+            if (absLinks.length > 0) {
+                hasLinkErrors = true;
+                if (absoluteLinksContainer) absoluteLinksContainer.style.display = 'block';
+                if (absoluteLinksCount) absoluteLinksCount.textContent = absLinks.length;
+                if (absoluteLinksList) {
+                    absoluteLinksList.innerHTML = '';
+                    absLinks.forEach(item => {
+                        absoluteLinksList.appendChild(createEnhancedLinkItem(item, true));
+                    });
+                }
+            }
 
             // Render Popups Warnings
             if (data.popup_links && data.popup_links.length > 0) {
                 hasLinkErrors = true;
-                popupLinksContainer.style.display = 'block';
+                if (popupLinksContainer) popupLinksContainer.style.display = 'block';
                 data.popup_links.forEach(item => {
                     const li = document.createElement('li');
                     li.innerHTML = `
@@ -1408,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Render Semantic Coherence Alerts for Links
             if (data.coherence_warnings && data.coherence_warnings.length > 0) {
                 hasLinkErrors = true;
-                coherenceLinksContainer.style.display = 'block';
+                if (coherenceLinksContainer) coherenceLinksContainer.style.display = 'block';
                 data.coherence_warnings.forEach(item => {
                     const isRed = item.level === 'red';
                     const li = document.createElement('li');
@@ -1427,7 +1589,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Render 404 Broken links
             if (data.broken_links && data.broken_links.length > 0) {
                 hasLinkErrors = true;
-                brokenLinksContainer.style.display = 'block';
+                if (brokenLinksContainer) brokenLinksContainer.style.display = 'block';
                 data.broken_links.forEach(item => {
                     const li = document.createElement('li');
                     li.innerHTML = `
@@ -1440,10 +1602,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Render Anchors Rotos
+            // Render Broken Anchors
             if (data.broken_anchors && data.broken_anchors.length > 0) {
                 hasLinkErrors = true;
-                brokenAnchorsContainer.style.display = 'block';
+                if (brokenAnchorsContainer) brokenAnchorsContainer.style.display = 'block';
                 data.broken_anchors.forEach(item => {
                     const li = document.createElement('li');
                     li.innerHTML = `
@@ -1456,28 +1618,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Render Valid Links (Healthy Links)
-            if (data.valid_links && data.valid_links.length > 0) {
-                data.valid_links.forEach(item => {
-                    const li = document.createElement('li');
-                    const isBtn = item.type === 'button';
-                    li.innerHTML = `
-                        <span class="link-text">${isBtn ? '🔘 Button CTA' : '🔗 Text CTA'}: ${escapeHTML(item.text)}</span>
-                        <span class="link-href">URL: ${escapeHTML(item.href)}</span>
-                        <span class="link-widget">Container Widget: ${escapeHTML(item.widget || 'N/A')}</span>
-                        <span class="link-status" style="color:#4caf50; background:rgba(76,175,80,0.1);">HTTP 200 OK</span>
-                    `;
-                    validLinksList.appendChild(li);
+            // Render Analyzed Links function
+            window.renderAnalyzedLinksList = function(filterType = 'all') {
+                if (!validLinksList) return;
+                validLinksList.innerHTML = '';
+                let filtered = window.currentAnalyzedLinks || [];
+                if (filterType === 'relative') {
+                    filtered = filtered.filter(l => !l.is_absolute);
+                } else if (filterType === 'absolute') {
+                    filtered = filtered.filter(l => !!l.is_absolute);
+                } else if (filterType === 'broken') {
+                    filtered = filtered.filter(l => l.exists === false || (l.status && l.status >= 400));
+                }
+
+                if (filtered.length === 0) {
+                    validLinksList.innerHTML = `<li style="text-align:center;color:var(--text-muted);padding:1rem;">No internal links found in this filter category (${filterType}).</li>`;
+                    return;
+                }
+
+                filtered.forEach(item => {
+                    validLinksList.appendChild(createEnhancedLinkItem(item));
                 });
-            } else {
-                validLinksList.innerHTML = `<li style="text-align:center;color:var(--text-muted)">No internal links were traced.</li>`;
+            };
+
+            // Reset filter pill active state to 'all' and render initial list
+            const linksFilterPillsEl = document.getElementById('links-filter-pills');
+            if (linksFilterPillsEl) {
+                linksFilterPillsEl.querySelectorAll('.link-filter-btn').forEach(b => {
+                    if (b.getAttribute('data-filter') === 'all') b.classList.add('active');
+                    else b.classList.remove('active');
+                });
             }
+            window.renderAnalyzedLinksList('all');
 
             if (!hasLinkErrors && data.total_links_analyzed > 0) {
-                linksSuccessMsg.style.display = 'block';
+                if (linksSuccessMsg) linksSuccessMsg.style.display = 'block';
             }
 
-            linksCard.style.display = 'block';
+            if (linksCard) linksCard.style.display = 'block';
         } else {
             if (linksCard) linksCard.style.display = 'none';
         }
@@ -1760,20 +1938,61 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    function getWidgetDocSvg() {
-        return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
+    function getWidgetIconSvg(w) {
+        const type = (w.type || '').toLowerCase();
+        const name = (w.display_title || w.name || w.widget_name || '').toLowerCase();
+
+        // 1. Contact Information (Serif italic i - Image 1)
+        if (type === 'contact-info' || name.includes('contact information') || name.includes('contact info')) {
+            return `<svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff">
+                <text x="12" y="18" font-family="'Times New Roman', Georgia, serif" font-size="20" font-weight="bold" font-style="italic" text-anchor="middle" fill="#ffffff">i</text>
+            </svg>`;
+        }
+
+        // 2. Hours / Dealership Hours (Clock icon - Image 1)
+        if (type === 'hours' || name.includes('hour')) {
+            return `<svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/>
+            </svg>`;
+        }
+
+        // 3. Dynamic Google Map (Map icon - Image 1)
+        if (type === 'map' || name.includes('map')) {
+            return `<svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+                <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+            </svg>`;
+        }
+
+        // 4. Contact / Lead / Form / Finance / Trade / Schedule -> Person silhouette icon (user screenshot)
+        if (type === 'contact' || type === 'form' || type === 'finance' || type === 'trade' || type === 'trade-in' || type === 'schedule' ||
+            name.includes('form') || name.includes('lead') || name.includes('finance') || name.includes('trade') || name.includes('quote') || name.includes('contact form')) {
+            return `<svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>`;
+        }
+
+        // 5. Links / Navigation -> Checkbox with checkmark (user screenshot)
+        if (type === 'navigation' || type === 'links' || name.includes('links') || name.includes('link')) {
+            return `<svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+                <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-9 14-4.5-4.5 1.42-1.42L10 14.17l7.08-7.09 1.42 1.42L10 17z"/>
+            </svg>`;
+        }
+
+        // 6. Default / Content (WYSIWYG document with lines, user screenshot)
+        return `<svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+            <rect x="8" y="12" width="8" height="1.8" rx="0.5"/>
+            <rect x="8" y="15" width="8" height="1.8" rx="0.5"/>
+            <rect x="8" y="9" width="4" height="1.8" rx="0.5"/>
         </svg>`;
     }
 
     function renderWidgetCardHtml(w) {
         const hasHeadings = w.headings && w.headings.length > 0;
         const hasSnippet = Boolean(w.text_snippet && w.text_snippet.trim());
-        const canPreview = hasHeadings || hasSnippet;
+        const hasFormFields = Boolean(w.form_fields && w.form_fields.length > 0);
+        const isForm = (w.type === 'contact' || w.type === 'form' || w.type === 'finance' || w.type === 'trade' || (w.display_title || '').toLowerCase().includes('form'));
+        const canPreview = hasHeadings || hasSnippet || hasFormFields;
 
         let headingsHtml = '';
         if (hasHeadings) {
@@ -1783,6 +2002,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <strong style="color: #f8fafc;">${escapeHTML(h.text)}</strong>
                 </div>
             `).join('');
+        }
+
+        let formFieldsHtml = '';
+        if (hasFormFields) {
+            formFieldsHtml = `
+                <div style="margin: 0.4rem 0;">
+                    <span style="font-size: 0.73rem; font-weight: 600; color: #94a3b8; text-transform: uppercase;">Captured Form Fields:</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.25rem;">
+                        ${w.form_fields.map(f => `<span style="font-size: 0.72rem; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; padding: 0.1rem 0.45rem; border-radius: 4px;">${escapeHTML(f)}</span>`).join('')}
+                    </div>
+                </div>
+            `;
         }
 
         let snippetHtml = '';
@@ -1795,9 +2026,11 @@ document.addEventListener('DOMContentLoaded', () => {
             previewDrawerHtml = `
                 <div class="ddc-content-preview-drawer" id="preview-drawer-${escapeHTML(w.id)}" style="display: none;">
                     ${headingsHtml}
+                    ${formFieldsHtml}
                     ${snippetHtml}
                     <div class="ddc-preview-meta">
                         ${w.links_count ? `<span>🔗 ${w.links_count} Links</span>` : ''}
+                        ${w.form_fields && w.form_fields.length ? `<span>📋 ${w.form_fields.length} Fields</span>` : ''}
                         ${w.text_snippet ? `<span>📝 ~${w.text_snippet.split(/\s+/).length} Words preview</span>` : ''}
                         <span>🆔 ${escapeHTML(w.id)}</span>
                     </div>
@@ -1813,12 +2046,49 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
+        const infoBtnHtml = canPreview ? `
+            <span class="ddc-action-btn info" title="View Live Widget Content" onclick="const dr = document.getElementById('preview-drawer-${escapeHTML(w.id)}'); if (dr) { dr.style.display = dr.style.display === 'none' ? 'block' : 'none'; }">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="#0284c7"/>
+                    <text x="12" y="16.5" text-anchor="middle" fill="#ffffff" font-size="13" font-family="system-ui, sans-serif" font-weight="bold">i</text>
+                </svg>
+            </span>
+        ` : '';
+
+        const folderBtnHtml = `
+            <span class="ddc-action-btn config" title="Widget Properties">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#eab308" stroke="#ca8a04" stroke-width="1.2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+            </span>
+        `;
+
+        const deviceBtnHtml = `
+            <span class="ddc-action-btn device" title="Device Responsive Visibility">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="3" width="20" height="13" rx="1.5" stroke="#475569" stroke-width="1.8" fill="#f97316"/>
+                    <rect x="5" y="6" width="14" height="7" fill="#ffffff"/>
+                    <line x1="8" y1="20" x2="16" y2="20" stroke="#475569" stroke-width="2"/>
+                    <line x1="12" y1="16" x2="12" y2="20" stroke="#475569" stroke-width="2"/>
+                </svg>
+            </span>
+        `;
+
+        const deleteBtnHtml = `
+            <span class="ddc-action-btn delete" title="Delete Widget">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </span>
+        `;
+
         return `
             <div class="ddc-widget-wrapper" data-widget-filter="${escapeHTML((w.display_title || '') + ' ' + (w.subtext || '') + ' ' + w.id).toLowerCase()}">
                 <div class="ddc-widget-card" onclick="const dr = document.getElementById('preview-drawer-${escapeHTML(w.id)}'); if (dr) { dr.style.display = dr.style.display === 'none' ? 'block' : 'none'; }">
                     <div class="ddc-widget-left">
-                        <div class="ddc-widget-doc-icon">
-                            ${getWidgetDocSvg()}
+                        <div class="ddc-widget-doc-icon ${isForm ? 'is-form-icon' : ''}">
+                            ${getWidgetIconSvg(w)}
                         </div>
                         <div class="ddc-widget-details">
                             <span class="ddc-widget-title">${escapeHTML(w.display_title || w.name || w.id)}</span>
@@ -1826,12 +2096,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="ddc-widget-actions" onclick="event.stopPropagation();">
-                        ${canPreview ? `
-                            <span class="ddc-action-btn info" title="View Live Widget Content" onclick="const dr = document.getElementById('preview-drawer-${escapeHTML(w.id)}'); if (dr) { dr.style.display = dr.style.display === 'none' ? 'block' : 'none'; }">ℹ️</span>
-                        ` : ''}
-                        <span class="ddc-action-btn" title="Widget Settings / Lock">🔒</span>
-                        <span class="ddc-action-btn" title="Device Responsive Visibility">🖥️</span>
-                        <span class="ddc-action-btn delete" title="Delete Widget">✕</span>
+                        ${infoBtnHtml}
+                        ${folderBtnHtml}
+                        ${deviceBtnHtml}
+                        ${deleteBtnHtml}
                     </div>
                 </div>
                 ${previewDrawerHtml}
@@ -1895,19 +2163,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const secId = sec.section_id || `section-${sIdx + 1}`;
             let subitemsHtml = '';
             if (sec.widgets && sec.widgets.length > 0) {
-                subitemsHtml = sec.widgets.map(w => `
+                subitemsHtml = sec.widgets.map(w => {
+                    let wIcon = '📄';
+                    const wType = (w.type || '').toLowerCase();
+                    const wTitle = (w.display_title || w.name || '').toLowerCase();
+                    if (wType === 'contact' || wType === 'form' || wType === 'finance' || wType === 'trade' || wTitle.includes('contact') || wTitle.includes('form') || wTitle.includes('lead')) {
+                        wIcon = '👤';
+                    } else if (wType === 'navigation' || wType === 'links' || wTitle.includes('links')) {
+                        wIcon = '☑️';
+                    }
+                    return `
                     <div class="ddc-designer-subitem" onclick="const el = document.getElementById('composer-sec-${secId}'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.boxShadow = '0 0 15px rgba(99, 102, 241, 0.6)'; setTimeout(() => el.style.boxShadow='', 1800); }">
-                        <span>📄 ${escapeHTML(w.display_title || w.name)}</span>
+                        <span>${wIcon} ${escapeHTML(w.display_title || w.name)}</span>
                         <span style="font-family: monospace; font-size: 0.7rem; color: #64748b;">${escapeHTML(w.id)}</span>
                     </div>
-                `).join('');
+                `;}).join('');
             } else if (sec.is_hidden) {
                 subitemsHtml = `<div style="font-size: 0.72rem; color: #f87171; font-style: italic; padding: 0.3rem 0.5rem;">Section disabled / hidden in template</div>`;
             }
 
             const hiddenIcon = sec.is_hidden ? `<span title="Hidden from view in page template" style="color: #9ca3af; font-size: 0.85rem; margin-left: 0.3rem;">🚫</span>` : '';
-            const bgIcon = sec.has_bg_image ? `<span title="Contains Background Image" style="font-size: 0.85rem; margin-left: 0.3rem;">🖼️</span>` : '';
-            const badgeText = sec.is_hidden ? 'Hidden' : `${sec.widgets_count || (sec.widgets ? sec.widgets.length : 0)} widgets`;
+            const bgIcon = sec.has_bg_image ? `<span title="Contains Background Image" style="font-size: 0.85rem; margin-left: 0.3rem; opacity: 0.7;">🖼️</span>` : '';
+            const badgeHtml = sec.is_hidden ? `<span class="ddc-designer-item-badge" style="color: #fca5a5; background: rgba(239,68,68,0.15);">Hidden</span>` : '';
 
             designerItemsHtml += `
                 <div class="ddc-designer-item" id="designer-item-${secId}">
@@ -1929,8 +2206,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${bgIcon}
                         </div>
                         <div class="ddc-designer-item-meta">
-                            <span class="ddc-designer-item-badge" style="${sec.is_hidden ? 'color: #fca5a5; background: rgba(239,68,68,0.15);' : ''}">${badgeText}</span>
-                            <span class="ddc-designer-drag-handle">☰</span>
+                            ${badgeHtml}
+                            <span class="ddc-designer-drag-handle">═</span>
                         </div>
                     </div>
                     <div class="ddc-designer-sublist" id="designer-sublist-${secId}" style="display: none;">
@@ -2021,6 +2298,48 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     `;
+                } else if (colLayout.layout_type === 'fifty-fifty') {
+                    // 2 Columns Side-by-Side 50/50 (Matching user screenshot)
+                    let leftWidgetsHtml = (colLayout.left_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+                    let rightWidgetsHtml = (colLayout.right_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+
+                    innerContentHtml = `
+                        <div class="ddc-fifty-fifty-container">
+                            <div class="ddc-half-col">
+                                ${leftWidgetsHtml || '<div class="ddc-empty-col-placeholder">Empty Left Column</div>'}
+                            </div>
+                            <div class="ddc-half-col">
+                                ${rightWidgetsHtml || '<div class="ddc-empty-col-placeholder">Empty Right Column</div>'}
+                            </div>
+                        </div>
+                    `;
+                } else if (colLayout.layout_type === 'contact-map') {
+                    // 2 Columns: Contact & Hours Left (~30%), Dynamic Map Right (~70%) (Image 1)
+                    let leftWidgetsHtml = (colLayout.left_column && colLayout.left_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+                    let rightWidgetsHtml = (colLayout.right_column && colLayout.right_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+
+                    innerContentHtml = `
+                        <div class="ddc-contact-map-container">
+                            <div class="ddc-contact-map-left-col">
+                                ${leftWidgetsHtml || '<div class="ddc-empty-col-placeholder">Contact Information & Hours</div>'}
+                            </div>
+                            <div class="ddc-contact-map-right-col">
+                                ${rightWidgetsHtml || '<div class="ddc-empty-col-placeholder">Dynamic Google Map</div>'}
+                            </div>
+                        </div>
+                    `;
+                } else if (colLayout.layout_type === 'centered') {
+                    // Centered Column Layout (Form Centered / Content Centered - Image 1)
+                    const isForm = (sec.title || sec.name || '').toLowerCase().includes('form');
+                    let centeredWidgetsHtml = (colLayout.widgets || sec.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
+
+                    innerContentHtml = `
+                        <div class="ddc-centered-section-container">
+                            <div class="ddc-centered-column ${isForm ? 'is-form' : ''}">
+                                ${centeredWidgetsHtml}
+                            </div>
+                        </div>
+                    `;
                 } else if (colLayout.layout_type === 'thirds') {
                     // 3 Columns Side-by-Side (Images 4 & 5)
                     let thirdsColsHtml = (colLayout.columns || []).map(c => `
@@ -2034,7 +2353,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${thirdsColsHtml}
                         </div>
                     `;
-                } else {
+                } else if (colLayout.layout_type === 'srp') {
                     // Standard SRP multi-column (Facets left, Listing right)
                     let topWidgetsHtml = (colLayout.top_widgets || []).map(w => renderWidgetCardHtml(w)).join('');
                     let leftWidgetsHtml = (colLayout.left_column && colLayout.left_column.widgets || []).map(w => renderWidgetCardHtml(w)).join('');
@@ -2053,6 +2372,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ${rightWidgetsHtml}
                                 </div>
                             </div>
+                        </div>
+                    `;
+                } else {
+                    // Fallback for general multi-column without facets label
+                    let allW = (colLayout.widgets || sec.widgets || []);
+                    if (!allW.length && colLayout.left_column && colLayout.left_column.widgets) {
+                        allW = allW.concat(colLayout.left_column.widgets);
+                    }
+                    if (colLayout.right_column && colLayout.right_column.widgets) {
+                        allW = allW.concat(colLayout.right_column.widgets);
+                    }
+                    let fallbackWidgetsHtml = allW.map(w => renderWidgetCardHtml(w)).join('');
+                    innerContentHtml = `
+                        <div class="ddc-composer-section-widgets">
+                            ${fallbackWidgetsHtml}
                         </div>
                     `;
                 }
@@ -2077,12 +2411,41 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                 } else {
-                    innerContentHtml = `
-                        <div class="ddc-composer-section-widgets">
-                            ${widgetsHtml}
-                        </div>
-                    `;
+                    const isCentered = (sec.title || sec.name || '').toLowerCase().includes('centered') || sec.layout_type === 'centered';
+                    const isForm = (sec.title || sec.name || '').toLowerCase().includes('form');
+                    if (isCentered) {
+                        innerContentHtml = `
+                            <div class="ddc-centered-section-container">
+                                <div class="ddc-centered-column ${isForm ? 'is-form' : ''}">
+                                    ${widgetsHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        innerContentHtml = `
+                            <div class="ddc-composer-section-widgets">
+                                ${widgetsHtml}
+                            </div>
+                        `;
+                    }
                 }
+            }
+
+            if (sec.has_bg_color && sec.bg_color) {
+                const isCenteredSec = (sec.title || sec.name || '').toLowerCase().includes('centered') || sec.layout_type === 'centered';
+                const innerDashedClass = isCenteredSec ? 'ddc-composer-section-bg-inner' : 'ddc-composer-section-dashed';
+                innerContentHtml = `
+                    <div class="ddc-section-bg-wrapper" style="background-color: ${escapeHTML(sec.bg_color)};">
+                        <div class="${innerDashedClass}">
+                            ${innerContentHtml}
+                        </div>
+                    </div>
+                `;
+                sectionExtraClasses += ' has-bg-container';
+            }
+
+            if (sec.columns_layout && sec.columns_layout.layout_type === 'fifty-fifty') {
+                sectionExtraClasses += ' is-fifty-fifty';
             }
 
             sectionsCanvasHtml += `
@@ -3149,7 +3512,7 @@ function renderToolBugsList(items) {
 }
 
 // Bookmarklet Modal Controller
-const DYNAMICS_BOOKMARKLET_CODE = `javascript:(function(){var DYNAMICS_ICON_REGEX=/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F\\u200B-\\u200D\\u202A-\\u202E\\u2500-\\u25FF\\u2600-\\u27BF\\uE000-\\uF8FF\\uFFF0-\\uFFFF]/g;function cleanFieldText(val){if(!val)return '';return val.replace(DYNAMICS_ICON_REGEX,'').trim();}function cleanCtaPayload(val){if(!val)return '';var cleaned=val.replace(DYNAMICS_ICON_REGEX,' ').trim();var lines=cleaned.split(/[\\r\\n]+/).map(function(l){var trimmed=l.replace(/^[•\\-\\*\\s\\u25A1\\u25A0\\u2022\\u00A0]+/g,'').trim();trimmed=trimmed.replace(/\\b(calls\\s*to\\s*action|links|ctas(\\s*and\\s*links)?)\\b/gi,'').trim();trimmed=trimmed.replace(/^[:\\-\\s\\t]+|[:\\-\\s\\t]+$/g,'').trim();return trimmed;}).filter(function(l){return l&&/[a-zA-Z0-9]/.test(l);});return lines.join('\\n');}function getDocs(){var docs=[document];try{var iframes=document.querySelectorAll('iframe');for(var f=0;f<iframes.length;f++){try{var d=iframes[f].contentDocument||(iframes[f].contentWindow&&iframes[f].contentWindow.document);if(d&&docs.indexOf(d)===-1)docs.push(d);}catch(e){}}}catch(e){}return docs;}function extractValFromEl(el,excludeKeys){if(!el)return '';var dataId=(el.getAttribute('data-id')||'').toLowerCase();for(var k=0;k<excludeKeys.length;k++){if(dataId.indexOf(excludeKeys[k].toLowerCase())!==-1)return '';}if(dataId.indexOf('label-container')!==-1||dataId.indexOf('-label')!==-1||el.tagName==='LABEL'){return '';}var inps=el.querySelectorAll('input,textarea');for(var i=0;i<inps.length;i++){var iv=(inps[i].value||inps[i].getAttribute('value')||'').trim();if(iv)return iv;}if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){var ev=(el.value||el.getAttribute('value')||'').trim();if(ev)return ev;}var links=el.querySelectorAll('a');for(var j=0;j<links.length;j++){var aTxt=(links[j].innerText||links[j].textContent||'').trim();if(aTxt&&!/^(open|visit|link|http|https|website|click|view)$/i.test(aTxt))return aTxt;var aHref=(links[j].getAttribute('href')||'').trim();if(aHref&&!aHref.startsWith('javascript:')&&aHref!=='#'&&aHref.indexOf('.')!==-1)return aHref;}var ctrls=el.querySelectorAll('[data-id*="fieldControl" i],[role="textbox"],[data-id*="value" i]');for(var c=0;c<ctrls.length;c++){var cTxt=(ctrls[c].innerText||ctrls[c].textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(cTxt)return cTxt;}var txt=(el.innerText||el.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();return txt;}function getF(keys,excludeKeys,labelTexts){excludeKeys=excludeKeys||[];keys=keys||[];labelTexts=labelTexts||[];var docs=getDocs();for(var d=0;d<docs.length;d++){var doc=docs[d];for(var i=0;i<keys.length;i++){var els=doc.querySelectorAll('[data-id*="'+keys[i]+'" i]');for(var j=0;j<els.length;j++){var val=extractValFromEl(els[j],excludeKeys);if(val&&val.trim()){var isLbl=false;for(var l=0;l<labelTexts.length;l++){if(val.trim().toLowerCase()===labelTexts[l].toLowerCase()){isLbl=true;break;}}if(!isLbl)return val.trim();}}}}if(labelTexts&&labelTexts.length>0){for(var d2=0;d2<docs.length;d2++){var doc2=docs[d2];for(var l2=0;l2<labelTexts.length;l2++){var target=labelTexts[l2].toLowerCase();var labels=doc2.querySelectorAll('label,span[role="presentation"]');for(var b=0;b<labels.length;b++){var lText=(labels[b].innerText||labels[b].textContent||'').replace(DYNAMICS_ICON_REGEX,'').replace(/[\\s\\*:]+/g,'').replace(/\\uD83D\\uDD12/g,'').trim().toLowerCase();if(lText===target){var row=labels[b].parentElement;for(var up=0;up<5&&row;up++){var inp=row.querySelector('input,textarea');if(inp&&inp.value&&inp.value.trim()&&inp.value.trim().toLowerCase()!==target)return inp.value.trim();var lnk=row.querySelector('a');if(lnk){var lt=(lnk.innerText||lnk.textContent||'').trim();if(lt&&lt.toLowerCase()!==target)return lt;var lh=(lnk.getAttribute('href')||'').trim();if(lh&&lh.indexOf('.')!==-1&&!lh.startsWith('javascript:'))return lh;}var tb=row.querySelector('[role="textbox"],[data-id*="value" i]');if(tb){var tt=(tb.innerText||tb.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(tt&&tt.toLowerCase()!==target)return tt;}row=row.parentElement;}}}}}}return '';}function getPathFromUrl(str){if(!str)return '/';var s=str.trim();var idx=s.indexOf('://');if(idx!==-1){s=s.substring(idx+3);if(s.indexOf('/')===0)return s;var slashIdx=s.indexOf('/');return slashIdx!==-1?s.substring(slashIdx):'/';}return s.indexOf('/')===0?s:('/'+s);}function isDirectUrl(str){if(!str)return false;var s=str.trim();var idx=s.indexOf('://');if(idx===-1)return false;var rest=s.substring(idx+3);if(rest.indexOf('/')===0)return false;var host=rest.split('/')[0].split('?')[0];return host.indexOf('.')!==-1;}function cleanHost(str){if(!str)return '';var s=str.trim();var idx=s.indexOf('://');if(idx!==-1)s=s.substring(idx+3);s=s.split('/')[0].split('?')[0].split('#')[0].trim();if(!/\\.[a-zA-Z]{2,}/.test(s))return '';if(/^(url|website|http|https|none|null|undefined)$/i.test(s))return '';return s;}function cleanId(str){if(!str)return '';var s=str.trim().split(/\\s+/)[0].replace(/[^-a-zA-Z0-9_]/g,'');if(/^(product|fulfillment|account|website|details|name|title|page|none|null)$/i.test(s))return '';return s;}var delId=cleanFieldText(getF(['deliverablenumber.fieldControl','deliverableid.fieldControl','ticketnumber.fieldControl','deliverableid','deliverable_number']));if(!delId){var params=new URLSearchParams(window.location.search);var rawId=params.get('id')||'';if(rawId)delId=rawId.split('-')[0].toUpperCase();}var title=cleanFieldText(getF(['ddcms_name.fieldControl','ddcms_name','ddcms_h1','ddcms_title','h1title.fieldControl','targeth1.fieldControl','pagetitle.fieldControl','h1','name.fieldControl'],['account','customer','parentaccount','owner','createdby','modifiedby','header_crmformheader','dealer','quickview']));var copy=cleanFieldText(getF(['completedcopy.fieldControl','completedcopy']));var url=cleanFieldText(getF(['completedpageurl.fieldControl','completedpageurl']));var httpIdx=url.indexOf('http');if(httpIdx!==-1){url=url.substring(httpIdx).split(/[\\s\\)\\'"]/)[0];}var ctas=cleanCtaPayload(getF(['callstoaction.fieldControl','callstoaction']));var links=cleanCtaPayload(getF(['links.fieldControl','links']));var combinedCtas=[];if(ctas)combinedCtas.push(ctas);if(links)combinedCtas.push(links);var details=cleanFieldText(getF(['ddcms_details.fieldControl','ddcms_details','details.fieldControl','details','specialinstructions'],['copywriting']));var rawPageEx=cleanFieldText(getF(['ddcms_pageexample.fieldControl','ddcms_pageexample','pageexample.fieldControl','pageexample'],[],['Page Example']));var rawWebsite=cleanFieldText(getF(['websiteurl.fieldControl','websiteurl','website.fieldControl','website','ddcms_websiteurl'],[],['Website']));var host=cleanHost(rawWebsite);if(!host){var allDocs=getDocs();for(var d3=0;d3<allDocs.length;d3++){var lbls=allDocs[d3].querySelectorAll('label,[role="presentation"],span');for(var b3=0;b3<lbls.length;b3++){var lt3=(lbls[b3].innerText||lbls[b3].textContent||'').replace(DYNAMICS_ICON_REGEX,'').replace(/[\\s\\*:]+/g,'').replace(/\\uD83D\\uDD12/g,'').trim().toLowerCase();if(lt3==='website'){var r3=lbls[b3].parentElement;for(var u3=0;u3<5&&r3;u3++){var is3=r3.querySelectorAll('input,textarea');for(var k3=0;k3<is3.length;k3++){var h3=cleanHost(is3[k3].value||is3[k3].getAttribute('value')||'');if(h3){host=h3;rawWebsite=h3;break;}}if(host)break;var as3=r3.querySelectorAll('a');for(var m3=0;m3<as3.length;m3++){var h4=cleanHost(as3[m3].innerText||as3[m3].textContent||'')||cleanHost(as3[m3].getAttribute('href')||'');if(h4){host=h4;rawWebsite=h4;break;}}if(host)break;r3=r3.parentElement;}if(host)break;}}if(host)break;}}var rawSiteId=cleanFieldText(getF(['ddcms_productfulfillmentaccountid.fieldControl','ddcms_productfulfillmentaccountid','productfulfillmentaccount.fieldControl','productfulfillmentaccount','ddcms_productfulfillmentaccount','fulfillmentaccount'],[],['Product Fulfillment Account']));var siteId=cleanId(rawSiteId);if(!siteId){var allDocs2=getDocs();for(var d4=0;d4<allDocs2.length;d4++){var lbls2=allDocs2[d4].querySelectorAll('label,[role="presentation"],span');for(var b4=0;b4<lbls2.length;b4++){var lt4=(lbls2[b4].innerText||lbls2[b4].textContent||'').replace(DYNAMICS_ICON_REGEX,'').replace(/[\\s\\*:]+/g,'').replace(/\\uD83D\\uDD12/g,'').trim().toLowerCase();if(lt4==='product fulfillment account'||lt4.indexOf('product fulfillment')===0){var r4=lbls2[b4].parentElement;for(var u4=0;u4<5&&r4;u4++){var is4=r4.querySelectorAll('input,textarea');for(var k4=0;k4<is4.length;k4++){var s4=cleanId(is4[k4].value||is4[k4].getAttribute('value')||'');if(s4){siteId=s4;rawSiteId=s4;break;}}if(siteId)break;var tbs4=r4.querySelectorAll('[role="textbox"],[data-id*="value" i]');for(var m4=0;m4<tbs4.length;m4++){var s5=cleanId(tbs4[m4].innerText||tbs4[m4].textContent||'');if(s5){siteId=s5;rawSiteId=s5;break;}}if(siteId)break;r4=r4.parentElement;}if(siteId)break;}}if(siteId)break;}}var isDirect=isDirectUrl(rawPageEx);var path=getPathFromUrl(rawPageEx);var liveUrl=host?('https://'+host+path):'';var cmsUrl=siteId?('https://'+siteId+'.cms.dealer.com'+path):'';var primaryUrl='';var pType='';if(isDirect){primaryUrl=rawPageEx.trim();pType='direct';}else if(liveUrl){primaryUrl=liveUrl;pType='live';}else if(cmsUrl){primaryUrl=cmsUrl;pType='cms';}else if(path&&path!=='/'){primaryUrl=path;pType='path';}var payload={deliverable_id:delId,title:title,completed_copy:copy,completed_page_url:url,ctas_and_links:combinedCtas.join('\\n'),special_instructions:details,page_example_raw:rawPageEx,page_example_url:primaryUrl,page_example_live_url:liveUrl,page_example_cms_url:cmsUrl,page_example_path:path,page_example_type:pType,website:rawWebsite,product_fulfillment_account:rawSiteId,source:'bookmarklet',timestamp:Date.now()};var qaUrl='https://qa-tool-brown.vercel.app';var jsonStr=JSON.stringify(payload);try{fetch('http://127.0.0.1:5000/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).catch(function(){});}catch(e){}fetch(qaUrl+'/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).then(function(){window.open(qaUrl,'_blank');}).catch(function(){window.open(qaUrl,'_blank');});})();`;
+const DYNAMICS_BOOKMARKLET_CODE = `javascript:(function(){var DYNAMICS_ICON_REGEX=/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F\\u200B-\\u200D\\u202A-\\u202E\\u2500-\\u25FF\\u2600-\\u27BF\\uE000-\\uF8FF\\uFFF0-\\uFFFF]/g;function cleanFieldText(val){if(!val)return '';return val.replace(DYNAMICS_ICON_REGEX,'').trim();}function cleanCtaPayload(val){if(!val)return '';var cleaned=val.replace(DYNAMICS_ICON_REGEX,' ').trim();var lines=cleaned.split(/[\\r\\n]+/).map(function(l){var trimmed=l.replace(/^[•\\-\\*\\s\\u25A1\\u25A0\\u2022\\u00A0]+/g,'').trim();trimmed=trimmed.replace(/\\b(calls\\s*to\\s*action|links|ctas(\\s*and\\s*links)?)\\b/gi,'').trim();trimmed=trimmed.replace(/^[:\\-\\s\\t]+|[:\\-\\s\\t]+$/g,'').trim();return trimmed;}).filter(function(l){return l&&/[a-zA-Z0-9]/.test(l);});return lines.join('\\n');}function getDocs(){var docs=[document];try{var iframes=document.querySelectorAll('iframe');for(var f=0;f<iframes.length;f++){try{var d=iframes[f].contentDocument||(iframes[f].contentWindow&&iframes[f].contentWindow.document);if(d&&docs.indexOf(d)===-1)docs.push(d);}catch(e){}}}catch(e){}return docs;}function extractValFromEl(el,excludeKeys){if(!el)return '';var dataId=(el.getAttribute('data-id')||'').toLowerCase();for(var k=0;k<excludeKeys.length;k++){if(dataId.indexOf(excludeKeys[k].toLowerCase())!==-1)return '';}if(dataId.indexOf('label-container')!==-1||dataId.indexOf('-label')!==-1||el.tagName==='LABEL'){return '';}var inps=el.querySelectorAll('input,textarea');for(var i=0;i<inps.length;i++){var iv=(inps[i].value||inps[i].getAttribute('value')||'').trim();if(iv)return iv;}if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){var ev=(el.value||el.getAttribute('value')||'').trim();if(ev)return ev;}var links=el.querySelectorAll('a');for(var j=0;j<links.length;j++){var aTxt=(links[j].innerText||links[j].textContent||'').trim();if(aTxt&&!/^(open|visit|link|http|https|website|click|view)$/i.test(aTxt))return aTxt;var aHref=(links[j].getAttribute('href')||'').trim();if(aHref&&!aHref.startsWith('javascript:')&&aHref!=='#'&&aHref.indexOf('.')!==-1)return aHref;}var ctrls=el.querySelectorAll('[data-id*="fieldControl" i],[role="textbox"],[data-id*="value" i]');for(var c=0;c<ctrls.length;c++){var cTxt=(ctrls[c].innerText||ctrls[c].textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(cTxt)return cTxt;}var txt=(el.innerText||el.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();return txt;}function getF(keys,excludeKeys,labelTexts){excludeKeys=excludeKeys||[];keys=keys||[];labelTexts=labelTexts||[];var docs=getDocs();for(var d=0;d<docs.length;d++){var doc=docs[d];for(var i=0;i<keys.length;i++){var els=doc.querySelectorAll('[data-id*="'+keys[i]+'" i]');for(var j=0;j<els.length;j++){var val=extractValFromEl(els[j],excludeKeys);if(val&&val.trim()){var isLbl=false;for(var l=0;l<labelTexts.length;l++){if(val.trim().toLowerCase()===labelTexts[l].toLowerCase()){isLbl=true;break;}}if(!isLbl)return val.trim();}}}}if(labelTexts&&labelTexts.length>0){for(var d2=0;d2<docs.length;d2++){var doc2=docs[d2];for(var l2=0;l2<labelTexts.length;l2++){var target=labelTexts[l2].toLowerCase();var labels=doc2.querySelectorAll('label,span[role="presentation"]');for(var b=0;b<labels.length;b++){var lText=(labels[b].innerText||labels[b].textContent||'').replace(DYNAMICS_ICON_REGEX,'').replace(/[\\s\\*:]+/g,'').replace(/\\uD83D\\uDD12/g,'').trim().toLowerCase();if(lText===target){var row=labels[b].parentElement;for(var up=0;up<5&&row;up++){var inp=row.querySelector('input,textarea');if(inp&&inp.value&&inp.value.trim()&&inp.value.trim().toLowerCase()!==target)return inp.value.trim();var lnk=row.querySelector('a');if(lnk){var lt=(lnk.innerText||lnk.textContent||'').trim();if(lt&&lt.toLowerCase()!==target)return lt;var lh=(lnk.getAttribute('href')||'').trim();if(lh&&lh.indexOf('.')!==-1&&!lh.startsWith('javascript:'))return lh;}var tb=row.querySelector('[role="textbox"],[data-id*="value" i]');if(tb){var tt=(tb.innerText||tb.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(tt&&tt.toLowerCase()!==target)return tt;}row=row.parentElement;}}}}}}return '';}function getSiteOrigin(u){if(!u)return '';var s=u.trim();if(!/^https?:\\/\\//i.test(s))s='https://'+s;try{return new URL(s).origin;}catch(e){var m=s.match(/^(https?:\\/\\/[^\\/\\?\\#]+)/i);return m?m[1]:'';}}var delId=cleanFieldText(getF(['deliverablenumber.fieldControl','deliverableid.fieldControl','ticketnumber.fieldControl','deliverableid','deliverable_number']));if(!delId){var params=new URLSearchParams(window.location.search);var rawId=params.get('id')||'';if(rawId)delId=rawId.split('-')[0].toUpperCase();}var title=cleanFieldText(getF(['ddcms_name.fieldControl','ddcms_name','ddcms_h1','ddcms_title','h1title.fieldControl','targeth1.fieldControl','pagetitle.fieldControl','h1','name.fieldControl'],['account','customer','parentaccount','owner','createdby','modifiedby','header_crmformheader','dealer','quickview']));var copy=cleanFieldText(getF(['completedcopy.fieldControl','completedcopy']));var url=cleanFieldText(getF(['completedpageurl.fieldControl','completedpageurl']));var httpIdx=url.indexOf('http');if(httpIdx!==-1){url=url.substring(httpIdx).split(/[\\s\\)\\'"]/)[0];}var ctas=cleanCtaPayload(getF(['callstoaction.fieldControl','callstoaction']));var links=cleanCtaPayload(getF(['links.fieldControl','links']));var combinedCtas=[];if(ctas)combinedCtas.push(ctas);if(links)combinedCtas.push(links);var details=cleanFieldText(getF(['ddcms_details.fieldControl','ddcms_details','details.fieldControl','details','specialinstructions'],['copywriting']));var rawPageEx=cleanFieldText(getF(['ddcms_pageexample.fieldControl','ddcms_pageexample','pageexample.fieldControl','pageexample'],[],['Page Example']));var primaryUrl='';if(rawPageEx){var trimmedEx=rawPageEx.trim();if(/^https?:\\/\\//i.test(trimmedEx)){primaryUrl=trimmedEx;}else if(trimmedEx.indexOf('//')===0){primaryUrl='https:'+trimmedEx;}else if(/^www\\./i.test(trimmedEx)){primaryUrl='https://'+trimmedEx;}else{var dealerOrigin=getSiteOrigin(url);var normPath=trimmedEx.indexOf('/')===0?trimmedEx:('/'+trimmedEx);primaryUrl=dealerOrigin?(dealerOrigin+normPath):normPath;}}var payload={deliverable_id:delId,title:title,completed_copy:copy,completed_page_url:url,ctas_and_links:combinedCtas.join('\\n'),special_instructions:details,page_example_raw:rawPageEx,page_example_url:primaryUrl,page_example_live_url:primaryUrl,page_example_cms_url:'',page_example_path:rawPageEx?(rawPageEx.indexOf('/')===0?rawPageEx:('/'+rawPageEx)):'',page_example_type:/^https?:\\/\\//i.test(rawPageEx)?'direct':'resolved',website:'',product_fulfillment_account:'',source:'bookmarklet',timestamp:Date.now()};var qaUrl='https://qa-tool-brown.vercel.app';var jsonStr=JSON.stringify(payload);try{fetch('http://127.0.0.1:5000/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).catch(function(){});}catch(e){}fetch(qaUrl+'/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).then(function(){window.open(qaUrl,'_blank');}).catch(function(){window.open(qaUrl,'_blank');});})();`;
 
 function initBookmarkletModal() {
     const bookmarkletBtn = document.getElementById('bookmarklet-btn');

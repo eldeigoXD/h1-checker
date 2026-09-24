@@ -137,8 +137,11 @@ def query_image_assets(make=None, model=None, condition=None, category=None, sea
     total_row = cursor.fetchone()
     total = total_row['total'] if total_row else 0
 
-    query += " ORDER BY use_count DESC, id DESC LIMIT ? OFFSET ?"
-    params.extend([limit, offset])
+    if limit is not None and limit > 0:
+        query += " ORDER BY use_count DESC, id DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+    else:
+        query += " ORDER BY use_count DESC, id DESC"
     
     cursor.execute(query, params)
     rows = [dict(row) for row in cursor.fetchall()]

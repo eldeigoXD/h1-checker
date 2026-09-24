@@ -799,6 +799,15 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
             if any(bad in h for bad in ['bargain', 'under', 'carfax', 'wholesale', 'special', '/ev.htm', '/hybrid.htm', '/sedan.htm', '/suv.htm', '/truck.htm', '/coupe.htm', '/van.htm', '/minivan.htm', '/convertible.htm', '/hatchback.htm', '/wagon.htm']): continue
             if _re_di.search(r'/(new|used|certified)-inventory/(?!index\b)[a-z0-9\-]+\.htm', h): continue  # e.g. /new-inventory/sedan.htm is a sub-filter page, not main inv path
             
+            # On DDC sites, reject any inventory path that points to sub-models, make subfolders, or non-index files
+            # (e.g. /used-inventory/ford/f350.htm, /used-inventory/ford.htm, /new-inventory/f-150.htm)
+            if not is_dealer_inspire:
+                m_inv = _re_di.search(r'/(new|used|certified|all)-inventory(/.*)?', h)
+                if m_inv:
+                    sub = (m_inv.group(2) or '').strip('/')
+                    if sub and sub not in ['index.htm', 'index.html']:
+                        continue  # Must be canonical base path only
+            
             # Categorize
             if any(k in h for k in ['new-inventory', '/inventory/new', '/new-cars', '/new-vehicles']):
                 nav_paths['new'].append(raw)
@@ -834,14 +843,22 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
             # Strongly prefer canonical inventory paths (/new-inventory/, /used-inventory/, etc.)
             canonical = [p for p in path_list if re.search(r'/(new|used|certified|all)-inventory/', p.lower())]
             if canonical:
-                # Among canonical, prefer index.htm
-                indices = [p for p in canonical if 'index.htm' in p.lower()]
+                # Among canonical, prefer index.htm / index.html
+                indices = [p for p in canonical if 'index.htm' in p.lower() or 'index.html' in p.lower()]
                 if indices: return min(indices, key=len)
-                return min(canonical, key=len)
-            # Fallback: prefer index.htm, otherwise shortest path
-            indices = [p for p in path_list if 'index.htm' in p.lower()]
+                # If no index.htm, check for root folder (e.g. /used-inventory/ or /used-inventory)
+                clean_roots = [p for p in canonical if p.lower().rstrip('/') in ['/new-inventory', '/used-inventory', '/certified-inventory', '/all-inventory']]
+                if clean_roots:
+                    return clean_roots[0].rstrip('/') + '/index.htm'
+                # Do NOT pick a sub-model or sub-folder page from canonical!
+                return None
+            # Fallback: prefer index.htm, otherwise clean roots
+            indices = [p for p in path_list if 'index.htm' in p.lower() or 'index.html' in p.lower()]
             if indices: return min(indices, key=len)
-            return min(path_list, key=len)
+            clean_roots = [p for p in path_list if p.lower().rstrip('/') in ['/new-inventory', '/used-inventory', '/certified-inventory', '/all-inventory', '/new-vehicles', '/used-vehicles']]
+            if clean_roots:
+                return clean_roots[0].rstrip('/') + '/index.htm'
+            return None
 
         new_inv_path  = _pick_best(nav_paths['new'])
         used_inv_path = _pick_best(nav_paths['used'])
@@ -2286,6 +2303,68 @@ def consolidate_inventory_bugs(bugs: list, inventory_info: dict, custom_rules: s
 
 
 
+def has_breadcrumbs_in_page(soup):
+    """
+    Comprehensive breadcrumb detection supporting:
+    1. Schema.org microdata (BreadcrumbList)
+    2. JSON-LD scripts (@type: BreadcrumbList)
+    3. Semantic classes / IDs (.breadcrumb, .breadcrumbs, [class*="breadcrumb"], etc.)
+    4. ARIA landmarks (nav[aria-label="breadcrumb"], etc.)
+    5. CMS widget names (data-widget-name="*breadcrumb*")
+    6. Custom inline/HTML breadcrumb trails (e.g. <ul ...><li><a href="/index.htm">Home</a></li><li>></li>...)
+    """
+    if not soup:
+        return False
+        
+    import re as _re_bc
+    # 1. Schema.org Microdata
+    if soup.find(attrs={'itemtype': _re_bc.compile(r'BreadcrumbList', _re_bc.I)}):
+        return True
+        
+    # 2. JSON-LD Script
+    for s in soup.find_all('script', type='application/ld+json'):
+        if s.string and 'BreadcrumbList' in s.string:
+            return True
+            
+    # 3. Standard Semantic CSS classes & IDs
+    if soup.select('.breadcrumb, .breadcrumbs, [class*="breadcrumb"], [id*="breadcrumb"], .ws-breadcrumbs'):
+        return True
+        
+    # 4. ARIA Navigation landmark
+    if soup.find(['nav', 'ol', 'ul', 'div'], attrs={'aria-label': _re_bc.compile(r'breadcrumb', _re_bc.I)}):
+        return True
+        
+    # 5. DDC / CMS Widget Attributes
+    if soup.find(attrs={'data-widget-name': _re_bc.compile(r'breadcrumb', _re_bc.I)}) or \
+       soup.find(attrs={'data-name': _re_bc.compile(r'breadcrumb', _re_bc.I)}):
+        return True
+        
+    # 6. Custom Inline / HTML Breadcrumb Trails (e.g. <ul ...><li><a href="/index.htm">Home</a></li><li>></li>...)
+    for el in soup.find_all(['ul', 'ol', 'nav', 'div', 'p']):
+        if el.name in ['header', 'footer'] or len(el.find_all(['ul', 'ol', 'section'])) > 1:
+            continue
+        links = el.find_all('a')
+        if not (1 <= len(links) <= 8):
+            continue
+        first_a = links[0]
+        first_txt = first_a.get_text(strip=True).lower()
+        first_h = (first_a.get('href') or '').strip().lower()
+        has_first_home = first_txt in ['home', 'inicio'] or (first_h in ['/', '/index.htm', '/index.html'] and len(first_txt) <= 10)
+        if not has_first_home:
+            continue
+        el_text = el.get_text(separator=' ')
+        has_sep = any(sep in el_text for sep in [' > ', ' >', '> ', ' › ', ' » ', ' / '])
+        if not has_sep:
+            for child in el.find_all(['li', 'span', 'i']):
+                if child.get_text(strip=True) in ['>', '›', '»', '/', '|', '→']:
+                    has_sep = True
+                    break
+        if has_first_home and has_sep:
+            return True
+            
+    return False
+
+
 def run_page_audit(url: str, soup, response, response_time_ms: float) -> dict:
     """
     Runs a static-HTML page audit across 4 categories.
@@ -2451,10 +2530,8 @@ def run_page_audit(url: str, soup, response, response_time_ms: float) -> dict:
         _check("seo", "Robots Meta", "pass", "No robots meta tag — page is indexable by default.")
 
     # Breadcrumbs
-    has_schema = bool(soup.find(attrs={'itemtype': _re.compile(r'BreadcrumbList', _re.I)}))
-    has_class = bool(soup.select('.breadcrumb, .breadcrumbs, [class*="breadcrumb"], .ws-breadcrumbs'))
-    if has_schema or has_class:
-        _check("seo", "Breadcrumbs", "pass", "Breadcrumbs detected (Schema.org or Semantic classes).")
+    if has_breadcrumbs_in_page(soup):
+        _check("seo", "Breadcrumbs", "pass", "Breadcrumbs detected (Schema.org, Semantic classes, or HTML breadcrumb trail).")
     else:
         _check("seo", "Breadcrumbs", "warn", "No breadcrumbs detected. Consider adding them for better UX and SEO crawlability.")
 
@@ -2613,10 +2690,7 @@ def verify_custom_rules(custom_rules_text: str, soup, inventory_info: dict) -> l
         
         # 1. Breadcrumbs
         if 'breadcrumb' in rule_lower:
-            has_schema = bool(soup.find(attrs={'itemtype': lambda x: x and 'BreadcrumbList' in x})) if soup else False
-            has_class = bool(soup.find(attrs={'class': lambda x: x and 'breadcrumb' in x.lower()})) if soup else False
-            has_widget = bool(soup.find(attrs={'data-widget-name': lambda x: x and 'breadcrumb' in x.lower()})) if soup else False
-            if has_schema or has_class or has_widget:
+            if has_breadcrumbs_in_page(soup):
                 res['status'] = 'success'
                 res['found_text'] = 'Breadcrumbs component found on page.'
             else:
@@ -2798,7 +2872,7 @@ def run_media_audit(url, html_raw, soup):
             _ids_c = _re2.findall(r'pictures\.dealer\.com/[a-z]/([^/"\'&\s>]+)/', html_raw)
             if _ids_c:
                 # Exclude known shared OEM asset directories if possible
-                _ids_c = [i for i in _ids_c if i.lower() not in ['mnao', 'global', 'shared']]
+                _ids_c = [i for i in _ids_c if i.lower() not in ['mnao', 'global', 'shared'] and not i.lower().startswith('demo')]
                 if _ids_c:
                     dealer_id = max(set(_ids_c), key=_ids_c.count)
 
@@ -2806,23 +2880,29 @@ def run_media_audit(url, html_raw, soup):
             media_audit['dealer_id'] = dealer_id
             print(f"DEBUG: Media Audit - dealer_id detected: {dealer_id}")
 
-            # 2. Widgets to EXCLUDE from image audit
-            MEDIA_SKIP_WIDGETS = [
+            # 2. Widgets and containers to EXCLUDE from image audit (campaigns, specials, inventory, navigation, headers)
+            MEDIA_SKIP_KEYWORDS = [
                 'ws-inv-', 'inventory-listing', 'inventory-search',
-                'ws-specials', 'specials-listing', 'specials-widget',
-                'navigation', 'ws-navigation', 'header-default',
+                'ws-specials', 'specials-listing', 'specials-widget', 'specials',
+                'special', 'campaign', 'coupon', 'promo', 'promotion',
+                'incentive', 'rebate', 'navigation', 'ws-navigation', 'header-default',
             ]
 
             def _is_excluded_widget(tag):
-                """Returns True if the tag is inside an excluded widget."""
+                """Returns True if the tag is inside an excluded widget or container."""
                 p = tag
                 while p:
-                    wn = p.get('data-widget-name', p.get('data-widget-id', p.get('data-name', ''))) or ''
-                    wn = wn.lower()
-                    if any(skip in wn for skip in MEDIA_SKIP_WIDGETS):
+                    wn = p.get('data-widget-name', '') or ''
+                    wid = p.get('data-widget-id', '') or ''
+                    dname = p.get('data-name', '') or ''
+                    dcomp = p.get('data-component', '') or ''
+                    p_id = p.get('id', '') or ''
+                    classes = ' '.join(p.get('class') or [])
+                    combined = f"{wn} {wid} {dname} {dcomp} {p_id} {classes}".lower()
+                    if any(skip in combined for skip in MEDIA_SKIP_KEYWORDS):
                         return True
-                    # Also skip nav and header tags
-                    if p.name in ['nav', 'header']:
+                    # Also skip nav, header, footer tags
+                    if p.name in ['nav', 'header', 'footer']:
                         return True
                     p = p.parent
                 return False
@@ -2848,6 +2928,55 @@ def run_media_audit(url, html_raw, soup):
                     srcs.add(bg2)
                 return srcs
 
+            def _is_system_or_oem_image(src_val, tag=None):
+                if not src_val:
+                    return False
+                s_low = src_val.lower()
+                
+                # 1. AdChoices, compliance, privacy, evidon and opt-out logos
+                if any(k in s_low for k in [
+                    'adchoice', 'ad-choice', 'ad_choice', 'adchoices', 'ad-choices',
+                    'opt-out', 'optout', 'evidon', 'truste', 'privacy-choice', 'youradchoices'
+                ]):
+                    return True
+                    
+                # 2. Dealer.com system graphics, stock assets & OEM shared graphics
+                if any(k in s_low for k in [
+                    'dealer.com/graphics/', 'images.dealer.com/graphics/',
+                    'dealer.com/ddc/', 'static.dealer.com',
+                    'dbcreative', 'automotive brands', 'automotive%20brands',
+                    '/oem/', 'shared/oem', 'global/oem', '/adchoice/',
+                    '/d/demo'
+                ]):
+                    return True
+
+                # 3. OEM Syndicated Demo / Campaign Accounts (e.g. demogm, demoford, demochrysler, etc.)
+                # In Dealer.com, OEM national campaigns & service specials are syndicated from demo accounts
+                if _re2.search(r'pictures\.dealer\.com/[a-z]/demo[a-z0-9_-]*/', s_low):
+                    return True
+                    
+                # 4. Tag attributes (alt, class, parent a href)
+                if tag:
+                    alt_text = (tag.get('alt') or '').lower()
+                    if any(k in alt_text for k in ['adchoice', 'ad-choice', 'adchoices', 'opt-out']):
+                        return True
+                    classes = ' '.join(tag.get('class') or []).lower()
+                    if any(k in classes for k in ['adchoice', 'ad-choice', 'adchoices', 'ad-choices']):
+                        return True
+                    p = tag.parent
+                    steps = 0
+                    while p and steps < 4:
+                        p_href = (p.get('href') or '').lower()
+                        p_class = ' '.join(p.get('class') or []).lower()
+                        if any(k in p_href or k in p_class for k in ['adchoice', 'ad-choice', 'adchoices', 'ad-choices', 'opt-out']):
+                            return True
+                        if p.name == 'a':
+                            break
+                        p = p.parent
+                        steps += 1
+                        
+                return False
+
             offending = []
             analyzed_images = []
 
@@ -2865,6 +2994,10 @@ def run_media_audit(url, html_raw, soup):
                                
                 for src in _extract_img_srcs(img_tag):
                     if src and not src.startswith('data:'):
+                        # Skip system/compliance logos (like AdChoices) from media audit
+                        if _is_system_or_oem_image(src, img_tag):
+                            continue
+                            
                         # Skip 1x1 tracking pixels or hidden images
                         w = img_tag.get('width', '')
                         h = img_tag.get('height', '')
@@ -2881,8 +3014,7 @@ def run_media_audit(url, html_raw, soup):
                         
                     # Only check pictures.dealer.com images — skip other CDNs and local paths
                     if 'pictures.dealer.com' in src or 'dealer.com' in src:
-                        src_lower = src.lower()
-                        if 'dbcreative' in src_lower or 'automotive brands' in src_lower or 'automotive%20brands' in src_lower or 'dealer.com/ddc/' in src_lower or 'static.dealer.com' in src_lower or 'ad-choices' in src_lower:
+                        if _is_system_or_oem_image(src, img_tag):
                             # Skip OEM brand images, static third-party logos (like ad-choices), and default DDC stock images which are not dealer-specific media library content
                             pass
                         elif dealer_id not in src:
@@ -2899,12 +3031,12 @@ def run_media_audit(url, html_raw, soup):
                 wn = el.get('data-name', el.get('data-widget-name', el.get('data-widget-id', 'Background element')))
                 for src in _extract_img_srcs(el):
                     if src and not src.startswith('data:'):
+                        if _is_system_or_oem_image(src, el):
+                            continue
                         analyzed_images.append({'src': src.split('?')[0], 'type': 'background', 'widget': wn})
                         
                     if 'pictures.dealer.com' in src or 'dealer.com' in src:
-                        src_lower = src.lower()
-                        if 'dbcreative' in src_lower or 'automotive brands' in src_lower or 'automotive%20brands' in src_lower or 'dealer.com/ddc/' in src_lower:
-                            # Skip OEM brand images and default DDC stock images which are not dealer-specific media library content
+                        if _is_system_or_oem_image(src, el):
                             pass
                         elif dealer_id not in src:
                             offending.append({
@@ -3276,31 +3408,35 @@ def extract_sections_and_widgets(soup, url: str = ""):
         cleaned = re.sub(r'\.\d+-\d+', '', raw)
         cleaned = re.sub(r'-\d+$', '', cleaned)
         c_low = cleaned.lower()
-        if c_low == 'title':
+        if 'title' in c_low:
             return 'Page Title'
-        if c_low == 'slideshow':
+        if 'slideshow' in c_low:
             return 'Slideshow'
         if 'seo-content' in c_low or 'seo' in c_low:
             return 'Additional SEO Content'
-        if c_low == 'inventory-search-results':
+        if 'inventory-search-results' in c_low:
             return 'Inventory Search Results'
-        if c_low == 'content-centered':
+        if 'content-centered' in c_low:
             return 'Content Centered'
-        if c_low == 'content-wide':
+        if 'form-centered' in c_low:
+            return 'Form Centered'
+        if 'content-wide' in c_low:
             return 'Content Wide'
-        if c_low == 'content-background-image-right':
+        if 'content-background-image-right' in c_low or 'content-w-image-right' in c_low or 'image-right' in c_low:
             return 'Content w/ Image Right'
-        if c_low == 'content-background-image-left':
+        if 'content-background-image-left' in c_low or 'content-w-image-left' in c_low or 'image-left' in c_low:
             return 'Content w/ Image Left'
-        if c_low == 'content-thirds':
+        if 'empty-fifty-fifty' in c_low or 'fifty-fifty' in c_low or '50-50' in c_low or 'halves' in c_low:
+            return 'Fifty Fifty'
+        if 'content-thirds' in c_low:
             return 'Content Thirds'
-        if c_low == 'content-left-over-background-image':
+        if 'content-left-over-background-image' in c_low:
             return 'Content Left Over Background Image'
-        if c_low == 'content-right-over-background-image':
+        if 'content-right-over-background-image' in c_low:
             return 'Content Right Over Background Image'
-        if c_low in ['map-hours', 'map']:
+        if any(k in c_low for k in ['map-hours', 'map']):
             return 'Contact and Map'
-        if c_low in ['primary-banner', 'hero-banner', 'hero']:
+        if any(k in c_low for k in ['primary-banner', 'hero-banner', 'hero']):
             return 'Hero Banner'
         return cleaned.replace('-', ' ').replace('_', ' ').title()
 
@@ -3316,10 +3452,26 @@ def extract_sections_and_widgets(soup, url: str = ""):
                 return m.group(1)
         return None
 
-    # Find top-level sections
+    def is_header_or_footer(el):
+        for p in [el] + list(el.parents):
+            if not p or not hasattr(p, 'name'):
+                continue
+            if p.name in ['header', 'footer']:
+                return True
+            p_classes = p.get('class', [])
+            p_id = p.get('id', '')
+            p_name = p.get('data-name', '') or p.get('data-section-name', '')
+            combined = (' '.join(p_classes) + ' ' + p_id + ' ' + p_name).lower()
+            if any(k in combined for k in ['ddc-header', 'ddc-footer', 'site-header', 'site-footer', 'global-header', 'global-footer', 'links-wrapper', 'ddc-logo-and-follow']):
+                return True
+        return False
+
+    # Find top-level sections (excluding global header / footer layout wrappers)
     all_sec = soup.find_all(lambda el: el.name in ['section'] or (el.name == 'div' and 'page-section' in el.get('class', [])))
     top_sections = []
     for s in all_sec:
+        if is_header_or_footer(s):
+            continue
         parent_sec = s.find_parent(lambda p: p != s and (p.name in ['section'] or (p.name == 'div' and 'page-section' in p.get('class', []))))
         if not parent_sec:
             top_sections.append(s)
@@ -3327,6 +3479,8 @@ def extract_sections_and_widgets(soup, url: str = ""):
     if not top_sections:
         raw_candidates = soup.find_all('div', class_=re.compile(r'container|section|ddc-content'))
         for s in raw_candidates:
+            if is_header_or_footer(s):
+                continue
             is_child = False
             for parent in top_sections:
                 if s in parent.find_all():
@@ -3357,10 +3511,38 @@ def extract_sections_and_widgets(soup, url: str = ""):
         text_snippet = raw_text[:280] if raw_text else ''
         links = [a.get('href') for a in w_el.find_all('a', href=True)]
 
-        # Determine type
+        # Determine type & form classification
         w_name_low = (w_name + ' ' + w_id).lower()
-        if any(k in w_name_low for k in ['title']):
+        has_form_tag = w_el.name == 'form' or bool(w_el.find('form'))
+        is_search_or_filter = any(k in w_name_low for k in ['search', 'filter', 'facet', 'listing', 'paging'])
+        
+        is_contact_info = not is_search_or_filter and (
+            any(k in w_name_low for k in ['contact-info', 'contactinfo', 'location-info', 'hours-contact']) or
+            ('contact' in w_name_low and not has_form_tag and any(k in w_name_low for k in ['info', 'information', 'phone', 'address', 'details', 'location']))
+        )
+        is_contact_form = not is_search_or_filter and not is_contact_info and (
+            has_form_tag or 
+            any(k in w_name_low for k in ['contact-form', 'lead', 'inquiry', 'quote', 'ask-question', 'reach-out', 'form', 'contact-us', 'contactus']) or
+            ('contact' in w_name_low and not is_contact_info)
+        )
+        is_finance_form = not is_search_or_filter and any(k in w_name_low for k in ['finance', 'credit', 'pre-qual', 'prequal', 'loan'])
+        is_trade_form = not is_search_or_filter and any(k in w_name_low for k in ['trade', 'value-trade', 'appraisal'])
+        is_schedule_form = not is_search_or_filter and any(k in w_name_low for k in ['schedule', 'appointment', 'test-drive', 'testdrive', 'service-app'])
+
+        if is_contact_info:
+            w_type = 'contact-info'
+        elif is_trade_form:
+            w_type = 'trade'
+        elif is_finance_form:
+            w_type = 'finance'
+        elif is_schedule_form:
+            w_type = 'schedule'
+        elif is_contact_form:
+            w_type = 'contact'
+        elif any(k in w_name_low for k in ['page-title', 'pagetitle', 'title']):
             w_type = 'title'
+        elif any(k in w_name_low for k in ['raw']):
+            w_type = 'raw'
         elif any(k in w_name_low for k in ['content', 'wysiwyg', 'text']):
             w_type = 'content'
         elif any(k in w_name_low for k in ['disclaimer']):
@@ -3381,17 +3563,63 @@ def extract_sections_and_widgets(soup, url: str = ""):
             w_type = 'navigation'
         elif any(k in w_name_low for k in ['map']):
             w_type = 'map'
-        elif any(k in w_name_low for k in ['contact']):
-            w_type = 'contact'
         elif any(k in w_name_low for k in ['hours']):
             w_type = 'hours'
         else:
             w_type = 'general'
 
+        # Clean ID string
+        clean_wid = re.sub(r'^[^\w\-]+|[^\w\-]+$', '', w_id).strip()
+        if not clean_wid:
+            if is_contact_info:
+                clean_wid = 'contact2'
+            elif is_contact_form:
+                clean_wid = 'contact1'
+            elif is_finance_form:
+                clean_wid = 'finance1'
+            elif is_trade_form:
+                clean_wid = 'trade1'
+            elif is_schedule_form:
+                clean_wid = 'schedule1'
+            elif any(k in w_name_low for k in ['links', 'link']) or w_type == 'navigation':
+                clean_wid = 'links1'
+            elif any(k in w_name_low for k in ['content', 'wysiwyg', 'text']) or w_type == 'content':
+                clean_wid = 'content1'
+            elif any(k in w_name_low for k in ['hours']) or w_type == 'hours':
+                clean_wid = 'hours1'
+            elif any(k in w_name_low for k in ['map']) or w_type == 'map':
+                clean_wid = 'map1'
+            else:
+                clean_wid = w_name or 'widget1'
+
         clean_id = w_id.capitalize() if w_id.startswith('inventory') else w_id
-        if 'page-title' in w_name_low:
-            display_title = f'v9.widgets.content.page-title.a1 ({w_id})'
-            subtext = f'v9.widgets.content.page-title.a1 - {page_alias}:{w_id}' if page_alias else 'Renders page title and heading.'
+        if is_contact_info:
+            display_title = f'Contact Information ( {clean_wid} )'
+            subtext = 'Displays contact information about location such as phone number etc.'
+        elif is_trade_form:
+            display_title = f'Trade-In Form ( {clean_wid} )'
+            subtext = 'Form for vehicle trade-in valuation and customer details.'
+        elif is_finance_form:
+            display_title = f'Finance Application ( {clean_wid} )'
+            subtext = 'Form that allows capture of customer credit/finance application.'
+        elif is_schedule_form:
+            display_title = f'Schedule Appointment Form ( {clean_wid} )'
+            subtext = 'Form for scheduling appointment or test drive.'
+        elif is_contact_form:
+            display_title = f'Contact Form ( {clean_wid} )'
+            subtext = 'Contact form that allows capture of general information such as Name, Email, etc.'
+        elif any(k in w_name_low for k in ['links', 'link']) or w_type == 'navigation':
+            display_title = f'Links ( {clean_wid} )'
+            subtext = 'Allows for generation of buttons/links.'
+        elif 'page-title' in w_name_low or 'pagetitle' in w_name_low:
+            display_title = f'v9.widgets.content.page-title.v1 ( {clean_wid} )'
+            subtext = f'v9.widgets.content.page-title.v1 - {page_alias}:{clean_wid}' if page_alias else f'v9.widgets.content.page-title.v1 - {clean_wid}'
+        elif 'raw' in w_name_low:
+            display_title = f'Raw HTML Content ( {clean_wid} )'
+            subtext = 'Space for entering in raw HTML content.'
+        elif any(k in w_name_low for k in ['content', 'wysiwyg', 'text']) or w_type == 'content':
+            display_title = f'Content ( {clean_wid} )'
+            subtext = 'Space for entering in WYSIWYG content.'
         elif 'ws-inv-data-service' in w_name_low:
             display_title = f'v9.newmodel.inventory-listing.ws-inv-data-service ({w_id})'
             subtext = f'v9.newmodel.inventory-listing.ws-inv-data-service - {page_alias}:{w_id}' if page_alias else w_name
@@ -3401,27 +3629,30 @@ def extract_sections_and_widgets(soup, url: str = ""):
         elif 'disclaimer' in w_name_low:
             display_title = f'Disclaimer ({w_id})'
             subtext = 'Widget for dynamically pulling in disclaimer text.'
-        elif 'links' in w_name_low:
-            display_title = f'Quick Links ({w_id})'
-            subtext = f'Navigation Links ({len(links)} links)'
-        elif 'map' in w_name_low:
-            display_title = f'Dynamic Map ({w_id})'
+        elif 'map' in w_name_low or w_type == 'map':
+            display_title = f'Dynamic Google Map ( {clean_wid} )'
             subtext = 'Google Maps dealership location'
-        elif 'contact' in w_name_low:
-            display_title = f'Contact Info ({w_id})'
-            subtext = 'Dealership contact information'
-        elif 'hours' in w_name_low:
-            display_title = f'Dealership Hours ({w_id})'
-            subtext = 'Operating hours schedule'
-        elif 'content' in w_name_low:
-            display_title = f'Content ({w_id})'
-            subtext = 'Space for entering in WYSIWYG content.'
+        elif 'hours' in w_name_low or w_type == 'hours':
+            display_title = f'Hours ( {clean_wid} )'
+            subtext = 'COMPOSER_HOURS_VERBIASE'
         elif w_name.startswith('ws-inv-') or w_name.startswith('ws-'):
             display_title = f'{w_name} ({clean_id})'
             subtext = f'{w_name} - {page_alias}:{w_id}' if page_alias else w_name
         else:
             display_title = f'{w_name} ({w_id})' if w_id else w_name
             subtext = f'{page_alias}:{w_id}' if page_alias else ''
+
+        # Extract form field names if present
+        form_fields = []
+        if has_form_tag or is_contact_form or is_finance_form or is_trade_form or is_schedule_form:
+            for inp in w_el.find_all(['input', 'select', 'textarea']):
+                inp_type = (inp.get('type') or 'text').lower()
+                if inp_type in ['hidden', 'submit', 'button', 'image', 'reset']:
+                    continue
+                inp_name = inp.get('placeholder') or inp.get('name') or inp.get('id') or inp.get('aria-label') or ''
+                inp_name = inp_name.strip()
+                if inp_name and inp_name not in form_fields:
+                    form_fields.append(inp_name.replace('-', ' ').replace('_', ' ').title())
 
         return {
             'id': w_id or f'widget-{id(w_el)}',
@@ -3432,40 +3663,14 @@ def extract_sections_and_widgets(soup, url: str = ""):
             'type': w_type,
             'headings': headings,
             'text_snippet': text_snippet,
-            'has_content': len(headings) > 0 or len(text_snippet) > 20,
+            'has_content': len(headings) > 0 or len(text_snippet) > 20 or len(form_fields) > 0,
+            'form_fields': form_fields,
             'links_count': len(links),
             'classes': ' '.join(classes[:5])
         }
 
     sections_tree = []
     total_widgets_count = 0
-
-    # Detect if standard DDC sections are hidden from view in the page template (Image 1)
-    dom_sec_names = [clean_section_title(s.get('data-name', '')) for s in top_sections]
-    template_hidden_sections = []
-    if 'Page Title' not in dom_sec_names:
-        template_hidden_sections.append(('page-title-hidden', 'Page Title', 'Hidden from view in page template'))
-    if 'Slideshow' not in dom_sec_names and any('inventory' in n.lower() or 'image' in n.lower() for n in dom_sec_names):
-        template_hidden_sections.append(('slideshow-hidden', 'Slideshow', 'Hidden from view in page template'))
-    if 'Additional SEO Content' not in dom_sec_names and any('inventory' in n.lower() or 'content' in n.lower() for n in dom_sec_names):
-        template_hidden_sections.append(('seo-content-hidden', 'Additional SEO Content', 'Hidden from view in page template'))
-
-    for h_id, h_title, h_reason in template_hidden_sections:
-        sections_tree.append({
-            "section_id": h_id,
-            "raw_name": h_id,
-            "name": h_title,
-            "title": h_title,
-            "is_hidden": True,
-            "hidden_reason": h_reason,
-            "has_bg_image": False,
-            "image_url": None,
-            "layout_type": "hidden",
-            "widgets_count": 0,
-            "widgets": [],
-            "columns_layout": None,
-            "containers": []
-        })
 
     for idx, sec in enumerate(top_sections, start=1):
         raw_sec_name = sec.get('data-name') or sec.get('data-section-name') or f'section-{idx}'
@@ -3475,10 +3680,23 @@ def extract_sections_and_widgets(soup, url: str = ""):
 
         is_hidden = ('d-none' in sec_classes) or ('hide' in sec_classes) or ('display: none' in sec_style) or ('display:none' in sec_style) or sec.has_attr('hidden')
         sec_image = find_section_image(sec)
-        has_bg_image = 'background-image' in raw_sec_name or 'over-background-image' in raw_sec_name or ('background-image' in sec_style and not sec_style.startswith('data:image'))
+
+        raw_low = raw_sec_name.lower()
+        is_split_image_layout = any(k in raw_low for k in ['image-left', 'image-right', 'w-image-left', 'w-image-right'])
+        has_bg_image = False
+        if not is_split_image_layout:
+            has_bg_image = 'over-background-image' in raw_low or (
+                'title' in raw_low and ('background-image' in sec_style or 'linear-gradient' in sec_style or bool(sec_image))
+            ) or ('background-image' in sec_style and not sec_style.startswith('data:image'))
 
         # Collect unique widgets
-        all_widget_nodes = sec.find_all(lambda w: w.has_attr('data-widget-id') or w.has_attr('data-widget-name') or ('ddc-content' in w.get('class', [])))
+        all_widget_nodes = sec.find_all(lambda w: (
+            w.has_attr('data-widget-id') or 
+            w.has_attr('data-widget-name') or 
+            ('ddc-content' in w.get('class', [])) or
+            w.name == 'form' or
+            any('contact' in c or 'lead' in c or 'form' in c for c in w.get('class', []))
+        ))
         unique_nodes = []
         for wn in all_widget_nodes:
             is_inner = False
@@ -3534,11 +3752,28 @@ def extract_sections_and_widgets(soup, url: str = ""):
                     {'title': 'Content 3 (Right)', 'widgets': w_col3}
                 ]
             }
+        elif 'empty-fifty-fifty' in raw_low or 'fifty-fifty' in raw_low or '50-50' in raw_low or 'halves' in raw_low:
+            layout_type = 'fifty-fifty'
+            c_first = sec.find(attrs={'data-name': re.compile(r'first')})
+            c_second = sec.find(attrs={'data-name': re.compile(r'second')})
+
+            w_col1 = [parse_widget_node(wn) for wn in unique_nodes if c_first and (wn in c_first.find_all() or wn == c_first)]
+            w_col2 = [parse_widget_node(wn) for wn in unique_nodes if c_second and (wn in c_second.find_all() or wn == c_second)]
+
+            if not w_col1 and not w_col2 and len(sec_widgets) >= 2:
+                half = len(sec_widgets) // 2
+                w_col1 = sec_widgets[:half]
+                w_col2 = sec_widgets[half:]
+
+            columns_layout = {
+                'layout_type': 'fifty-fifty',
+                'left_column': {'title': 'Column 1 (50%)', 'widgets': w_col1},
+                'right_column': {'title': 'Column 2 (50%)', 'widgets': w_col2}
+            }
         elif 'over-background-image' in raw_low:
             layout_type = 'over-background-image'
             has_bg_image = True
         elif 'inventory-search-results' in raw_low:
-            layout_type = 'inventory-search-results'
             combined_c = sec.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['combined', 'two-column', 'split']))
             if combined_c:
                 facets_c = combined_c.find(lambda c: c.has_attr('data-name') and any(k in c['data-name'] for k in ['facet', 'filter', 'left']))
@@ -3570,6 +3805,65 @@ def extract_sections_and_widgets(soup, url: str = ""):
                             'widgets': [parse_widget_node(wn) for wn in listing_w_nodes]
                         }
                     }
+        elif any(k in raw_low for k in ['map-hours', 'contact-and-map', 'contact-map']) or ('map' in raw_low and any(k in raw_low for k in ['hours', 'contact', 'info'])):
+            layout_type = 'contact-map'
+            left_w = [w for w in sec_widgets if w.get('type') != 'map' and 'map' not in (w.get('id') or '').lower()]
+            right_w = [w for w in sec_widgets if w.get('type') == 'map' or 'map' in (w.get('id') or '').lower()]
+            if not left_w and len(sec_widgets) >= 2:
+                left_w = sec_widgets[:-1]
+                right_w = sec_widgets[-1:]
+            columns_layout = {
+                'layout_type': 'contact-map',
+                'left_column': {'title': 'Contact Information & Hours', 'widgets': left_w},
+                'right_column': {'title': 'Dynamic Google Map', 'widgets': right_w}
+            }
+        elif 'centered' in raw_low or 'centered' in sec_title.lower():
+            layout_type = 'centered'
+            columns_layout = None
+
+        # Background color detection on section or child containers
+        has_bg_color = False
+        bg_color = None
+        bg_class = None
+
+        for node in [sec] + sec.find_all(attrs={'data-name': True}):
+            n_classes = node.get('class', [])
+            n_style = node.get('style', '')
+
+            for c in n_classes:
+                if c in ['bg-light', 'bg-muted', 'bg-gray', 'bg-grey']:
+                    has_bg_color = True
+                    bg_color = '#eaedf1'
+                    bg_class = 'bg-light'
+                    break
+                elif c in ['bg-dark', 'bg-black']:
+                    has_bg_color = True
+                    bg_color = '#1e293b'
+                    bg_class = 'bg-dark'
+                    break
+                elif c == 'bg-primary':
+                    has_bg_color = True
+                    is_red_brand = any(k in url.lower() for k in ['toyota', 'poe', 'mitsubishi', 'mazda', 'honda', 'dodge', 'ram', 'audi', 'kia', 'alfa']) or 'red' in sec_style.lower() or 'red' in n_style.lower()
+                    bg_color = '#cc0000' if is_red_brand else '#1e40af'
+                    bg_class = 'bg-primary'
+                    break
+                elif c == 'bg-secondary':
+                    has_bg_color = True
+                    bg_color = '#475569'
+                    bg_class = 'bg-secondary'
+                    break
+
+            if not bg_color and n_style:
+                m_bg = re.search(r'background(?:-color)?\s*:\s*([^;]+)', n_style, re.I)
+                if m_bg and 'url(' not in m_bg.group(1).lower():
+                    col_val = m_bg.group(1).strip()
+                    if col_val.lower() not in ['transparent', 'inherit', 'initial', 'none']:
+                        has_bg_color = True
+                        bg_color = col_val
+                        bg_class = 'custom-bg'
+
+            if has_bg_color:
+                break
 
         # Backwards compatible container hierarchy
         containers_tree = [{
@@ -3586,6 +3880,9 @@ def extract_sections_and_widgets(soup, url: str = ""):
             "is_hidden": is_hidden,
             "has_bg_image": has_bg_image,
             "image_url": sec_image,
+            "has_bg_color": has_bg_color,
+            "bg_color": bg_color,
+            "bg_class": bg_class,
             "layout_type": layout_type,
             "total_widgets": len(sec_widgets),
             "widgets_count": len(sec_widgets),
@@ -3634,38 +3931,45 @@ def extract_h1():
 
     if request.method == 'POST':
         data = request.json or {}
-        url = data.get('url')
-        expected_title = data.get('expected_title', '').strip()
-        expected_content = data.get('expected_content', '').strip()
-        special_instructions = data.get('special_instructions', '').strip()
-        custom_rules = data.get('custom_rules', '').strip()
-        case_id = data.get('case_number', '').strip()
-        page_example_url = data.get('page_example_url', '').strip()
-        page_example_cms_url = data.get('page_example_cms_url', '').strip()
-        page_example_live_url = data.get('page_example_live_url', '').strip()
-        page_example_raw = data.get('page_example_raw', '').strip()
-        page_example_type = data.get('page_example_type', '').strip()
+        url = (data.get('url') or '').strip()
+        expected_title = (data.get('expected_title') or '').strip()
+        expected_content = (data.get('expected_content') or '').strip()
+        special_instructions = (data.get('special_instructions') or '').strip()
+        custom_rules = (data.get('custom_rules') or '').strip()
+        case_id = (data.get('case_number') or '').strip()
+        page_example_url = (data.get('page_example_url') or '').strip()
+        page_example_cms_url = (data.get('page_example_cms_url') or '').strip()
+        page_example_live_url = (data.get('page_example_live_url') or '').strip()
+        page_example_raw = (data.get('page_example_raw') or '').strip()
+        page_example_type = (data.get('page_example_type') or '').strip()
     else:
-        url = request.args.get('url')
-        page_example_url = request.args.get('page_example_url', '').strip()
-        page_example_cms_url = request.args.get('page_example_cms_url', '').strip()
-        page_example_live_url = request.args.get('page_example_live_url', '').strip()
-        page_example_raw = request.args.get('page_example_raw', '').strip()
-        page_example_type = request.args.get('page_example_type', '').strip()
+        url = (request.args.get('url') or '').strip()
+        page_example_url = (request.args.get('page_example_url') or '').strip()
+        page_example_cms_url = (request.args.get('page_example_cms_url') or '').strip()
+        page_example_live_url = (request.args.get('page_example_live_url') or '').strip()
+        page_example_raw = (request.args.get('page_example_raw') or '').strip()
+        page_example_type = (request.args.get('page_example_type') or '').strip()
 
     if not page_example_url and LATEST_DYNAMICS_STORE:
         if not case_id or LATEST_DYNAMICS_STORE.get('deliverable_id') == case_id:
-            page_example_url = LATEST_DYNAMICS_STORE.get('page_example_url', '')
-            page_example_cms_url = LATEST_DYNAMICS_STORE.get('page_example_cms_url', '')
-            page_example_live_url = LATEST_DYNAMICS_STORE.get('page_example_live_url', '')
-            page_example_raw = LATEST_DYNAMICS_STORE.get('page_example_raw', '')
-            page_example_type = LATEST_DYNAMICS_STORE.get('page_example_type', '')
+            page_example_url = (LATEST_DYNAMICS_STORE.get('page_example_url') or '').strip()
+            page_example_cms_url = (LATEST_DYNAMICS_STORE.get('page_example_cms_url') or '').strip()
+            page_example_live_url = (LATEST_DYNAMICS_STORE.get('page_example_live_url') or '').strip()
+            page_example_raw = (LATEST_DYNAMICS_STORE.get('page_example_raw') or '').strip()
+            page_example_type = (LATEST_DYNAMICS_STORE.get('page_example_type') or '').strip()
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
     
     if not url.startswith('http://') and not url.startswith('https://'):
         url = 'https://' + url
+
+    if page_example_url and not page_example_url.startswith(('http://', 'https://')):
+        parsed_target = urlparse(url)
+        if parsed_target.netloc:
+            origin = f"{parsed_target.scheme}://{parsed_target.netloc}"
+            norm_path = page_example_url if page_example_url.startswith('/') else f"/{page_example_url}"
+            page_example_url = origin + norm_path
 
     try:
         session = requests.Session(impersonate='chrome', verify=False)
@@ -3941,63 +4245,94 @@ def extract_h1():
                 continue
             
             if parsed_link.netloc == base_netloc and parsed_link.scheme in ['http', 'https']:
-                # Bug detection: Internal links should be relative
-                if href.startswith(('http://', 'https://')):
-                    # Extract relative path for the suggestion
-                    rel_path = parsed_link.path
-                    if not rel_path or rel_path == '/':
-                        rel_path = '/index.htm'
-                    if parsed_link.query:
-                        rel_path += '?' + parsed_link.query
-                        
-                    absolute_internal_links.append({
-                        'text': text, 
-                        'href': href, 
-                        'rel_path': rel_path,
-                        'widget': w_name
-                    })
-                    
+                # Determine if the link in HTML is absolute or relative
+                is_absolute = href.startswith(('http://', 'https://', '//'))
+                rel_path = parsed_link.path
+                if not rel_path or rel_path == '/':
+                    rel_path = '/index.htm'
+                if parsed_link.query:
+                    rel_path += '?' + parsed_link.query
+
                 clean_url = parsed_link._replace(fragment="").geturl()
                 is_btn = 'btn' in (a.get('class') or [])
-                internal_links_to_check.add((clean_url, text, w_name, 'button' if is_btn else 'text'))
-                
-        limit_links = list(internal_links_to_check)[:50]
+                internal_links_to_check.add((clean_url, text, w_name, 'button' if is_btn else 'text', href, is_absolute, rel_path))
+
+        # Prioritize absolute links and button CTAs so they are always verified via HTTP check
+        sorted_links = sorted(
+            list(internal_links_to_check),
+            key=lambda x: (not x[5], x[3] != 'button')
+        )
+        limit_links = sorted_links[:65]
         broken_links = []
         valid_links = []
         
         if limit_links:
             def check_link(link_tuple):
-                lnk, txt, wname, ltype = link_tuple
+                clean_url, txt, wname, ltype, raw_href, is_abs, rpath = link_tuple
+                status_code = 200
+                is_broken = False
                 try:
-                    resp = session.head(lnk, timeout=5, allow_redirects=True)
+                    resp = session.head(clean_url, timeout=5, allow_redirects=True)
                     code = resp.status_code
                     if code in [404, 405, 403] or code >= 500:
                         try:
-                            resp_get = session.get(lnk, timeout=6, allow_redirects=True, stream=True)
+                            resp_get = session.get(clean_url, timeout=6, allow_redirects=True, stream=True)
                             code = resp_get.status_code
                         except Exception:
                             pass
 
+                    status_code = code
                     if code == 404 or code >= 500:
-                        return {'type': 'broken', 'href': lnk, 'text': txt, 'widget': wname, 'status': code}
-                    else:
-                        return {'type': 'valid', 'href': lnk, 'text': txt, 'widget': wname, 'link_type': ltype}
+                        is_broken = True
                 except Exception as e:
-                    # Timeout or Connection Error is almost always WAF/bot-protection. 
-                    # A real broken link will return a fast 404. We treat timeouts/connection errors as valid to avoid false positives.
-                    return {'type': 'valid', 'href': lnk, 'text': txt, 'widget': wname, 'link_type': ltype}
-            
+                    # Timeout or Connection Error is treated as valid (bot protection / WAF)
+                    status_code = 200
+                    is_broken = False
+
+                link_item = {
+                    'href': clean_url,
+                    'raw_href': raw_href,
+                    'text': txt,
+                    'widget': wname,
+                    'type': ltype,
+                    'is_absolute': is_abs,
+                    'rel_path': rpath,
+                    'status': status_code,
+                    'exists': not is_broken
+                }
+                return link_item
+
             with ThreadPoolExecutor(max_workers=15) as executor:
                 futures = {executor.submit(check_link, lnk): lnk for lnk in limit_links}
                 for future in as_completed(futures):
                     res = future.result()
                     if res:
-                        if res['type'] == 'broken':
+                        if not res['exists']:
                             broken_links.append(res)
                         else:
-                            res.pop('type', None) # Remove 'type' key to match valid_links shape expected by frontend (type/link_type mapping is slightly messy, let's fix it)
-                            valid_link_obj = {'href': res['href'], 'text': res['text'], 'widget': res['widget'], 'type': res['link_type']}
-                            valid_links.append(valid_link_obj)
+                            valid_links.append(res)
+
+        # For any links beyond limit_links (if any), include them as valid with status 200
+        checked_hrefs = {l['href'] for l in (valid_links + broken_links)}
+        for item in sorted_links[65:]:
+            c_url, txt, wname, ltype, raw_href, is_abs, rpath = item
+            if c_url not in checked_hrefs:
+                valid_links.append({
+                    'href': c_url,
+                    'raw_href': raw_href,
+                    'text': txt,
+                    'widget': wname,
+                    'type': ltype,
+                    'is_absolute': is_abs,
+                    'rel_path': rpath,
+                    'status': 200,
+                    'exists': True
+                })
+
+        # All absolute internal links, with verified HTTP existence status
+        absolute_internal_links = [
+            l for l in (valid_links + broken_links) if l.get('is_absolute')
+        ]
         
         unique_broken_anchors = {f"{a['href']}-{a['error']}": a for a in broken_anchors}.values()
         
@@ -4022,9 +4357,42 @@ def extract_h1():
         # Moved below inventory validation so inventory_info is populated
         
         if parsed_instructions:
+            # Deduplicate requested CTAs so we don't evaluate duplicates multiple times
+            unique_instructions = []
+            seen_instructions = {}  # key -> index in unique_instructions
+
             for inst in parsed_instructions:
+                u = (inst.get('url') or '').strip()
+                t = (inst.get('text') or '').strip().lower()
+                orig = (inst.get('original') or '').strip()
+
+                # Normalize URL path for robust deduplication
+                u_norm = ''
+                if u:
+                    try:
+                        u_norm = urlparse(u).path.lower().rstrip('/')
+                    except Exception:
+                        u_norm = u.lower().rstrip('/')
+
+                if u_norm:
+                    key = ('url', u_norm)
+                elif t:
+                    key = ('text', t)
+                else:
+                    key = ('orig', orig.lower())
+
+                if key in seen_instructions:
+                    unique_instructions[seen_instructions[key]]['repeat_count'] += 1
+                else:
+                    inst_copy = dict(inst)
+                    inst_copy['repeat_count'] = 1
+                    seen_instructions[key] = len(unique_instructions)
+                    unique_instructions.append(inst_copy)
+
+            for inst in unique_instructions:
                 target_text = inst['text']
                 target_url = inst['url']
+                repeat_count = inst.get('repeat_count', 1)
                 
                 # Prediction logic if missing text or url
                 if target_text and not target_url:
@@ -4035,6 +4403,8 @@ def extract_h1():
                 found_match = False
                 matched_a = None
                 coherence_issue = None
+                fallback_a = None
+                fallback_coherence = None
 
                 for a in a_tags:
                     a_text = a.get_text(strip=True)
@@ -4044,8 +4414,11 @@ def extract_h1():
                     match_text = False
                     match_url  = False
 
-                    if target_text and target_text.lower() == a_text.lower():
-                        match_text = True
+                    if target_text:
+                        t_low = target_text.lower()
+                        a_low = a_text.lower()
+                        if t_low == a_low or t_low in a_low or (len(a_low) >= 3 and a_low in t_low):
+                            match_text = True
 
                     if target_url:
                         # Flexible URL matching: compare paths
@@ -4058,12 +4431,28 @@ def extract_h1():
                         if not t_path: t_path = '/'
                         if not a_path: a_path = '/'
 
-                        # Homepage normalization
-                        is_home_t = (t_path in ('/', '/index.htm'))
-                        is_home_a = (a_path in ('/', '/index.htm'))
+                        # Homepage normalization: Home Page ONLY matches the site root, NEVER subpaths!
+                        is_home_t = (t_path in ('', '/', '/index.htm', '/index.html'))
+                        is_home_a = (a_path in ('', '/', '/index.htm', '/index.html'))
 
-                        if (is_home_t and is_home_a) or t_path == a_path or a_href.endswith(target_url) or a_href == target_url:
-                            match_url = True
+                        a_netloc = a_parsed.netloc.lower()
+                        t_netloc = t_parsed.netloc.lower()
+                        b_netloc = base_netloc.lower()
+
+                        domain_ok = True
+                        if a_netloc:
+                            if t_netloc:
+                                domain_ok = (a_netloc == t_netloc)
+                            else:
+                                domain_ok = (a_netloc == b_netloc or a_netloc in b_netloc or b_netloc in a_netloc)
+
+                        if domain_ok:
+                            if is_home_t:
+                                if is_home_a:
+                                    match_url = True
+                            else:
+                                if t_path == a_path or a_href == target_url:
+                                    match_url = True
                         
                         # Same-page anchor: target URL points to current page path + #anchor
                         # In this case look for an element with that id on the page, not a link to it
@@ -4073,11 +4462,11 @@ def extract_h1():
                                 # Check if fragment exists as id on page
                                 if soup.find(id=t_fragment) or soup.find(id=t_fragment.replace('-', '_')):
                                     match_url = True  # anchor exists on page → treat as fulfilled
+                            elif a_fragment and a_fragment == t_fragment and (t_path == a_path or not t_path or t_path == '/'):
+                                match_url = True
 
                     # KEY RULE: If a URL was given, the PATH is the only authority.
                     if inst['url'] and match_url:
-                        found_match = True
-                        matched_a = a
                         # Check for typos in the requested instruction itself
                         req_url = inst['url']
                         if req_url and '.' in req_url:
@@ -4087,6 +4476,7 @@ def extract_h1():
                                     make_bug('instructions_mismatch', f"Requested URL '{req_url}' appears to have a typo (e.g. .ht instead of .htm). Please verify.")
                                 )
                                 
+                        current_coherence = None
                         if a_text and len(a_text) > 3:
                             dest_path_low = urlparse(a_href).path.lower()
                             txt_low = a_text.lower()
@@ -4102,14 +4492,35 @@ def extract_h1():
                                 bad_paths = [bad_paths] if isinstance(bad_paths, str) else bad_paths
                                 if any(h in txt_low for h in text_hints):
                                     if any(bp in dest_path_low for bp in bad_paths):
-                                        coherence_issue = f"Anchor text '{a_text[:40]}' appears semantically incoherent with destination '{a_href}'."
+                                        current_coherence = f"Anchor text '{a_text[:40]}' appears semantically incoherent with destination '{a_href}'."
                                         break
-                        break
+
+                        # If text was also requested and this link matches text too -> perfect match!
+                        if target_text:
+                            if match_text:
+                                found_match = True
+                                matched_a = a
+                                coherence_issue = current_coherence
+                                break
+                            elif not fallback_a:
+                                fallback_a = a
+                                fallback_coherence = current_coherence
+                        else:
+                            found_match = True
+                            matched_a = a
+                            coherence_issue = current_coherence
+                            break
+
                     # If ONLY text was given (no URL), match by text
                     elif inst['text'] and not inst['url'] and match_text:
                         found_match = True
                         matched_a = a
                         break
+
+                if not found_match and fallback_a:
+                    found_match = True
+                    matched_a = fallback_a
+                    coherence_issue = fallback_coherence
 
                 if found_match and matched_a:
                     l_text = matched_a.get_text(strip=True)
@@ -4119,7 +4530,8 @@ def extract_h1():
                         'original': inst['original'],
                         'status': 'success',
                         'found_text': l_text,
-                        'found_href': l_href
+                        'found_href': l_href,
+                        'repeat_count': repeat_count
                     }
                     if coherence_issue:
                         # Pass the CTA (path found) but add a coherence warning
@@ -4134,10 +4546,12 @@ def extract_h1():
                     hint = ''
                     if inst['url']:
                         hint = f" ({inst['url']})"
-                    missing_ctas_list.append(f"'{inst['original']}'{hint}")
+                    repeat_txt = f" (x{repeat_count})" if repeat_count > 1 else ""
+                    missing_ctas_list.append(f"'{inst['original']}'{hint}{repeat_txt}")
                     cta_evaluations.append({
                         'original': inst['original'],
-                        'status': 'error'
+                        'status': 'error',
+                        'repeat_count': repeat_count
                     })
                     
         if missing_ctas_list:
@@ -4495,8 +4909,8 @@ def extract_h1():
         # -------- IMAGE WIDGET VALIDATION --------
         image_issues = []
         # Find standalone image widgets
-        # Skip certain widgets that auto-handle titles or are specific headers (Hero)
-        SKIP_WIDGET_KWS = ['content-w-image', 'content-50-50', 'content-with-image', 'offset-vehicle-hero', 'js-hero-content']
+        # Skip certain widgets that auto-handle titles or are specific headers (Hero), campaigns, or specials
+        SKIP_WIDGET_KWS = ['content-w-image', 'content-50-50', 'content-with-image', 'offset-vehicle-hero', 'js-hero-content', 'campaign', 'special', 'coupon', 'promo', 'incentive']
         
         # Search for elements that look like widgets
         for widget in search_dom.find_all(lambda t: t.has_attr('data-widget-name') or t.has_attr('data-name')):
@@ -4625,8 +5039,11 @@ def extract_h1():
         abs_link_names = []
         for abs_lnk in absolute_internal_links:
             if _is_legal_link(abs_lnk):
+                abs_lnk['is_legal'] = True
                 continue  # skip Privacy Policy / Terms / Legal links
-            abs_link_names.append(abs_lnk.get('text', '')[:30] or abs_lnk.get('href', ''))
+            abs_lnk['is_legal'] = False
+            status_note = "" if abs_lnk.get('exists', True) else " [404]"
+            abs_link_names.append(f"{abs_lnk.get('text', '')[:30] or abs_lnk.get('href', '')}{status_note}")
             
         if abs_link_names:
             texts_str = ', '.join(abs_link_names)
@@ -4738,9 +5155,7 @@ def extract_h1():
             print(f"Sitemap validation error: {e}")
 
         # -------- BREADCRUMBS VALIDATION --------
-        has_breadcrumbs = False
-        if soup.select('nav[aria-label="breadcrumb"], .breadcrumb, ul.breadcrumbs, [itemtype*="schema.org/BreadcrumbList"]'):
-            has_breadcrumbs = True
+        has_breadcrumbs = has_breadcrumbs_in_page(soup)
         breadcrumbs_info = {'present': has_breadcrumbs}
 
         # -------- LEAD FORM SOURCE VALIDATION --------
@@ -4816,7 +5231,13 @@ def extract_h1():
             'broken_links': list(broken_links),
             'broken_anchors': list(unique_broken_anchors),
             'valid_links': valid_links,
+            'absolute_internal_links': absolute_internal_links,
             'popup_links': popup_links,
+            'total_links_analyzed': len(valid_links) + len(broken_links) + len(unique_broken_anchors) + len(popup_links),
+            'total_relative_links': sum(1 for l in (valid_links + broken_links) if not l.get('is_absolute')),
+            'total_absolute_links': sum(1 for l in (valid_links + broken_links) if l.get('is_absolute')),
+            'total_healthy_links': len(valid_links),
+            'total_broken_links': len(broken_links),
             'coherence_warnings': coherence_warnings,
             'title_match': title_match_result,
             'seo_coverage': seo_coverage,
@@ -4848,6 +5269,8 @@ def extract_h1():
         })
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': f'An error occurred: {str(e)}'
@@ -5139,33 +5562,11 @@ def extract_dynamics_deliverable(url):
         return s.indexOf('/') === 0 ? s : ('/' + s);
     }
 
-    function isDirectUrl(str) {
-        if (!str) return false;
-        var s = str.trim();
-        var idx = s.indexOf('://');
-        if (idx === -1) return false;
-        var rest = s.substring(idx + 3);
-        if (rest.indexOf('/') === 0) return false;
-        var host = rest.split('/')[0].split('?')[0];
-        return host.indexOf('.') !== -1;
-    }
-
-    function cleanHost(str) {
-        if (!str) return '';
-        var s = str.trim();
-        var idx = s.indexOf('://');
-        if (idx !== -1) s = s.substring(idx + 3);
-        s = s.split('/')[0].split('?')[0].split('#')[0].trim();
-        if (!/\.[a-zA-Z]{2,}/.test(s)) return '';
-        if (/^(url|website|http|https|none|null|undefined)$/i.test(s)) return '';
-        return s;
-    }
-
-    function cleanId(str) {
-        if (!str) return '';
-        var s = str.trim().split(/\s+/)[0].replace(/[^-a-zA-Z0-9_]/g, '');
-        if (/^(product|fulfillment|account|website|details|name|title|page|none|null)$/i.test(s)) return '';
-        return s;
+    function getSiteOrigin(u) {
+        if (!u) return '';
+        var s = u.trim();
+        if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+        try { return new URL(s).origin; } catch(e) { var m = s.match(/^(https?:\/\/[^\/\?\#]+)/i); return m ? m[1] : ''; }
     }
 
     var delId = cleanFieldText(getF(['deliverablenumber.fieldControl', 'deliverableid.fieldControl', 'ticketnumber.fieldControl', 'deliverableid', 'deliverable_number']));
@@ -5192,90 +5593,20 @@ def extract_dynamics_deliverable(url):
     var details = cleanFieldText(getF(['ddcms_details.fieldControl', 'ddcms_details', 'details.fieldControl', 'details', 'specialinstructions'], ['copywriting']));
 
     var rawPageEx = cleanFieldText(getF(['ddcms_pageexample.fieldControl', 'ddcms_pageexample', 'pageexample.fieldControl', 'pageexample'], [], ['Page Example']));
-
-    var rawWebsite = cleanFieldText(getF(['websiteurl.fieldControl', 'websiteurl', 'website.fieldControl', 'website', 'ddcms_websiteurl'], [], ['Website']));
-    var host = cleanHost(rawWebsite);
-    if (!host) {
-        var allDocs = getDocs();
-        for (var d3 = 0; d3 < allDocs.length; d3++) {
-            var lbls = allDocs[d3].querySelectorAll('label, [role="presentation"], span');
-            for (var b3 = 0; b3 < lbls.length; b3++) {
-                var lt3 = (lbls[b3].innerText || lbls[b3].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
-                if (lt3 === 'website') {
-                    var r3 = lbls[b3].parentElement;
-                    for (var u3 = 0; u3 < 5 && r3; u3++) {
-                        var is3 = r3.querySelectorAll('input, textarea');
-                        for (var k3 = 0; k3 < is3.length; k3++) {
-                            var h3 = cleanHost(is3[k3].value || is3[k3].getAttribute('value') || '');
-                            if (h3) { host = h3; rawWebsite = h3; break; }
-                        }
-                        if (host) break;
-                        var as3 = r3.querySelectorAll('a');
-                        for (var m3 = 0; m3 < as3.length; m3++) {
-                            var h4 = cleanHost(as3[m3].innerText || as3[m3].textContent || '') || cleanHost(as3[m3].getAttribute('href') || '');
-                            if (h4) { host = h4; rawWebsite = h4; break; }
-                        }
-                        if (host) break;
-                        r3 = r3.parentElement;
-                    }
-                    if (host) break;
-                }
-            }
-            if (host) break;
-        }
-    }
-
-    var rawSiteId = cleanFieldText(getF(['ddcms_productfulfillmentaccountid.fieldControl', 'ddcms_productfulfillmentaccountid', 'productfulfillmentaccount.fieldControl', 'productfulfillmentaccount', 'ddcms_productfulfillmentaccount', 'fulfillmentaccount'], [], ['Product Fulfillment Account']));
-    var siteId = cleanId(rawSiteId);
-    if (!siteId) {
-        var allDocs2 = getDocs();
-        for (var d4 = 0; d4 < allDocs2.length; d4++) {
-            var lbls2 = allDocs2[d4].querySelectorAll('label, [role="presentation"], span');
-            for (var b4 = 0; b4 < lbls2.length; b4++) {
-                var lt4 = (lbls2[b4].innerText || lbls2[b4].textContent || '').replace(DYNAMICS_ICON_REGEX, '').replace(/[\s\*:]+/g, '').replace(/\uD83D\uDD12/g, '').trim().toLowerCase();
-                if (lt4 === 'product fulfillment account' || lt4.indexOf('product fulfillment') === 0) {
-                    var r4 = lbls2[b4].parentElement;
-                    for (var u4 = 0; u4 < 5 && r4; u4++) {
-                        var is4 = r4.querySelectorAll('input, textarea');
-                        for (var k4 = 0; k4 < is4.length; k4++) {
-                            var s4 = cleanId(is4[k4].value || is4[k4].getAttribute('value') || '');
-                            if (s4) { siteId = s4; rawSiteId = s4; break; }
-                        }
-                        if (siteId) break;
-                        var tbs4 = r4.querySelectorAll('[role="textbox"], [data-id*="value" i]');
-                        for (var m4 = 0; m4 < tbs4.length; m4++) {
-                            var s5 = cleanId(tbs4[m4].innerText || tbs4[m4].textContent || '');
-                            if (s5) { siteId = s5; rawSiteId = s5; break; }
-                        }
-                        if (siteId) break;
-                        r4 = r4.parentElement;
-                    }
-                    if (siteId) break;
-                }
-            }
-            if (siteId) break;
-        }
-    }
-
-    var isDirect = isDirectUrl(rawPageEx);
-    var path = getPathFromUrl(rawPageEx);
-    var liveUrl = host ? ('https://' + host + path) : '';
-    var cmsUrl = siteId ? ('https://' + siteId + '.cms.dealer.com' + path) : '';
     var primaryUrl = '';
-    var pType = '';
-
-    if (isDirect) {
-        primaryUrl = rawPageEx.trim();
-        pType = 'direct';
-    } else if (liveUrl) {
-        primaryUrl = liveUrl;
-        pType = 'live';
-    } else if (cmsUrl) {
-        primaryUrl = cmsUrl;
-        pType = 'cms';
-    } else if (path && path !== '/') {
-        primaryUrl = path;
-        pType = 'path';
+    if (rawPageEx) {
+        var trimmedEx = rawPageEx.trim();
+        if (/^https?:\/\//i.test(trimmedEx)) {
+            primaryUrl = trimmedEx;
+        } else if (trimmedEx.indexOf('//') === 0) {
+            primaryUrl = 'https:' + trimmedEx;
+        } else if (/^www\./i.test(trimmedEx)) {
+            primaryUrl = 'https://' + trimmedEx;
+        } else {
+            var dealerOrigin = getSiteOrigin(url);
+            var normPath = trimmedEx.indexOf('/') === 0 ? trimmedEx : ('/' + trimmedEx);
+            primaryUrl = dealerOrigin ? (dealerOrigin + normPath) : normPath;
+        }
     }
 
     var payload = {
@@ -5287,12 +5618,12 @@ def extract_dynamics_deliverable(url):
         special_instructions: details,
         page_example_raw: rawPageEx,
         page_example_url: primaryUrl,
-        page_example_live_url: liveUrl,
-        page_example_cms_url: cmsUrl,
-        page_example_path: path,
-        page_example_type: pType,
-        website: rawWebsite,
-        product_fulfillment_account: rawSiteId,
+        page_example_live_url: primaryUrl,
+        page_example_cms_url: '',
+        page_example_path: rawPageEx ? (rawPageEx.indexOf('/') === 0 ? rawPageEx : ('/' + rawPageEx)) : '',
+        page_example_type: /^https?:\/\//i.test(rawPageEx) ? 'direct' : 'resolved',
+        website: '',
+        product_fulfillment_account: '',
         source: 'bookmarklet',
         timestamp: Date.now()
     };
@@ -5353,6 +5684,17 @@ LATEST_DYNAMICS_STORE = {}
 def save_extracted_dynamics():
     global LATEST_DYNAMICS_STORE
     data = request.json or {}
+    comp_url = (data.get('completed_page_url') or '').strip()
+    page_ex = (data.get('page_example_url') or data.get('page_example_raw') or '').strip()
+    if page_ex and not page_ex.startswith(('http://', 'https://')) and comp_url:
+        target = comp_url if comp_url.startswith(('http://', 'https://')) else f'https://{comp_url}'
+        parsed = urlparse(target)
+        if parsed.netloc:
+            origin = f"{parsed.scheme}://{parsed.netloc}"
+            norm_path = page_ex if page_ex.startswith('/') else f"/{page_ex}"
+            data['page_example_url'] = origin + norm_path
+            data['page_example_live_url'] = origin + norm_path
+
     LATEST_DYNAMICS_STORE = {
         **data,
         "updatedAt": int(time.time() * 1000)
@@ -5572,7 +5914,14 @@ def get_image_bank_api():
         condition = request.args.get('condition')
         category = request.args.get('category')
         search = request.args.get('search')
-        limit = int(request.args.get('limit', 50))
+        raw_limit = request.args.get('limit')
+        if raw_limit is not None:
+            if raw_limit.lower() == 'all':
+                limit = 0
+            else:
+                limit = int(raw_limit)
+        else:
+            limit = 50
         offset = int(request.args.get('offset', 0))
         
         result = query_image_assets(make, model, condition, category, search, limit, offset)

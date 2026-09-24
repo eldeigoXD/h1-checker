@@ -148,21 +148,21 @@ def store_qa_case(
         doc_id = hashlib.md5(f"{url}:{case_id}".encode()).hexdigest()
 
         metadata = {
-            "case_id":         case_id,
-            "url":             url[:500],
-            "path":            path[:200],
-            "page_title":      page_title[:200],
-            "h1_text":         h1_text[:200],
-            "instructions":    instructions[:500],
-            "inventory_filter": inventory_filter[:300],
-            "bug_count":       len(bugs),
+            "case_id":         str(case_id or "")[:100],
+            "url":             str(url or "")[:500],
+            "path":            str(path or "")[:200],
+            "page_title":      str(page_title or "")[:200],
+            "h1_text":         str(h1_text or "")[:200],
+            "instructions":    str(instructions or "")[:500],
+            "inventory_filter": str(inventory_filter or "")[:300],
+            "bug_count":       len(bugs or []),
             "layout_widgets":  json.dumps(layout_widgets or [])[:500],
             "stored_at":       datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
 
         # ChromaDB documents are used for retrieval display
         document = (
-            f"Case: {case_id} | URL: {url} | Bugs: {len(bugs)} | "
+            f"Case: {case_id} | URL: {url} | Bugs: {len(bugs or [])} | "
             f"Title: {page_title} | H1: {h1_text} | "
             f"Inventory: {inventory_filter} | Instructions: {instructions}"
         )[:1000]
