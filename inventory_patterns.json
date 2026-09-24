@@ -1580,5 +1580,11 @@
   },
   "www.upstatechevyofattica.com": {
     "/used-inventory/chevy-suvs-attica-ny.htm": "/used-inventory/index.htm?normalBodyStyle=SUV&make=Chevrolet"
+  },
+  "envisionofduartefordfd.cms.dealer.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
+  },
+  "www.schumacherchryslerdodgejeepramofdelraybeach.com": {
+    "/new-jeep/wrangler-delray.htm": "/new-inventory/index.htm?model=Wrangler&make=Jeep"
   }
 }

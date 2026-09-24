@@ -291,10 +291,17 @@ def parse_cta_instructions(instructions):
         # Format 4: Text: URL -> e.g. "New Inventory: /new-inventory/index.htm"
         m3 = re.match(r'^(.*?):\s*(.*?)$', part)
         if m3:
-            cta['text'] = m3.group(1).strip()
-            cta['url'] = m3.group(2).strip()
-            parsed.append(cta)
-            continue
+            potential_url = m3.group(2).strip()
+            is_valid_target = (
+                any(potential_url.startswith(prefix) for prefix in ['/', 'http://', 'https://', '#'])
+                or bool(re.search(r'\.(htm|html)\b', potential_url))
+                or bool(HOMEPAGE_REGEX.search(potential_url.lower()))
+            )
+            if is_valid_target:
+                cta['text'] = m3.group(1).strip()
+                cta['url'] = potential_url
+                parsed.append(cta)
+                continue
             
         # Format 6: Text - URL -> e.g. "Used Ford - /used-inventory/used-ford.htm"
         m4 = re.match(r'^(.*?)\s+-\s+(/.*?|https?://.*?|#.*?)$', part)
@@ -321,8 +328,21 @@ def parse_cta_instructions(instructions):
             
         # Format 5: Just Text
         # Ignore parts that look like descriptive instruction sentences rather than explicit CTA button labels
-        rule_keywords = ['update', 'photos', 'add faq', 'faqs', 'include lead form', 'accordion', 'bottom of the page', 'ownership in', 'page content']
+        rule_keywords = [
+            'update', 'photos', 'add faq', 'faqs', 'include lead form', 'accordion',
+            'bottom of the page', 'ownership in', 'page content', 'anchor text',
+            'internal links', 'in the body', 'click here', 'descriptive keyword',
+            'relevant internal', 'guidelines', 'follow instructions', 'seo content',
+            'word count', 'minimum of', 'make sure', 'please include', 'ensure that',
+            'a few relevant', 'internal :'
+        ]
         if any(kw in part_low for kw in rule_keywords) and not ('http' in part_low or '/' in part_low or '#' in part_low):
+            continue
+
+        words = part.strip().split()
+        if len(words) > 6 and not has_url:
+            continue
+        if part.strip().endswith('.') and len(words) > 3 and not has_url:
             continue
 
         cta['text'] = part
@@ -4341,6 +4361,7 @@ def extract_h1():
         coherence_score = None
         coherence_explanation = "Add your GEMINI_API_KEY to see semantic analysis."
         coherence_warnings = []
+        semantic_page_issues = []
         seo_coverage = None
         special_instructions_bugs = []
         missing_ctas_list = []
@@ -4582,12 +4603,13 @@ def extract_h1():
             )
             
             coherence_warnings = []
+            semantic_page_issues = []
             
             if deep_semantic.get('combined_verdict') in ('warning', 'bug'):
                 for issue in deep_semantic.get('combined_issues', []):
                     level = 'red' if deep_semantic['combined_verdict'] == 'bug' else 'yellow'
-                    coherence_warnings.append({
-                        'text': 'Page Content', 'href': url, 'reason': f"Semantic Mismatch: {issue}", 'level': level
+                    semantic_page_issues.append({
+                        'issue': issue, 'level': level
                     })
                 
                 if deep_semantic.get('combined_verdict') == 'bug':
@@ -5053,18 +5075,28 @@ def extract_h1():
         # Coherence and Semantic Issues
         red_issues = []
         yellow_issues = []
+
+        # 1. Real CTA / Link Coherence Warnings
         for cw in coherence_warnings:
-            reason = cw.get('reason', 'Label does not match destination URL.')
-            reason = reason.replace('Semantic Mismatch: ', '').strip()
-            
-            if cw.get('text') and cw.get('text') != 'Page Content':
-                text = cw.get('text', '')[:40].strip()
-                reason = f"Link '{text}': {reason}"
-                
+            if not cw.get('text') or cw.get('text') == 'Page Content':
+                continue
+            text = cw.get('text', '')[:40].strip()
+            reason = cw.get('reason', 'Label does not match destination URL.').strip()
+            item_desc = f"Link '{text}': {reason}"
             if cw.get('level') == 'red':
-                red_issues.append(reason)
+                red_issues.append(item_desc)
             else:
-                yellow_issues.append(reason)
+                yellow_issues.append(item_desc)
+
+        # 2. Page-level Semantic Issues (from Deep Semantic QA)
+        for spi in semantic_page_issues:
+            issue_msg = spi.get('issue', '').strip()
+            if not issue_msg:
+                continue
+            if spi.get('level') == 'red':
+                red_issues.append(issue_msg)
+            else:
+                yellow_issues.append(issue_msg)
                 
         if red_issues:
             issues_str = " • ".join(red_issues)

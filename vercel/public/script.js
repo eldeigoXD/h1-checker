@@ -1568,10 +1568,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Render Semantic Coherence Alerts for Links
-            if (data.coherence_warnings && data.coherence_warnings.length > 0) {
+            const ctaCoherenceList = (data.coherence_warnings || []).filter(item => item.text && item.text !== 'Page Content');
+            if (ctaCoherenceList.length > 0) {
                 hasLinkErrors = true;
                 if (coherenceLinksContainer) coherenceLinksContainer.style.display = 'block';
-                data.coherence_warnings.forEach(item => {
+                ctaCoherenceList.forEach(item => {
                     const isRed = item.level === 'red';
                     const li = document.createElement('li');
                     li.innerHTML = `

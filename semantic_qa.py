@@ -365,7 +365,9 @@ def run_semantic_check(
         url_model_lower = url_model.lower()
         title_low = (page_title or "").lower()
         h1_low    = (h1 or "").lower()
+        text_low  = (page_text or "").lower()
         model_in_title_or_h1 = url_model_lower in title_low or url_model_lower in h1_low
+        model_in_text = url_model_lower in text_low
 
         llm_result = llm_semantic_check(
             url=url,
@@ -384,18 +386,33 @@ def run_semantic_check(
                     continue
                 if _is_false_positive_issue(iss):
                     continue
-                # If model is clearly in title/H1, filter any LLM claim it is missing
+                iss_low = iss.lower()
+
+                # If model is clearly in title/H1, filter any LLM claim that it's missing or lacks focus
                 if model_in_title_or_h1:
-                    iss_low = iss.lower()
                     if any(fp in iss_low for fp in [
                         "not explicitly mention", "does not mention", "not mentioned",
                         "not in the title", "absent from", "missing from",
                         "not present in", "not found in title", "not found in h1",
-                        "dilutes focus",  # content is on-topic, LLM overflagging
-                        "wide variety",   # generic LLM complaint about multi-section content
+                        "does not contain", "not contain", "fails to contain",
+                        "fails to mention", "only a generic", "generic '",
+                        "dilutes focus", "wide variety", "focal point",
+                        "highlight it as", "does not match or highlight",
+                        "not match or highlight", "not the primary", "lack of focus",
                     ]):
                         print(f"[SemanticQA] Suppressed hallucinated issue (model '{url_model}' IS in title/H1): {iss}")
                         continue
+
+                # If model is in page text and deterministic check is clean, suppress vague mismatch complaints
+                if model_in_text and not det:
+                    if any(fp in iss_low for fp in [
+                        "does not match", "not match", "focal point", "highlight",
+                        "does not mention", "not mentioned", "not contain",
+                        "does not contain", "missing from the page", "not found on the page",
+                    ]):
+                        print(f"[SemanticQA] Suppressed hallucinated content issue (model '{url_model}' IS in page text): {iss}")
+                        continue
+
                 real_issues.append(iss)
 
             if real_issues:
