@@ -1720,7 +1720,7 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             inventory_info['status'] = 'none'
             inventory_info['source'] = 'none'
             return bugs, inventory_info
-        def find_vehicle_count(driver_or_soup, html_content=None):
+        def find_vehicle_count(driver_or_soup, html_content=None, target_url=None):
             def is_false_truck_count(val_str, full_txt, start_idx):
                 if val_str in ['150', '250', '350', '450', '550', '600', '650', '1500', '2500', '3500', '4500', '5500', '6500']:
                     preceding = full_txt[max(0, start_idx - 35):start_idx].lower()
@@ -1730,6 +1730,42 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
 
             # Check if we have a driver or just soup
             is_driver = hasattr(driver_or_soup, 'find_elements')
+            raw_html = html_content if html_content else (driver_or_soup.page_source if is_driver else None)
+
+            # 0. DDC JSON Facets Extraction (Ultra-precise for Dealer.com sites with query params/filters)
+            if raw_html:
+                try:
+                    from urllib.parse import parse_qs, urlparse
+                    parsed_t = urlparse(target_url or '')
+                    qs = parse_qs(parsed_t.query)
+                    t_model = (qs.get('model', [None])[0] or '').lower().replace('+', ' ').strip()
+                    t_make = (qs.get('make', [None])[0] or '').lower().replace('+', ' ').strip()
+                    
+                    found_selected = []
+                    for m in re.finditer(r'\{"count":(\d+),"label":"([^"]+)"[^}]*"selected":true\}', raw_html):
+                        cnt = m.group(1)
+                        lbl = m.group(2).lower()
+                        if t_model and t_model in lbl:
+                            return cnt
+                        found_selected.append((cnt, lbl))
+
+                    if t_make:
+                        for cnt, lbl in found_selected:
+                            if t_make in lbl:
+                                return cnt
+
+                    # Fallback to model match in facets even without selected:true
+                    if t_model:
+                        for m in re.finditer(r'\{"count":(\d+),"label":"([^"]+)"', raw_html):
+                            cnt = m.group(1)
+                            lbl = m.group(2).lower()
+                            if lbl == t_model:
+                                return cnt
+
+                    if found_selected:
+                        return found_selected[0][0]
+                except Exception:
+                    pass
             
             # 1. Targeted Selector Fallback
             selectors = [
@@ -1863,6 +1899,7 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                         if val.isdigit() and int(val) > 0:
                             if is_false_truck_count(val, txt, m.start()):
                                 continue
+                            return val
             # 6. Count vehicle card elements in DOM if no count text was matched
             if raw_html:
                 try:
@@ -1894,7 +1931,7 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
         is_generic_dealer_page = False
         
         if initial_html:
-            current_count = find_vehicle_count(None, initial_html)
+            current_count = find_vehicle_count(None, initial_html, target_url=url)
             if current_count:
                 print(f"DEBUG: Found count {current_count} in static HTML")
                 local_res = local_inventory_inference(url, initial_html, instructions)
@@ -1908,7 +1945,7 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             print("DEBUG: Waiting for Selenium content...")
             for _ in range(10):
                 time.sleep(1)
-                current_count = find_vehicle_count(driver, driver.page_source)
+                current_count = find_vehicle_count(driver, driver.page_source, target_url=url)
                 if current_count: break
                 # If we've waited 5 seconds and still nothing, try to trigger AJAX by scrolling
                 if _ == 5:
@@ -1920,7 +1957,7 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             
             if not is_generic_dealer_page:
                 for attempt in range(2):
-                    current_count = find_vehicle_count(driver, driver.page_source)
+                    current_count = find_vehicle_count(driver, driver.page_source, target_url=url)
                     if current_count: break
                     driver.execute_script("window.scrollTo(0, 1000);")
                     time.sleep(4)
@@ -2078,19 +2115,16 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             try:
                 sub_count = None
                 
-                # 1. Try curl_cffi first for fast and robust fetching (works for both query params and static paths)
+                # 1. Try curl_get_robust first for fast and robust fetching (works for both query params and static paths, using Google/Cloudflare DoH)
                 if not driver:
                     try:
-                        try:
-                            r = requests.get(f_url, impersonate="chrome120", timeout=12)
-                        except TypeError:
-                            r = requests.get(f_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}, timeout=12)
-                        if r.status_code == 200:
-                            sub_count = find_vehicle_count(None, r.text)
+                        r = curl_get_robust(f_url, timeout=20)
+                        if r and r.status_code == 200:
+                            sub_count = find_vehicle_count(None, r.text, target_url=f_url)
                     except Exception as ce:
                         print(f"DEBUG: request failed for sub-inventory {f_url}: {ce}")
 
-                # 2. Fallback to Selenium if curl_cffi failed to get a count
+                # 2. Fallback to Selenium if curl_get_robust failed to get a count
                 if sub_count is None:
                     try:
                         if not driver:
@@ -2098,15 +2132,15 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                         if driver:
                             driver.get(f_url)
                             time.sleep(6) # DDC Wait for JS filters to apply
-                            sub_count = find_vehicle_count(driver, driver.page_source)
+                            sub_count = find_vehicle_count(driver, driver.page_source, target_url=f_url)
                     except Exception as se:
                         print(f"DEBUG: selenium failed for sub-inventory {f_url}: {se}")
                 
                 # Extract target configs
                 if not driver:
                     try:
-                        r = requests.get(f_url, impersonate="chrome120", timeout=12)
-                        t_html = r.text
+                        r = curl_get_robust(f_url, timeout=20)
+                        t_html = r.text if r else ""
                     except:
                         t_html = ""
                 else:
