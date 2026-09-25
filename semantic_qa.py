@@ -125,12 +125,20 @@ def extract_models_from_text(text: str) -> list[str]:
     """
     Finds all known vehicle model names mentioned in page text.
     Returns list of canonical model names.
+    Uses word boundaries and cleans common automotive phrases that cause false positives.
     """
-    text_lower = text.lower()
+    text_clean = text.lower()
+    # Strip common automotive phrases that falsely trigger model names
+    text_clean = re.sub(r'\b(?:all|rough|any)[-\s]terrain\b|\bterrain\s+(?:tires?|modes?)\b', ' ', text_clean)
+    text_clean = re.sub(r'\b(?:pro|co|auto)[-\s]?pilot\b', ' ', text_clean)
+    text_clean = re.sub(r'\b(?:phone|wireless|battery|turbo|super|ev|fast)[-\s]?charger\b', ' ', text_clean)
+    text_clean = re.sub(r'\bspark\s+plugs?\b', ' ', text_clean)
+    text_clean = re.sub(r'\b(?:cutting|leading)[-\s]?edge\b', ' ', text_clean)
+    
     found = []
     for key, name in _MODEL_SLUG_MAP.items():
-        # Match key or canonical name (lowercased)
-        if key in text_lower or name.lower() in text_lower:
+        pattern = rf'\b(?:{re.escape(name.lower())}|{re.escape(key)})\b'
+        if re.search(pattern, text_clean):
             if name not in found:
                 found.append(name)
     return found
@@ -223,6 +231,8 @@ CRITICAL CONSTRAINTS TO AVOID FALSE POSITIVES:
 2. Do NOT flag multi-brand mentions as an error if they could be part of the dealership's name (e.g. "Buick GMC").
 3. Do NOT claim a keyword (like 'EV') is missing from the title if it is actually present in the provided Page Title or H1.
 4. If url_model is 'Unknown', do not force a model mismatch if the content aligns with the general URL path (e.g. '/ev-san-antonio.htm' matching EV content).
+5. If the URL model is prominently featured in the H1, Title, or content, the verdict MUST be 'ok'. Dealership websites routinely feature other models in navigation menus, footer links, or cross-shopping references — this is NOT a model mismatch.
+6. Do NOT mistake automotive features (like 'all-terrain tires', 'ProPILOT Assist', or 'wireless charger') for vehicle models.
 """
 
 
@@ -368,6 +378,7 @@ def run_semantic_check(
         text_low  = (page_text or "").lower()
         model_in_title_or_h1 = url_model_lower in title_low or url_model_lower in h1_low
         model_in_text = url_model_lower in text_low
+        model_count = len(re.findall(rf'\b{re.escape(url_model_lower)}\b', text_low))
 
         llm_result = llm_semantic_check(
             url=url,
@@ -399,6 +410,10 @@ def run_semantic_check(
                         "dilutes focus", "wide variety", "focal point",
                         "highlight it as", "does not match or highlight",
                         "not match or highlight", "not the primary", "lack of focus",
+                        "shifts focus", "exclusively discuss", "not exclusively",
+                        "other models mentioned", "mentions other models",
+                        "primary vehicle of interest is not", "discusses other models",
+                        "discusses the", "different models",
                     ]):
                         print(f"[SemanticQA] Suppressed hallucinated issue (model '{url_model}' IS in title/H1): {iss}")
                         continue
@@ -409,8 +424,21 @@ def run_semantic_check(
                         "does not match", "not match", "focal point", "highlight",
                         "does not mention", "not mentioned", "not contain",
                         "does not contain", "missing from the page", "not found on the page",
+                        "shifts focus", "exclusively discuss", "not exclusively",
+                        "other models mentioned", "mentions other models",
+                        "primary vehicle of interest is not", "discusses other models",
+                        "discusses the", "different models",
                     ]):
                         print(f"[SemanticQA] Suppressed hallucinated content issue (model '{url_model}' IS in page text): {iss}")
+                        continue
+
+                # If model is dominant on the page (>= 2 mentions) and in Title/H1, suppress any complaint about other models
+                if model_count >= 2 and model_in_title_or_h1:
+                    if any(fp in iss_low for fp in [
+                        "mentions", "discusses", "shifts focus", "not exclusively",
+                        "primary vehicle", "other models", "different models", "focus to"
+                    ]):
+                        print(f"[SemanticQA] Suppressed false positive (model '{url_model}' is dominant with {model_count} mentions): {iss}")
                         continue
 
                 real_issues.append(iss)
@@ -418,7 +446,8 @@ def run_semantic_check(
             if real_issues:
                 result["combined_verdict"] = llm_result["verdict"]
                 result["combined_issues"].extend(real_issues)
-            # If all issues were false positives, keep verdict as 'ok'
+            else:
+                result["combined_verdict"] = "ok"
 
     return result
 
