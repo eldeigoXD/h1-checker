@@ -241,6 +241,23 @@ def split_compound_line(line):
         
     return final_parts
 
+def clean_cta_url(raw_url):
+    """
+    Strips trailing parenthetical notes or extraneous text from CTA URLs.
+    Example:
+      "/research/mercedes-benz-lineup.htm#contact (anchor link to contact form at the bottom of the page)"
+      -> "/research/mercedes-benz-lineup.htm#contact"
+    """
+    if not raw_url: return raw_url
+    url = raw_url.strip()
+    # Remove trailing parenthetical note e.g. " (anchor link to contact form...)"
+    url = re.sub(r'\s*\([^)]*\)\s*$', '', url).strip()
+    # If there are multiple whitespace-separated tokens, check if first token is a valid URL/anchor
+    parts = url.split()
+    if len(parts) > 1 and (parts[0].startswith('/') or parts[0].startswith('http://') or parts[0].startswith('https://') or parts[0].startswith('#')):
+        url = parts[0]
+    return url
+
 def parse_cta_instructions(instructions):
     """
     Parses 'Special Layout Instructions' into a list of required CTAs.
@@ -266,6 +283,20 @@ def parse_cta_instructions(instructions):
         
         has_url = any(part.startswith(prefix) for prefix in ['/', 'http://', 'https://', '#']) or bool(re.search(r'/(?:[a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\.htm', part))
         
+        # Check if part ends with an explanatory parenthetical note rather than a URL (e.g. "(anchor link to contact form...)")
+        m_paren = re.match(r'^(.*?) \((.*?)\)$', part)
+        if m_paren:
+            inside = m_paren.group(2).strip()
+            is_paren_url = (
+                any(inside.startswith(p) for p in ['/', 'http://', 'https://', '#'])
+                or bool(re.search(r'\.(htm|html)\b', inside))
+                or bool(HOMEPAGE_REGEX.search(inside.lower()))
+            ) and (' ' not in inside.strip() or bool(HOMEPAGE_REGEX.search(inside.lower())))
+            if not is_paren_url:
+                part = m_paren.group(1).strip()
+                part_low = part.lower().strip()
+                has_url = any(part.startswith(prefix) for prefix in ['/', 'http://', 'https://', '#']) or bool(re.search(r'/(?:[a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\.htm', part))
+
         # Format 1: Text (URL) -> e.g. "New Intory (/new-inventory/index.htm)"
         m1 = re.match(r'^(.*?) \((.*?)\)$', part)
         if m1:
@@ -348,6 +379,10 @@ def parse_cta_instructions(instructions):
         cta['text'] = part
         parsed.append(cta)
         
+    for item in parsed:
+        if item.get('url'):
+            item['url'] = clean_cta_url(item['url'])
+            
     return parsed
 
 def clean_inventory_instructions(instructions: str) -> str:
@@ -4101,9 +4136,67 @@ def extract_h1():
         # -------- LINKS VALIDATION --------
         # Collect all valid anchor targets (IDs and names) from the FULL page first.
         # This prevents false positives if the target is in the header/footer.
-        all_ids = [tag.get('id') for tag in soup.find_all(id=True) if tag.get('id')]
-        all_names = [tag.get('name') for tag in soup.find_all('a', attrs={'name': True}) if tag.get('name')]
+        all_ids = [tag.get('id').strip() for tag in soup.find_all(id=True) if tag.get('id')]
+        all_names = [tag.get('name').strip() for tag in soup.find_all(attrs={'name': True}) if tag.get('name')]
         valid_anchor_targets = set(all_ids + all_names)
+        valid_anchor_targets_lower = {t.lower() for t in valid_anchor_targets if t}
+
+        # Standard browser / HTML targets that are always valid
+        standard_scroll_targets = {
+            'top', 'page-top', 'header', 'site-header', 'page-header', 'header-default',
+            'wrapper', 'ddc-wrapper', 'root', 'app', 'main', 'main-content', 'content',
+            'page-content', 'primary', 'page', 'body', 'start', 'title', 'h1'
+        }
+        valid_anchor_targets_lower.update(standard_scroll_targets)
+
+        def is_valid_anchor(anchor_id, a_tag, link_text):
+            if not anchor_id:
+                return True
+                
+            a_low = anchor_id.lower().strip()
+            classes_str = ' '.join(a_tag.get('class') or []).lower()
+            aria_str = (a_tag.get('aria-label') or '').lower()
+            title_str = (a_tag.get('title') or '').lower()
+            t_lower = link_text.lower()
+
+            # 1. Back to top / Go to the top / Scroll to header / Title
+            if (
+                a_low in standard_scroll_targets
+                or any(k in t_lower for k in ['top', 'subir', 'back to top', 'go to top', 'return to top', 'to the top', 'scroll to top', 'go to the top'])
+                or any(k in classes_str for k in ['back-to-top', 'scroll-to-top', 'to-top', 'btn-top', 'scroll-top', 'backtop'])
+                or any(k in aria_str for k in ['top', 'subir', 'back to top', 'go to top'])
+                or any(k in title_str for k in ['top', 'subir', 'back to top', 'go to top'])
+                or bool(a_tag.find(class_=lambda c: c and any(k in c.lower() for k in ['chevron-up', 'arrow-up', 'caret-up', 'to-top', 'scroll-top'])))
+            ):
+                return True
+
+            # 2. Accessibility skip links
+            if 'skip' in t_lower or 'accessibility' in t_lower or a_low in ('main-content', 'main', 'content', 'primary'):
+                return True
+
+            # 3. Bootstrap / DDC JS components (tab, accordion, modal, carousel, collapse)
+            if any(a_tag.has_attr(attr) for attr in ['data-toggle', 'data-bs-toggle', 'data-target', 'data-bs-target', 'data-slide']):
+                return True
+            if any(k in a_low for k in ['collapse', 'tab', 'modal', 'carousel']):
+                return True
+
+            # 4. Standard ID / Name match
+            if (
+                a_low in valid_anchor_targets_lower
+                or a_low.replace('-', '_') in valid_anchor_targets_lower
+                or a_low.replace('_', '-') in valid_anchor_targets_lower
+            ):
+                return True
+
+            # 5. Fuzzy match for common sections (e.g. #contact matching #contact-form or #contact_us)
+            if any(a_low in target or target in a_low for target in valid_anchor_targets_lower if len(a_low) >= 4 and len(target) >= 4):
+                return True
+                
+            # 6. Check if soup has an element containing this anchor ID or name
+            if soup.find(id=lambda i: i and a_low in i.lower()) or soup.find(attrs={'name': lambda n: n and a_low in n.lower()}):
+                return True
+
+            return False
 
         ddc_wrapper = soup.find('div', class_='ddc-wrapper')
         if ddc_wrapper:
@@ -4243,21 +4336,20 @@ def extract_h1():
                 
             # Anchors Validation
             if href.startswith('#'):
-                anchor_id = href[1:]
-                if anchor_id:
-                    if anchor_id not in valid_anchor_targets:
-                        broken_anchors.append({
-                            'text': text, 'href': href, 'widget': w_name,
-                            'error': f"ID '{anchor_id}' does not exist in Landing"
-                        })
+                anchor_id = href[1:].strip()
+                if anchor_id and not is_valid_anchor(anchor_id, a, text):
+                    broken_anchors.append({
+                        'text': text, 'href': href, 'widget': w_name,
+                        'error': f"ID '{anchor_id}' does not exist in Landing"
+                    })
                 continue
             
             full_link = urljoin(url, href)
             parsed_link = urlparse(full_link)
             
             if parsed_link.netloc == base_netloc and parsed_link.path == urlparse(url).path and parsed_link.fragment:
-                anchor_id = parsed_link.fragment
-                if anchor_id not in valid_anchor_targets:
+                anchor_id = parsed_link.fragment.strip()
+                if anchor_id and not is_valid_anchor(anchor_id, a, text):
                     broken_anchors.append({
                         'text': text, 'href': href, 'widget': w_name,
                         'error': f"ID '{anchor_id}' does not exist in Landing"
@@ -4442,6 +4534,7 @@ def extract_h1():
                             match_text = True
 
                     if target_url:
+                        target_url = clean_cta_url(target_url)
                         # Flexible URL matching: compare paths
                         t_parsed = urlparse(target_url)
                         t_path = t_parsed.path.lower().rstrip('/')
@@ -4451,6 +4544,8 @@ def extract_h1():
                         a_fragment = a_parsed.fragment.lower()
                         if not t_path: t_path = '/'
                         if not a_path: a_path = '/'
+
+                        cur_path = urlparse(url).path.lower().rstrip('/')
 
                         # Homepage normalization: Home Page ONLY matches the site root, NEVER subpaths!
                         is_home_t = (t_path in ('', '/', '/index.htm', '/index.html'))
@@ -4475,21 +4570,32 @@ def extract_h1():
                                 if t_path == a_path or a_href == target_url:
                                     match_url = True
                         
-                        # Same-page anchor: target URL points to current page path + #anchor
-                        # In this case look for an element with that id on the page, not a link to it
-                        if not match_url and t_fragment:
-                            cur_path = urlparse(url).path.lower().rstrip('/')
-                            if t_path == cur_path or not t_path or t_path == '/':
-                                # Check if fragment exists as id on page
-                                if soup.find(id=t_fragment) or soup.find(id=t_fragment.replace('-', '_')):
-                                    match_url = True  # anchor exists on page → treat as fulfilled
-                            elif a_fragment and a_fragment == t_fragment and (t_path == a_path or not t_path or t_path == '/'):
+                        # SAME-PAGE ANCHOR MATCHING:
+                        # Target URL points to current page + #anchor (e.g. /page.htm#contact or #contact)
+                        # Link on page can be #contact or /page.htm#contact
+                        is_same_page_target = (t_path == cur_path or not t_path or t_path == '/') and bool(t_fragment)
+                        is_same_page_a = (a_path in ('', '/', cur_path)) and bool(a_fragment)
+
+                        if is_same_page_target and is_same_page_a:
+                            tf_clean = t_fragment.replace('-', '').replace('_', '')
+                            af_clean = a_fragment.replace('-', '').replace('_', '')
+                            if (
+                                t_fragment == a_fragment
+                                or tf_clean == af_clean
+                                or t_fragment in a_fragment
+                                or a_fragment in t_fragment
+                                or ('contact' in t_fragment and 'contact' in a_fragment)
+                            ):
                                 match_url = True
+                        elif is_same_page_target and not match_url:
+                            if (a_path == cur_path or a_path == t_path) and a_fragment:
+                                if t_fragment == a_fragment or t_fragment in a_fragment:
+                                    match_url = True
 
                     # KEY RULE: If a URL was given, the PATH is the only authority.
                     if inst['url'] and match_url:
                         # Check for typos in the requested instruction itself
-                        req_url = inst['url']
+                        req_url = clean_cta_url(inst['url'])
                         if req_url and '.' in req_url:
                             ext = req_url.split('.')[-1].lower()
                             if ext in ['ht', 'h', 'htmll']:
@@ -4543,9 +4649,27 @@ def extract_h1():
                     matched_a = fallback_a
                     coherence_issue = fallback_coherence
 
+                # Fallback for on-page section / lead form anchors:
+                # If target points to an anchor on current page (#contact or /page.htm#contact)
+                # and no <a> link matched, check if an on-page section/form satisfies it
+                if not found_match and target_url:
+                    t_parsed = urlparse(target_url)
+                    t_frag = t_parsed.fragment.lower()
+                    t_p = t_parsed.path.lower().rstrip('/')
+                    cur_p = urlparse(url).path.lower().rstrip('/')
+                    if t_frag and (t_p == cur_p or not t_p or t_p == '/'):
+                        anchor_el = (
+                            soup.find(id=lambda i: i and (t_frag in i.lower() or i.lower() in t_frag))
+                            or soup.find(attrs={'name': lambda n: n and (t_frag in n.lower() or n.lower() in t_frag)})
+                            or soup.find(class_=lambda c: c and any(k in c.lower() for k in [t_frag, 'contact-form', 'lead-form', 'form-container']))
+                        )
+                        if anchor_el:
+                            found_match = True
+                            matched_a = anchor_el
+
                 if found_match and matched_a:
-                    l_text = matched_a.get_text(strip=True)
-                    l_href = matched_a.get('href', '').strip()
+                    l_text = matched_a.get_text(strip=True)[:50] if hasattr(matched_a, 'get_text') else (target_text or 'Contact')
+                    l_href = matched_a.get('href', '').strip() if matched_a.has_attr('href') else (f"#{t_frag}" if (target_url and urlparse(target_url).fragment) else target_url)
                     save_cta_pattern(l_text, l_href)
                     result = {
                         'original': inst['original'],

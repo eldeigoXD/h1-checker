@@ -89,7 +89,8 @@
     "/new-jeep/grand-wagoneer-doylestown-pa.htm": "/new-inventory/index.htm?make=Jeep&model=Grand%20Wagoneer",
     "/used-jeep/gladiator-doylestown-pa.htm": "/used-inventory/index.htm?model=Gladiator&make=Jeep",
     "/used-ram/2500-doylestown-pa.htm": "/used-inventory/index.htm?model=Ram+2500&make=Ram",
-    "/new-ram/2500-doylestown-pa.htm": "/new-inventory/index.htm?model=2500&make=Ram"
+    "/new-ram/2500-doylestown-pa.htm": "/new-inventory/index.htm?model=2500&make=Ram",
+    "/new-chrysler/pacifica-doylestown-pa.htm": "/new-inventory/index.htm?model=Pacifica&make=Chrysler"
   },
   "www.bakerchryslerdodgejeepramlowell.com": {
     "/new-ram/ram-lowell-mi.htm": "/new-inventory/index.htm?make=Ram&normalBodyStyle=Truck"
@@ -1105,7 +1106,8 @@
     "/new-inventory/index.htm": "https://www.brandontomescdjr.com/new-inventory/index.htm"
   },
   "www.mbwestcovina.com": {
-    "/new-inventory/glc-300-west-covina-ca.htm": "/new-inventory/index.htm?model=GLC+300"
+    "/new-inventory/glc-300-west-covina-ca.htm": "/new-inventory/index.htm?model=GLC+300",
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
   },
   "www.paulthigpenchevy.com": {
     "/new-chevrolet/vidalia-ga/colorado.htm": "/new-trucks/vidalia-ga.htm?model=Colorado&make=Chevrolet"
@@ -1219,7 +1221,8 @@
     "/new-buick/encore-gx.htm": "/new-inventory/index.htm?model=Encore+GX&make=Buick"
   },
   "redrockfordofdickinsonfordfd.cms.dealer.com": {
-    "/new-inventory/ford-maverick-dickinson-nd.htm": "/new-inventory/index.htm?model=Maverick&make=Ford"
+    "/new-inventory/ford-maverick-dickinson-nd.htm": "/new-inventory/index.htm?model=Maverick&make=Ford",
+    "/new-inventory/ford-ranger-dickinson-nd.htm": "/new-inventory/index.htm?model=Ranger&make=Ford"
   },
   "dunningfordfd.cms.dealer.com": {
     "/new-ford/bronco-sport-cambridge-oh.htm": "/new-inventory/index.htm?model=Bronco+Sport&make=Ford",
@@ -1528,7 +1531,8 @@
     "/new-inventory/nissan.htm": "/new-inventory/index.htm?make=Nissan"
   },
   "www.keastgmc.com": {
-    "/used-inventory/gmc-harlan-ia.htm": "/used-inventory/index.htm?make=GMC"
+    "/used-inventory/gmc-harlan-ia.htm": "/used-inventory/index.htm?make=GMC",
+    "/used-inventory/chevy-harlan-ia.htm": "/used-inventory/index.htm?make=Chevrolet"
   },
   "www.toyotasm.com": {
     "/dealership/serving-arroyo-grande.htm": "SUM: /new-inventory/index.htm | /used-inventory/index.htm"
@@ -1586,5 +1590,23 @@
   },
   "www.schumacherchryslerdodgejeepramofdelraybeach.com": {
     "/new-jeep/wrangler-delray.htm": "/new-inventory/index.htm?model=Wrangler&make=Jeep"
+  },
+  "www.fredbeanshyundaimechanicsburg.com": {
+    "/new-hyundai/ioniq-5-mechanicsburg-pa.htm": "/new-inventory/index.htm?model=IONIQ%205&make=Hyundai"
+  },
+  "www.northpointechevy.com": {
+    "/new/chevy-equinox-suv-seneca-pa.htm": "/new-inventory/index.htm?model=Equinox&make=Chevrolet"
+  },
+  "www.toyotabyfox.com": {
+    "/new-inventory/index.htm": "/new-inventory/index.htm"
+  },
+  "www.ganleybuickgmc.com": {
+    "/new-buick/enclave-strongsville-oh.htm": "/new-inventory/index.htm?model=Enclave&make=Buick"
+  },
+  "www.loditoyota.com": {
+    "/new-toyota/rav4-lodi-ca.htm": "/new-inventory/index.htm?model=RAV4&make=Toyota"
+  },
+  "colenissanportage.cms.dealer.com": {
+    "/new-inventory/nissan/frontier-kalamazoo-mi.htm": "/new-inventory/index.htm?model=Frontier&make=Nissan"
   }
 }
