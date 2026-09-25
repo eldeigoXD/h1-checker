@@ -1863,7 +1863,29 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                         if val.isdigit() and int(val) > 0:
                             if is_false_truck_count(val, txt, m.start()):
                                 continue
-                            return val
+            # 6. Count vehicle card elements in DOM if no count text was matched
+            if raw_html:
+                try:
+                    from bs4 import BeautifulSoup as BS
+                    dom_soup = BS(raw_html, 'html.parser')
+                    vehicle_cards = dom_soup.select(
+                        '.ddc-vehicle-card, .vehicle-card, .srp-vehicle, .inv-vehicle, '
+                        '.vehicle-item, .srp-item, [data-vin], .inventory-list-item, '
+                        'li.vehicle, .hproduct, div[data-vehicle-id]'
+                    )
+                    if vehicle_cards:
+                        vins = set()
+                        for vc in vehicle_cards:
+                            vin = vc.get('data-vin') or vc.get('data-vehicle-id')
+                            if vin and len(vin.strip()) >= 8:
+                                vins.add(vin.strip().upper())
+                        if vins:
+                            return str(len(vins))
+                        real_cards = [vc for vc in vehicle_cards if not any(c in (vc.get('class') or []) for c in ['template', 'clone', 'd-none', 'hide'])]
+                        if real_cards:
+                            return str(len(real_cards))
+                except Exception:
+                    pass
 
             return None
 
@@ -2050,37 +2072,40 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
         else:
             urls_to_visit = [res]
 
+        found_any_count = False
         for target_path in urls_to_visit:
             f_url = urljoin(url, target_path)
             try:
                 sub_count = None
-                requires_js = '?' in f_url
                 
-                # Try curl_cffi first if no driver or as faster alternative, AND it doesn't strictly require JS
-                if not driver and not requires_js:
+                # 1. Try curl_cffi first for fast and robust fetching (works for both query params and static paths)
+                if not driver:
                     try:
                         try:
-                            r = requests.get(f_url, impersonate="chrome120", timeout=15)
+                            r = requests.get(f_url, impersonate="chrome120", timeout=12)
                         except TypeError:
-                            r = requests.get(f_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}, timeout=15)
+                            r = requests.get(f_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}, timeout=12)
                         if r.status_code == 200:
                             sub_count = find_vehicle_count(None, r.text)
                     except Exception as ce:
                         print(f"DEBUG: request failed for sub-inventory {f_url}: {ce}")
 
-                
-                # Fallback to Selenium if needed OR if JS is required
-                if not sub_count:
-                    if not driver:
-                        driver = get_selenium_driver()
-                    driver.get(f_url)
-                    time.sleep(8) # DDC Wait for JS filters to apply
-                    sub_count = find_vehicle_count(driver, driver.page_source)
+                # 2. Fallback to Selenium if curl_cffi failed to get a count
+                if sub_count is None:
+                    try:
+                        if not driver:
+                            driver = get_selenium_driver()
+                        if driver:
+                            driver.get(f_url)
+                            time.sleep(6) # DDC Wait for JS filters to apply
+                            sub_count = find_vehicle_count(driver, driver.page_source)
+                    except Exception as se:
+                        print(f"DEBUG: selenium failed for sub-inventory {f_url}: {se}")
                 
                 # Extract target configs
                 if not driver:
                     try:
-                        r = requests.get(f_url, impersonate="chrome120", timeout=15)
+                        r = requests.get(f_url, impersonate="chrome120", timeout=12)
                         t_html = r.text
                     except:
                         t_html = ""
@@ -2096,7 +2121,8 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                     if c not in inventory_info['target_config_ids']:
                         inventory_info['target_config_ids'].append(c)
                 
-                if sub_count:
+                if sub_count is not None:
+                    found_any_count = True
                     total_sum += int(sub_count)
                 else:
                     print(f"DEBUG: No count found for {f_url}")
@@ -2109,39 +2135,70 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                 })
                 return bugs, inventory_info
 
-        filter_count = str(total_sum)
-        inventory_info['filter_count'] = filter_count
+        # Check if the page already has a valid model-specific widget (e.g. auto-new-acadia on Acadia page)
+        curr_config_ids = inventory_info.get('config_ids', [])
+        is_model_specific_widget = False
         
-        # Robust comparison: handle None or non-integer counts
+        # Check model query param in res (e.g. model=Acadia)
+        model_m = re.search(r'[?&]model=([^&]+)', res, re.I)
+        if model_m:
+            target_model = model_m.group(1).lower().replace('+', '').replace('-', '').strip()
+            if any(target_model in c.lower().replace('-', '').replace('_', '') for c in curr_config_ids):
+                is_model_specific_widget = True
+        
+        # Also check path tokens (e.g. /new-inventory/gmc-acadia.htm -> 'acadia' in config_ids)
+        path_tokens = [tok for tok in re.split(r'[-_/.]+', raw_path.lower()) if tok and tok not in ['new', 'used', 'inventory', 'index', 'htm', 'html', 'gmc', 'ford', 'chevy', 'chevrolet']]
+        if any(any(tok in c.lower() for c in curr_config_ids) for tok in path_tokens if len(tok) >= 4):
+            is_model_specific_widget = True
+
         curr_val = 0
         try:
             if current_count:
                 curr_val = int(current_count)
         except: pass
 
-        if curr_val == 0:
-            # If no vehicles on page, it's an informational/content page or just missing widget
-            inventory_info['status'] = 'no_local_widget'
-        elif curr_val != total_sum:
-            is_bargain_path = 'bargain' in raw_path.lower()
-            has_valid_widget = any(c in ['auto-bargain', 'auto-used', 'auto-new'] for c in inventory_info.get('config_ids', []))
-            has_explicit_instruction = bool(instructions and any(k in instructions.lower() for k in ['below', 'under', 'max price', '$', 'less than']))
-            
-            if is_bargain_path and has_valid_widget and curr_val > 0 and not has_explicit_instruction:
+        if not found_any_count:
+            # We could NOT determine the count from the filter URL
+            if is_model_specific_widget and curr_val > 0:
+                # The landing page is already configured with the exact model widget and has vehicles!
                 inventory_info['status'] = 'match'
                 inventory_info['filter_count'] = str(curr_val)
             else:
-                bugs.append(make_bug('inventory_mismatch', f"Inventory filter mismatch. Expected path: '{res}'"))
-                inventory_info['status'] = 'mismatch'
-                inventory_learner.confirm_correction(url, False)
+                inventory_info['filter_count'] = None
+                if curr_val > 0:
+                    inventory_info['status'] = 'match'
+                    inventory_info['filter_count'] = str(curr_val)
+                else:
+                    inventory_info['status'] = 'no_local_widget'
         else:
-            inventory_info['status'] = 'match'
-            inventory_learner.confirm_correction(url, True)
+            filter_count = str(total_sum)
+            inventory_info['filter_count'] = filter_count
 
-            # --- Auto-Learning: Save successful match (only if no prior entry exists) ---
-            existing_patterns = load_inventory_patterns()
-            if not existing_patterns.get(domain, {}).get(raw_path):
-                save_inventory_pattern(domain, raw_path, res)
+            if curr_val == 0:
+                inventory_info['status'] = 'no_local_widget'
+            elif curr_val == total_sum:
+                inventory_info['status'] = 'match'
+                inventory_learner.confirm_correction(url, True)
+                existing_patterns = load_inventory_patterns()
+                if not existing_patterns.get(domain, {}).get(raw_path):
+                    save_inventory_pattern(domain, raw_path, res)
+            else:
+                # Counts differ, BUT check if it's already a matching model widget
+                if is_model_specific_widget and curr_val > 0:
+                    inventory_info['status'] = 'match'
+                    inventory_info['filter_count'] = str(curr_val)
+                else:
+                    is_bargain_path = 'bargain' in raw_path.lower()
+                    has_valid_widget = any(c in ['auto-bargain', 'auto-used', 'auto-new'] for c in curr_config_ids)
+                    has_explicit_instruction = bool(instructions and any(k in instructions.lower() for k in ['below', 'under', 'max price', '$', 'less than']))
+                    
+                    if is_bargain_path and has_valid_widget and curr_val > 0 and not has_explicit_instruction:
+                        inventory_info['status'] = 'match'
+                        inventory_info['filter_count'] = str(curr_val)
+                    else:
+                        bugs.append(make_bug('inventory_mismatch', f"Inventory filter mismatch. Expected path: '{res}'"))
+                        inventory_info['status'] = 'mismatch'
+                        inventory_learner.confirm_correction(url, False)
             
     except Exception as e:
         import traceback

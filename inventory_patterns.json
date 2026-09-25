@@ -1256,7 +1256,8 @@
   },
   "www.glocknergmc.com": {
     "/used-inventory/index.htm": "https://www.glocknergmc.com/used-inventory/index.htm",
-    "/new-inventory/gmc-yukon.htm": "/new-inventory/index.htm?model=Yukon&make=GMC"
+    "/new-inventory/gmc-yukon.htm": "/new-inventory/index.htm?model=Yukon&make=GMC",
+    "/new-inventory/gmc-acadia.htm": "/new-inventory/index.htm?model=Acadia&make=GMC"
   },
   "guntercdjrmcllc.cms.dealer.com": {
     "/used-inventory/index.htm": "https://guntercdjrmcllc.cms.dealer.com/used-inventory/index.htm"
@@ -1583,7 +1584,8 @@
     "/used-inventory/suvs.htm": "/used-inventory/index.htm?normalBodyStyle=SUV"
   },
   "www.upstatechevyofattica.com": {
-    "/used-inventory/chevy-suvs-attica-ny.htm": "/used-inventory/index.htm?normalBodyStyle=SUV&make=Chevrolet"
+    "/used-inventory/chevy-suvs-attica-ny.htm": "/used-inventory/index.htm?normalBodyStyle=SUV&make=Chevrolet",
+    "/new-chevrolet/suvs/equinox/models-sale-attica-genesee-wyoming-county-ny.htm": "/new-inventory/index.htm?model=Equinox&make=Chevrolet"
   },
   "envisionofduartefordfd.cms.dealer.com": {
     "/new-inventory/index.htm": "/new-inventory/index.htm"
@@ -1608,5 +1610,18 @@
   },
   "colenissanportage.cms.dealer.com": {
     "/new-inventory/nissan/frontier-kalamazoo-mi.htm": "/new-inventory/index.htm?model=Frontier&make=Nissan"
+  },
+  "www.curryautocenter.com": {
+    "/new-inventory/trax-bloomington-in.htm": "/new-inventory/index.htm?model=Trax"
+  },
+  "www.abernethybuickgmc.com": {
+    "/used/gmc-in-lincolnton-nc.htm": "/used-inventory/index.htm?make=GMC",
+    "/new/buick-in-lincolnton-nc.htm": "/new-inventory/index.htm?make=Buick"
+  },
+  "www.glocknerofironton.com": {
+    "/new-inventory/gmc-canyon.htm": "/new-inventory/index.htm?model=Canyon&make=GMC"
+  },
+  "www.bradleychevrolet.com": {
+    "/used-inventory/used-silverado-1500-lake-havasu-az.htm": "/used-inventory/index.htm?model=Silverado%201500"
   }
 }
