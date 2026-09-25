@@ -31,7 +31,7 @@ Allowed 'type' values for rules:
   - "presence": an element must exist (e.g. breadcrumbs, accordion, inventory widget, hero image, grid layout, list layout, lead form, contact form, imagery/photos).
   - "absence": an element must NOT exist (e.g. remove map, no breadcrumbs).
   - "inventory_config": specific inventory filters requested (e.g. new vehicles under $30,000, used trucks under 20k, Ram 1500).
-  - "tone": the writing style to adopt (e.g. urban youthful tone, formal tone).
+  - "tone": ONLY use if the user EXPLICITLY requested a specific writing tone or style (e.g. "use formal tone", "casual tone"). NEVER generate a tone rule if not explicitly requested in the instructions.
   - "other": any other instruction.
 
 Output JSON schema:
@@ -118,15 +118,41 @@ def parse_instructions(instructions: str) -> tuple[List[Dict], Dict]:
     valid_rules = []
     inst_low = instructions.lower().strip()
     
+    # Generic automotive and web stop words that LLMs echo back when hallucinating rules
+    STOP_WORDS = {
+        'used', 'new', 'cars', 'trucks', 'suvs', 'page', 'sale', 'dealership', 'vehicles', 
+        'make', 'model', 'inventory', 'for', 'with', 'from', 'this', 'that', 'have', 'need', 
+        'must', 'should', 'create', 'build', 'update', 'check', 'view', 'look', 'auto', 'dealer',
+        'near', 'harrisonburg', 'portsmouth', 'texas', 'florida', 'county', 'please'
+    }
+
     for r in raw_rules:
+        rtype = r.get("type")
         orig = (r.get("original_text") or "").lower().strip()
         elem = (r.get("element") or "").lower().strip()
         
-        # Check if words from rule exist in user input
-        if orig and any(w in inst_low for w in orig.split() if len(w) > 3):
+        # 1. Tone rules validation: MUST have explicit style requested by the user
+        if rtype == "tone":
+            style = (r.get("style") or "").lower().strip()
+            # If style is empty, or neither the style nor "tone"/"voice" appears in user instructions, discard
+            if not style or len(style) < 3:
+                continue
+            if not any(k in inst_low for k in [style, 'tone', 'voice', 'writing style']):
+                continue
             valid_rules.append(r)
-        elif elem and any(w in inst_low for w in elem.split() if len(w) > 3):
+            continue
+
+        # 2. General rules validation: Ensure the element or non-trivial words actually come from user text
+        orig_words = [w for w in orig.split() if len(w) > 3 and w not in STOP_WORDS]
+        elem_words = [w for w in elem.split() if len(w) > 3 and w not in STOP_WORDS]
+
+        if orig_words and any(w in inst_low for w in orig_words):
             valid_rules.append(r)
+        elif elem_words and any(w in inst_low for w in elem_words):
+            valid_rules.append(r)
+        elif elem and any(k in elem for k in ['breadcrumb', 'hero', 'form', 'map', 'accordion', 'faq', 'photo', 'image', 'layout', 'grid', 'list', 'filter']):
+            if any(k in inst_low for k in [elem, elem.replace('_', ' '), elem.replace('-', ' ')]):
+                valid_rules.append(r)
 
     return valid_rules, overrides
 
@@ -310,8 +336,10 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
 
 def _check_tone(rule: Dict, page_text: str) -> Dict:
     """Uses LLM to evaluate tone."""
-    style = rule.get("style", "")
-    original = rule.get("original_text", f"Use {style} tone")
+    style = (rule.get("style") or "").strip()
+    if not style or len(style) < 3:
+        return None
+    original = rule.get("original_text") or f"Use {style} tone"
     
     if not is_ollama_available():
         return {
@@ -328,11 +356,11 @@ def _check_tone(rule: Dict, page_text: str) -> Dict:
     
     result = ask_ollama_json(prompt=prompt, system=_TONE_SYSTEM, timeout=25)
     match = result.get("match", False)
-    reason = result.get("reason", "Tone evaluation completed.")
+    reason = result.get("reason") or (f"Content matches requested '{style}' tone." if match else f"Content does not clearly reflect requested '{style}' tone.")
     
     return {
         "original": original,
-        "status": "success" if match else "error",
+        "status": "success" if match else "manual_review",
         "reason": reason,
         "type": "tone"
     }
@@ -389,7 +417,9 @@ def evaluate_instructions(instructions: str, soup: BeautifulSoup, page_text: str
             evaluations.append(_check_presence_absence(rule, soup, is_presence=is_presence, seo_coverage=seo_coverage, inventory_info=inventory_info))
 
         elif rtype == "tone":
-            evaluations.append(_check_tone(rule, page_text))
+            t_eval = _check_tone(rule, page_text)
+            if t_eval:
+                evaluations.append(t_eval)
         else:
             # Vague keywords like "service" go to manual review
             evaluations.append({
