@@ -984,10 +984,17 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
     dealer_brands = []
     domain_clean = domain_low.replace('-', '').replace('_', '')
     for key, val in LOCAL_MAKES.items():
-        if key in domain_clean and len(key) > 3:
+        if len(key) >= 4 and key in domain_clean:
             if val not in dealer_brands: dealer_brands.append(val)
-    if 'vw' in domain_clean: dealer_brands.append('Volkswagen')
-    if 'mg' in domain_clean: dealer_brands.append('MG')
+        elif key in ['gmc', 'bmw', 'kia'] and key in domain_clean:
+            if val not in dealer_brands: dealer_brands.append(val)
+        elif key == 'ram':
+            import re as _re_domain
+            if _re_domain.search(r'(?:^|[.-]|[^a-z])ram(?:[^a-z]|$)|(?:dodge|chrysler|jeep|cdjr).*ram|ram.*(?:trucks|auto|dealer|cdjr|of)', domain_low):
+                if val not in dealer_brands: dealer_brands.append(val)
+    import re as _re_vw
+    if _re_vw.search(r'(?:^|[.-]|[^a-z])vw(?:[^a-z]|$)|vw(?:of|dealer|auto|parts)', domain_low):
+        dealer_brands.append('Volkswagen')
 
     # Normalize for matching
     slug = f" {slug} "
@@ -1240,15 +1247,23 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
     # OR if we explicitly found the make in the slug.
     if not found_make:
         domain_low = domain.lower()
+        domain_clean = domain_low.replace('-', '').replace('_', '')
         for key, val in LOCAL_MAKES.items():
-            # Check if the make name is part of the domain (e.g. 'kia' in 'kiaofwaldorf')
-            if key in domain_low and len(key) > 3: # Avoid short strings like 'vw' or 'mg'
+            if len(key) >= 4 and key in domain_clean:
                 found_make = val
                 break
-        # Fallback for very short but common makes
+            elif key in ['gmc', 'bmw', 'kia'] and key in domain_clean:
+                found_make = val
+                break
+            elif key == 'ram':
+                import re as _re_domain
+                if _re_domain.search(r'(?:^|[.-]|[^a-z])ram(?:[^a-z]|$)|(?:dodge|chrysler|jeep|cdjr).*ram|ram.*(?:trucks|auto|dealer|cdjr|of)', domain_low):
+                    found_make = val
+                    break
         if not found_make:
-            if 'vw' in domain_low: found_make = 'Volkswagen'
-            if 'mg' in domain_low: found_make = 'MG'
+            import re as _re_vw
+            if _re_vw.search(r'(?:^|[.-]|[^a-z])vw(?:[^a-z]|$)|vw(?:of|dealer|auto|parts)', domain_low):
+                found_make = 'Volkswagen'
 
     # Match body styles
     for key, val in LOCAL_BODY_STYLES.items():
