@@ -671,6 +671,7 @@ CRITICAL CONSTRAINTS TO PREVENT FALSE POSITIVES:
 - Do NOT report on address or map links (e.g. Google Maps).
 - Do NOT complain that normal automotive CTA buttons (e.g. 'New Inventory', 'New Ford Inventory', 'Get Pre-Qualified') are 'vague', 'redundant', or lack brand names.
 - Do NOT report general inventory buttons (like 'New Inventory' -> '/new-inventory/index.htm') appearing on specific model pages. Dealerships always include site-wide inventory buttons.
+- Used vehicle inventory: Dealerships and Used Car Centers sell USED cars of ALL makes and brands. NEVER report brand contradictions for links pointing to used inventory (e.g. /used/, /pre-owned/, /cpo/), or on used car dealership websites, or when the button or page is about used vehicles.
 
 Respond ONLY with this JSON:
 {{
@@ -693,6 +694,7 @@ def audit_cta_and_brand_coherence(
     allowed_brands: set[str],
     ctas: list[dict],
     requested_ctas: list[dict] = None,
+    is_used_page: bool = False,
     run_llm: bool = True,
 ) -> list[dict]:
     """
@@ -706,6 +708,10 @@ def audit_cta_and_brand_coherence(
     """
     issues = []
     seen_keys = set()
+
+    url_low = (url or '').lower()
+    if any(u in url_low for u in ['/used', '/pre-owned', '/cpo', 'used-', '-used', '/preowned', 'usedcar', 'preowned']):
+        is_used_page = True
 
     # Normalize allowed brands
     normalized_allowed = {b.lower() for b in allowed_brands} if allowed_brands else set()
@@ -730,13 +736,18 @@ def audit_cta_and_brand_coherence(
         href_low = href.lower()
 
         # A. Brand contradiction check
-        if normalized_allowed:
+        # Skip if page is used-focused or if destination URL points to used inventory (dealers sell used cars of all makes)
+        if normalized_allowed and not (is_used_page and not main_brand):
             for ob in other_makes:
                 ob_low = ob.lower()
                 # Check for competitor brand in button text or destination URL
                 if re.search(rf'\b{re.escape(ob_low)}\b', txt_low):
                     # Exclude comparison words and used car sales (dealers legitimately sell used cars of other makes)
                     if any(cmp_w in txt_low for cmp_w in [' vs ', 'compare', 'competitor', 'used ', 'pre-owned ', 'preowned ', 'trade']):
+                        continue
+                    if any(u in href_low for u in ['/used', '/pre-owned', '/cpo', 'used-', '-used', '/preowned']):
+                        continue
+                    if is_used_page:
                         continue
                     msg = f"Critical Brand Contradiction: Button '{txt}' references competitor brand '{ob}' on a {main_brand or 'dealership'} website."
                     key = (txt, 'brand_mismatch')
@@ -840,6 +851,9 @@ def audit_cta_and_brand_coherence(
 
                         # If LLM claims brand mismatch, STRICTLY VERIFY that an actual competitor brand exists
                         if "brand" in iss_type.lower() or "brand" in iss_msg.lower():
+                            if is_used_page or any(u in iss_href.lower() for u in ['/used', '/pre-owned', '/cpo', 'used-', '-used', '/preowned']) or any(cmp_w in iss_txt.lower() for cmp_w in ['used', 'pre-owned', 'preowned', 'trade']):
+                                print(f"[SemanticQA] Suppressed brand contradiction on used inventory CTA '{iss_txt}' -> '{iss_href}'")
+                                continue
                             detected_competitor = None
                             for ob in other_makes:
                                 if re.search(rf'\b{re.escape(ob.lower())}\b', iss_txt.lower()) or re.search(rf'\b{re.escape(ob.lower())}\b', iss_href.lower()):

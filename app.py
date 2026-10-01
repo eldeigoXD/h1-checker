@@ -927,8 +927,9 @@ def infer_site_brands(page_url: str, page_title: str = "", h1_tags: list = None,
                 main_brand = val
 
     # 5. Used / Pre-Owned page detection
-    is_used_page = any(u_kw in parsed_path for u_kw in ['/used', '/pre-owned', '/cpo', 'used-', '-used']) or \
-                   any(u_kw in title_and_h1 for u_kw in ['used', 'pre-owned', 'certified pre-owned', 'cpo'])
+    is_used_page = any(u_kw in parsed_path for u_kw in ['/used', '/pre-owned', '/cpo', 'used-', '-used', '/preowned']) or \
+                   any(u_kw in title_and_h1 for u_kw in ['used', 'pre-owned', 'certified pre-owned', 'cpo']) or \
+                   any(u_kw in domain for u_kw in ['usedcar', 'preowned', 'used-car', 'used_car'])
 
     if is_used_page and page_text:
         # Dealerships sell used cars of ANY make.
@@ -939,6 +940,11 @@ def infer_site_brands(page_url: str, page_title: str = "", h1_tags: list = None,
 
     if not allowed_brands and main_brand:
         allowed_brands.add(main_brand)
+
+    # If it's a used car dealership or generic used inventory page without a single new franchise main brand,
+    # all makes are permitted (no competitor brand restrictions).
+    if is_used_page and not main_brand:
+        allowed_brands = set()
 
     return main_brand, allowed_brands, is_used_page
 
@@ -5641,7 +5647,9 @@ def extract_h1():
                         })
                 
                 # B. Brand Mismatch — only flag brands NOT in the dealer's allowed_brands set
-                if allowed_brands:
+                # Dealerships legitimately sell used vehicles of all makes. Skip brand checks for used pages and used URLs.
+                is_used_target = any(u in lnk_low for u in ['/used', '/pre-owned', '/cpo', 'used-', '-used', '/preowned'])
+                if allowed_brands and not is_used_page and not is_used_target:
                     other_brands = [b for b in set(LOCAL_MAKES.values()) if b not in allowed_brands and len(b) > 3]
                     for ob in other_brands:
                         ob_low = ob.lower()
@@ -5675,6 +5683,8 @@ def extract_h1():
             # 3. Comprehensive CTA & Brand Audit across ALL on-page buttons
             page_cta_elements = []
             for a in a_tags:
+                if is_hidden_or_header(a):
+                    continue
                 if is_inside_inventory_featured(a):
                     continue
                 if is_accordion_element(a):
@@ -5686,6 +5696,9 @@ def extract_h1():
                 a_cls = ' '.join(a.get('class', []))
                 a_wname = get_widget_name(a)
                 is_btn = 'btn' in a_cls or 'button' in a_cls or a.name == 'button' or 'btn' in a_wname.lower()
+                # Skip inline text links inside paragraphs unless styled as a button
+                if a.parent and a.parent.name == 'p' and not is_btn:
+                    continue
                 if a_txt and (is_btn or len(a_txt) <= 50):
                     if not semantic_qa.is_utility_or_compliance_link(a_txt, a_href):
                         page_cta_elements.append({'text': a_txt, 'href': a_href, 'widget': a_wname, 'is_button': is_btn})
@@ -5696,6 +5709,7 @@ def extract_h1():
                     main_brand=main_brand,
                     allowed_brands=allowed_brands,
                     ctas=page_cta_elements,
+                    is_used_page=is_used_page,
                     run_llm=True
                 )
                 for issue in cta_audit_issues:
