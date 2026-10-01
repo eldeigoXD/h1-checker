@@ -306,6 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (data && (data.deliverable_id || data.title || data.completed_copy || data.completed_page_url)) {
+                    if (dynUrl) {
+                        data.deliverable_url = dynUrl;
+                    }
                     populateFormWithDynamicsData(data);
                 } else {
                     showDynamicsStatus('⚠️ Extraction completed, but no deliverable fields were found.', 'error');
@@ -430,6 +433,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const openComposerBtn = document.getElementById('action-open-composer');
+    if (openComposerBtn) {
+        openComposerBtn.addEventListener('click', (e) => {
+            const currentHref = openComposerBtn.getAttribute('href');
+            if (!currentHref || currentHref === '#' || currentHref.trim() === '') {
+                e.preventDefault();
+                const curUrl = lastScanData?.url || input.value.trim() || '';
+                const enteredSite = prompt('Enter the Dealer.com Site ID for Composer (e.g. mercedesbenzofmobilemb):');
+                if (enteredSite && enteredSite.trim()) {
+                    const compUrl = buildComposerUrl(enteredSite.trim(), curUrl);
+                    if (compUrl) {
+                        window.open(compUrl, '_blank');
+                    }
+                }
+            }
+        });
+    }
+
     const clearBtn = document.getElementById('clear-btn');
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
@@ -442,6 +463,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageExInput = document.getElementById('expected-page-example-input');
             if (pageExInput) pageExInput.value = '';
             window.currentDynamicsData = null;
+            if (resultUrl) {
+                resultUrl.textContent = '';
+                resultUrl.removeAttribute('href');
+            }
+            const openPageBtn = document.getElementById('action-open-page');
+            if (openPageBtn) openPageBtn.removeAttribute('href');
+            if (openComposerBtn) {
+                openComposerBtn.removeAttribute('href');
+                openComposerBtn.removeAttribute('data-site-id');
+                const badge = document.getElementById('composer-site-badge');
+                if (badge) badge.style.display = 'none';
+            }
+            const openDeliverableBtn = document.getElementById('action-open-deliverable');
+            if (openDeliverableBtn) {
+                openDeliverableBtn.style.display = 'none';
+                openDeliverableBtn.removeAttribute('href');
+            }
             resultsArea.style.display = 'none';
             hideError();
             // Full state reset to avoid data leaking into next scan
@@ -503,6 +541,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     url: url,
                     case_number: caseNumber,
+                    deliverable_url: window.currentDynamicsData?.deliverable_url || '',
+                    deliverable_id: window.currentDynamicsData?.deliverable_id || caseNumber,
                     expected_title: expectedTitle,
                     expected_content: expectedContent,
                     special_instructions: specialInstructions,
@@ -557,11 +597,98 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMsg.style.display = 'none';
     }
 
+    function extractSiteIdFromUrl(targetUrl) {
+        if (!targetUrl) return '';
+        try {
+            const u = targetUrl.startsWith('http') ? targetUrl : ('https://' + targetUrl);
+            const host = new URL(u).hostname.toLowerCase();
+            let m = host.match(/^([a-z0-9_-]+)\.(?:cms\.)?dealer\.com$/);
+            if (m && !['www', 'pictures', 'images', 'assets', 'static'].includes(m[1])) return m[1];
+            m = host.match(/^([a-z0-9_-]+)\.website\.dealercenter\.coxautoinc\.com$/);
+            if (m) return m[1];
+        } catch(e) {}
+        return '';
+    }
+
+    function buildComposerUrl(siteId, pageUrl) {
+        if (!siteId || !pageUrl) return '';
+        try {
+            const u = pageUrl.startsWith('http') ? pageUrl : ('https://' + pageUrl);
+            const parsed = new URL(u);
+            let pathAndQuery = parsed.pathname + parsed.search;
+            if (!pathAndQuery || pathAndQuery === '') pathAndQuery = '/';
+            const encodedDeep = encodeURIComponent(pathAndQuery);
+            return `https://${siteId}.website.dealercenter.coxautoinc.com/cc-website/as/${siteId}/${siteId}-admin/composer/index?lang=en_US&deeplink=${encodedDeep}&format=&__ssuMode=true#website`;
+        } catch(e) {
+            return '';
+        }
+    }
+
     function renderResults(data) {
         lastScanData = data;
         window.lastScanData = data;
-        resultUrl.textContent = data.url;
+
+        // 1. Clickable Main URL
+        if (resultUrl) {
+            resultUrl.textContent = data.url;
+            resultUrl.href = data.url;
+        }
         h1Count.textContent = data.count;
+
+        // 2. Setup Quick Actions Bar underneath main link
+        const openPageBtn = document.getElementById('action-open-page');
+        if (openPageBtn) {
+            openPageBtn.href = data.url;
+        }
+
+        const openComposerBtn = document.getElementById('action-open-composer');
+        const composerSiteBadge = document.getElementById('composer-site-badge');
+        const siteId = data.site_id || 
+                       data.inventory_info?.site_id || 
+                       data.media_audit?.dealer_id || 
+                       data.media_audit_desktop?.dealer_id || 
+                       extractSiteIdFromUrl(data.url);
+
+        const composerUrl = data.composer_url || (siteId ? buildComposerUrl(siteId, data.url) : null);
+
+        if (openComposerBtn) {
+            if (composerUrl) {
+                openComposerBtn.href = composerUrl;
+                openComposerBtn.setAttribute('data-site-id', siteId || '');
+                if (composerSiteBadge) {
+                    composerSiteBadge.textContent = siteId;
+                    composerSiteBadge.style.display = 'inline-block';
+                }
+            } else {
+                openComposerBtn.href = '#';
+                openComposerBtn.removeAttribute('data-site-id');
+                if (composerSiteBadge) composerSiteBadge.style.display = 'none';
+            }
+        }
+
+        // 3. Deliverable Link
+        const openDeliverableBtn = document.getElementById('action-open-deliverable');
+        const deliverableBtnText = document.getElementById('deliverable-btn-text');
+        const delUrl = data.deliverable_url || window.currentDynamicsData?.deliverable_url || '';
+        const delId = data.deliverable_id || data.case_id || window.currentDynamicsData?.deliverable_id || document.getElementById('case-number-input')?.value.trim() || '';
+
+        if (openDeliverableBtn) {
+            if (delUrl) {
+                openDeliverableBtn.style.display = 'inline-flex';
+                openDeliverableBtn.href = delUrl;
+                if (deliverableBtnText) {
+                    deliverableBtnText.textContent = delId ? `📋 Deliverable (${delId})` : '📋 Open Deliverable';
+                }
+            } else if (delId) {
+                openDeliverableBtn.style.display = 'inline-flex';
+                openDeliverableBtn.href = 'https://orgba6d8fe6.crm.dynamics.com/main.aspx?appid=df9dfe4b-95a6-ef11-8a6a-0022480c6fc8&forceUCI=1&pagetype=entitylist&etn=ddcms_campaigndeliverable&viewid=53716d02-f24b-f011-8779-00224833de88&viewType=1039';
+                if (deliverableBtnText) {
+                    deliverableBtnText.textContent = `📋 Deliverable (${delId})`;
+                }
+            } else {
+                openDeliverableBtn.style.display = 'none';
+            }
+        }
 
         const statsCard = h1Count.parentElement.parentElement;
         const existingError = statsCard.querySelector('.h1-rule-error');
@@ -760,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 copyBtn.onclick = () => {
                     navigator.clipboard.writeText(primaryUrl);
                     const orig = copyBtn.textContent;
-                    copyBtn.textContent = '✅ Copiado!';
+                    copyBtn.textContent = '✅ Copied!';
                     setTimeout(() => { copyBtn.textContent = orig; }, 1500);
                 };
             }
@@ -1568,7 +1695,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Render Semantic Coherence Alerts for Links
-            const ctaCoherenceList = (data.coherence_warnings || []).filter(item => item.text && item.text !== 'Page Content');
+            const ctaCoherenceList = (data.coherence_warnings || []).filter(item => item.text && item.text !== 'Page Content' && item.href && !item.href.startsWith('#'));
             if (ctaCoherenceList.length > 0) {
                 hasLinkErrors = true;
                 if (coherenceLinksContainer) coherenceLinksContainer.style.display = 'block';
@@ -1578,7 +1705,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     li.innerHTML = `
                         <span class="link-text">CTA Text: ${escapeHTML(item.text)}</span>
                         <span class="link-href">Destination URL: ${escapeHTML(item.href)}</span>
-                        <span class="link-widget">Reason: ${escapeHTML(item.reason)}</span>
+                        <span class="link-widget">Reason: ${escapeHTML(item.reason || item.message || '')}</span>
                         <span class="link-status" style="color:${isRed ? '#ff4d4d' : '#ffb74d'}; background:${isRed ? 'rgba(255,77,77,0.1)' : 'rgba(255,152,0,0.1)'};">
                             ${isRed ? 'Error: Text Mismatch' : 'Warning: Potential Typo or Ambiguity'}
                         </span>
@@ -3046,7 +3173,7 @@ async function fetchImageBankAssets() {
 
             card.innerHTML = `
                 <div style="position: relative; width: 100%; height: 160px; background: #0c0c12; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <a href="${escapeHtml(asset.image_url)}" target="_blank" rel="noreferrer" title="Click para ver en resolución completa" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                    <a href="${escapeHtml(asset.image_url)}" target="_blank" rel="noreferrer" title="Click to view full resolution" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
                         <img src="${escapeHtml(asset.image_url)}" alt="${escapeHtml(asset.alt_text || 'Vehicle Asset')}" referrerpolicy="no-referrer" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
                     </a>
                     
@@ -3085,15 +3212,15 @@ async function fetchImageBankAssets() {
             if (copyBtn) {
                 copyBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(asset.image_url);
-                    copyBtn.textContent = '✅ Copiado!';
-                    setTimeout(() => { copyBtn.textContent = '📋 Copiar Link'; }, 1500);
+                    copyBtn.textContent = '✅ Copied!';
+                    setTimeout(() => { copyBtn.textContent = '📋 Copy Link'; }, 1500);
                 });
             }
 
             const delBtn = card.querySelector('.delete-img-btn');
             if (delBtn) {
                 delBtn.addEventListener('click', async () => {
-                    if (!confirm(`¿Deseas eliminar esta imagen de la base de datos?\n\nMake: ${asset.make || 'Desconocido'}\nModel: ${asset.model || 'Desconocido'}`)) return;
+                    if (!confirm(`Are you sure you want to delete this image from the database?\n\nMake: ${asset.make || 'Unknown'}\nModel: ${asset.model || 'Unknown'}`)) return;
                     try {
                         delBtn.disabled = true;
                         delBtn.textContent = '⏳';
@@ -3112,13 +3239,13 @@ async function fetchImageBankAssets() {
                                 }
                             }, 300);
                         } else {
-                            alert('Error al eliminar imagen: ' + (resData.error || 'Error desconocido'));
+                            alert('Error deleting image: ' + (resData.error || 'Unknown error'));
                             delBtn.disabled = false;
                             delBtn.textContent = '🗑️';
                         }
                     } catch(e) {
                         console.error('Error deleting asset:', e);
-                        alert('Error al conectar con el servidor.');
+                        alert('Error connecting to the server.');
                         delBtn.disabled = false;
                         delBtn.textContent = '🗑️';
                     }
@@ -3162,24 +3289,24 @@ function buildAiDebugPrompt(bugItem) {
     const comment = bugItem.user_comment || 'No specific comment provided.';
 
     let prompt = `<USER_REQUEST>\n`;
-    prompt += `Hola AI, hay un error / caso incorrecto reportado en el Tool de QA:\n\n`;
-    prompt += `📍 DETALLES DEL CASO:\n`;
+    prompt += `Hello AI, there is an incorrect report/bug identified in the QA Tool:\n\n`;
+    prompt += `📍 CASE DETAILS:\n`;
     prompt += `- URL: ${url}\n`;
     prompt += `- Case #: ${caseId}\n`;
     if (path) prompt += `- Path: ${path}\n`;
     if (title) prompt += `- Title: ${title}\n`;
-    prompt += `\n💬 EXPLICACIÓN DEL PROBLEMA / LO QUE DEBERÍA DAR EL TOOL:\n`;
+    prompt += `\n💬 PROBLEM EXPLANATION / EXPECTED TOOL OUTPUT:\n`;
     prompt += `${comment}\n\n`;
 
-    prompt += `📊 DATOS CAPTURADOS POR EL TOOL:\n`;
-    prompt += `- Total H1 Tags: ${scan.count ?? 'N/A'} (Válido: ${scan.h1_valid ?? 'N/A'})\n`;
+    prompt += `📊 DATA CAPTURED BY TOOL:\n`;
+    prompt += `- Total H1 Tags: ${scan.count ?? 'N/A'} (Valid: ${scan.h1_valid ?? 'N/A'})\n`;
     if (scan.h1s && Array.isArray(scan.h1s)) {
         prompt += `- H1 Text(s): ${scan.h1s.map(h => `"${h.text}"`).join(', ')}\n`;
     }
     if (scan.bugs && Array.isArray(scan.bugs) && scan.bugs.length > 0) {
-        prompt += `- Bugs Detectados por Tool: ${JSON.stringify(scan.bugs, null, 2)}\n`;
+        prompt += `- Bugs Detected by Tool: ${JSON.stringify(scan.bugs, null, 2)}\n`;
     } else {
-        prompt += `- Bugs Detectados por Tool: Ninguno (0 bugs)\n`;
+        prompt += `- Bugs Detected by Tool: None (0 bugs)\n`;
     }
 
     if (scan.inventory_validation) {
@@ -3202,7 +3329,7 @@ function buildAiDebugPrompt(bugItem) {
         prompt += `\n📋 CUSTOM RULES DATA:\n\`\`\`json\n${JSON.stringify(scan.custom_rules_validation, null, 2)}\n\`\`\`\n`;
     }
 
-    prompt += `\n¿Por qué el tool está infiriendo o fallando en este caso y cómo podemos solucionarlo en la lógica del tool o patrones de app.py?\n`;
+    prompt += `\nWhy is the tool inferring or failing in this case, and how can we resolve it in the tool logic or app.py patterns?\n`;
     prompt += `</USER_REQUEST>`;
 
     return prompt;
@@ -3476,7 +3603,7 @@ function renderToolBugsList(items) {
             copyBtn.addEventListener('click', () => {
                 navigator.clipboard.writeText(debugPromptText).then(() => {
                     const origText = copyBtn.innerHTML;
-                    copyBtn.innerHTML = '✅ ¡Copiado para la AI!';
+                    copyBtn.innerHTML = '✅ Copied for AI!';
                     copyBtn.style.background = '#2e7d32';
                     setTimeout(() => {
                         copyBtn.innerHTML = origText;
@@ -3513,7 +3640,7 @@ function renderToolBugsList(items) {
 }
 
 // Bookmarklet Modal Controller
-const DYNAMICS_BOOKMARKLET_CODE = `javascript:(function(){var DYNAMICS_ICON_REGEX=/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F\\u200B-\\u200D\\u202A-\\u202E\\u2500-\\u25FF\\u2600-\\u27BF\\uE000-\\uF8FF\\uFFF0-\\uFFFF]/g;function cleanFieldText(val){if(!val)return '';return val.replace(DYNAMICS_ICON_REGEX,'').trim();}function cleanCtaPayload(val){if(!val)return '';var cleaned=val.replace(DYNAMICS_ICON_REGEX,' ').trim();var lines=cleaned.split(/[\\r\\n]+/).map(function(l){var trimmed=l.replace(/^[•\\-\\*\\s\\u25A1\\u25A0\\u2022\\u00A0]+/g,'').trim();trimmed=trimmed.replace(/\\b(calls\\s*to\\s*action|links|ctas(\\s*and\\s*links)?)\\b/gi,'').trim();trimmed=trimmed.replace(/^[:\\-\\s\\t]+|[:\\-\\s\\t]+$/g,'').trim();return trimmed;}).filter(function(l){return l&&/[a-zA-Z0-9]/.test(l);});return lines.join('\\n');}function getDocs(){var docs=[document];try{var iframes=document.querySelectorAll('iframe');for(var f=0;f<iframes.length;f++){try{var d=iframes[f].contentDocument||(iframes[f].contentWindow&&iframes[f].contentWindow.document);if(d&&docs.indexOf(d)===-1)docs.push(d);}catch(e){}}}catch(e){}return docs;}function extractValFromEl(el,excludeKeys){if(!el)return '';var dataId=(el.getAttribute('data-id')||'').toLowerCase();for(var k=0;k<excludeKeys.length;k++){if(dataId.indexOf(excludeKeys[k].toLowerCase())!==-1)return '';}if(dataId.indexOf('label-container')!==-1||dataId.indexOf('-label')!==-1||el.tagName==='LABEL'){return '';}var inps=el.querySelectorAll('input,textarea');for(var i=0;i<inps.length;i++){var iv=(inps[i].value||inps[i].getAttribute('value')||'').trim();if(iv)return iv;}if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){var ev=(el.value||el.getAttribute('value')||'').trim();if(ev)return ev;}var links=el.querySelectorAll('a');for(var j=0;j<links.length;j++){var aTxt=(links[j].innerText||links[j].textContent||'').trim();if(aTxt&&!/^(open|visit|link|http|https|website|click|view)$/i.test(aTxt))return aTxt;var aHref=(links[j].getAttribute('href')||'').trim();if(aHref&&!aHref.startsWith('javascript:')&&aHref!=='#'&&aHref.indexOf('.')!==-1)return aHref;}var ctrls=el.querySelectorAll('[data-id*="fieldControl" i],[role="textbox"],[data-id*="value" i]');for(var c=0;c<ctrls.length;c++){var cTxt=(ctrls[c].innerText||ctrls[c].textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(cTxt)return cTxt;}var txt=(el.innerText||el.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();return txt;}function getF(keys,excludeKeys,labelTexts){excludeKeys=excludeKeys||[];keys=keys||[];labelTexts=labelTexts||[];var docs=getDocs();for(var d=0;d<docs.length;d++){var doc=docs[d];for(var i=0;i<keys.length;i++){var els=doc.querySelectorAll('[data-id*="'+keys[i]+'" i]');for(var j=0;j<els.length;j++){var val=extractValFromEl(els[j],excludeKeys);if(val&&val.trim()){var isLbl=false;for(var l=0;l<labelTexts.length;l++){if(val.trim().toLowerCase()===labelTexts[l].toLowerCase()){isLbl=true;break;}}if(!isLbl)return val.trim();}}}}if(labelTexts&&labelTexts.length>0){for(var d2=0;d2<docs.length;d2++){var doc2=docs[d2];for(var l2=0;l2<labelTexts.length;l2++){var target=labelTexts[l2].toLowerCase();var labels=doc2.querySelectorAll('label,span[role="presentation"]');for(var b=0;b<labels.length;b++){var lText=(labels[b].innerText||labels[b].textContent||'').replace(DYNAMICS_ICON_REGEX,'').replace(/[\\s\\*:]+/g,'').replace(/\\uD83D\\uDD12/g,'').trim().toLowerCase();if(lText===target){var row=labels[b].parentElement;for(var up=0;up<5&&row;up++){var inp=row.querySelector('input,textarea');if(inp&&inp.value&&inp.value.trim()&&inp.value.trim().toLowerCase()!==target)return inp.value.trim();var lnk=row.querySelector('a');if(lnk){var lt=(lnk.innerText||lnk.textContent||'').trim();if(lt&&lt.toLowerCase()!==target)return lt;var lh=(lnk.getAttribute('href')||'').trim();if(lh&&lh.indexOf('.')!==-1&&!lh.startsWith('javascript:'))return lh;}var tb=row.querySelector('[role="textbox"],[data-id*="value" i]');if(tb){var tt=(tb.innerText||tb.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(tt&&tt.toLowerCase()!==target)return tt;}row=row.parentElement;}}}}}}return '';}function getSiteOrigin(u){if(!u)return '';var s=u.trim();if(!/^https?:\\/\\//i.test(s))s='https://'+s;try{return new URL(s).origin;}catch(e){var m=s.match(/^(https?:\\/\\/[^\\/\\?\\#]+)/i);return m?m[1]:'';}}var delId=cleanFieldText(getF(['deliverablenumber.fieldControl','deliverableid.fieldControl','ticketnumber.fieldControl','deliverableid','deliverable_number']));if(!delId){var params=new URLSearchParams(window.location.search);var rawId=params.get('id')||'';if(rawId)delId=rawId.split('-')[0].toUpperCase();}var title=cleanFieldText(getF(['ddcms_name.fieldControl','ddcms_name','ddcms_h1','ddcms_title','h1title.fieldControl','targeth1.fieldControl','pagetitle.fieldControl','h1','name.fieldControl'],['account','customer','parentaccount','owner','createdby','modifiedby','header_crmformheader','dealer','quickview']));var copy=cleanFieldText(getF(['completedcopy.fieldControl','completedcopy']));var url=cleanFieldText(getF(['completedpageurl.fieldControl','completedpageurl']));var httpIdx=url.indexOf('http');if(httpIdx!==-1){url=url.substring(httpIdx).split(/[\\s\\)\\'"]/)[0];}var ctas=cleanCtaPayload(getF(['callstoaction.fieldControl','callstoaction']));var links=cleanCtaPayload(getF(['links.fieldControl','links']));var combinedCtas=[];if(ctas)combinedCtas.push(ctas);if(links)combinedCtas.push(links);var details=cleanFieldText(getF(['ddcms_details.fieldControl','ddcms_details','details.fieldControl','details','specialinstructions'],['copywriting']));var rawPageEx=cleanFieldText(getF(['ddcms_pageexample.fieldControl','ddcms_pageexample','pageexample.fieldControl','pageexample'],[],['Page Example']));var primaryUrl='';if(rawPageEx){var trimmedEx=rawPageEx.trim();if(/^https?:\\/\\//i.test(trimmedEx)){primaryUrl=trimmedEx;}else if(trimmedEx.indexOf('//')===0){primaryUrl='https:'+trimmedEx;}else if(/^www\\./i.test(trimmedEx)){primaryUrl='https://'+trimmedEx;}else{var dealerOrigin=getSiteOrigin(url);var normPath=trimmedEx.indexOf('/')===0?trimmedEx:('/'+trimmedEx);primaryUrl=dealerOrigin?(dealerOrigin+normPath):normPath;}}var payload={deliverable_id:delId,title:title,completed_copy:copy,completed_page_url:url,ctas_and_links:combinedCtas.join('\\n'),special_instructions:details,page_example_raw:rawPageEx,page_example_url:primaryUrl,page_example_live_url:primaryUrl,page_example_cms_url:'',page_example_path:rawPageEx?(rawPageEx.indexOf('/')===0?rawPageEx:('/'+rawPageEx)):'',page_example_type:/^https?:\\/\\//i.test(rawPageEx)?'direct':'resolved',website:'',product_fulfillment_account:'',source:'bookmarklet',timestamp:Date.now()};var qaUrl='https://qa-tool-brown.vercel.app';var jsonStr=JSON.stringify(payload);try{fetch('http://127.0.0.1:5000/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).catch(function(){});}catch(e){}fetch(qaUrl+'/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).then(function(){window.open(qaUrl,'_blank');}).catch(function(){window.open(qaUrl,'_blank');});})();`;
+const DYNAMICS_BOOKMARKLET_CODE = `javascript:(function(){var DYNAMICS_ICON_REGEX=/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F\\u200B-\\u200D\\u202A-\\u202E\\u2500-\\u25FF\\u2600-\\u27BF\\uE000-\\uF8FF\\uFFF0-\\uFFFF]/g;function cleanFieldText(val){if(!val)return '';return val.replace(DYNAMICS_ICON_REGEX,'').trim();}function cleanCtaPayload(val){if(!val)return '';var cleaned=val.replace(DYNAMICS_ICON_REGEX,' ').trim();var lines=cleaned.split(/[\\r\\n]+/).map(function(l){var trimmed=l.replace(/^[•\\-\\*\\s\\u25A1\\u25A0\\u2022\\u00A0]+/g,'').trim();trimmed=trimmed.replace(/\\b(calls\\s*to\\s*action|links|ctas(\\s*and\\s*links)?)\\b/gi,'').trim();trimmed=trimmed.replace(/^[:\\-\\s\\t]+|[:\\-\\s\\t]+$/g,'').trim();return trimmed;}).filter(function(l){return l&&/[a-zA-Z0-9]/.test(l);});return lines.join('\\n');}function getDocs(){var docs=[document];try{var iframes=document.querySelectorAll('iframe');for(var f=0;f<iframes.length;f++){try{var d=iframes[f].contentDocument||(iframes[f].contentWindow&&iframes[f].contentWindow.document);if(d&&docs.indexOf(d)===-1)docs.push(d);}catch(e){}}}catch(e){}return docs;}function extractValFromEl(el,excludeKeys){if(!el)return '';var dataId=(el.getAttribute('data-id')||'').toLowerCase();for(var k=0;k<excludeKeys.length;k++){if(dataId.indexOf(excludeKeys[k].toLowerCase())!==-1)return '';}if(dataId.indexOf('label-container')!==-1||dataId.indexOf('-label')!==-1||el.tagName==='LABEL'){return '';}var inps=el.querySelectorAll('input,textarea');for(var i=0;i<inps.length;i++){var iv=(inps[i].value||inps[i].getAttribute('value')||'').trim();if(iv)return iv;}if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){var ev=(el.value||el.getAttribute('value')||'').trim();if(ev)return ev;}var links=el.querySelectorAll('a');for(var j=0;j<links.length;j++){var aTxt=(links[j].innerText||links[j].textContent||'').trim();if(aTxt&&!/^(open|visit|link|http|https|website|click|view)$/i.test(aTxt))return aTxt;var aHref=(links[j].getAttribute('href')||'').trim();if(aHref&&!aHref.startsWith('javascript:')&&aHref!=='#'&&aHref.indexOf('.')!==-1)return aHref;}var ctrls=el.querySelectorAll('[data-id*="fieldControl" i],[role="textbox"],[data-id*="value" i]');for(var c=0;c<ctrls.length;c++){var cTxt=(ctrls[c].innerText||ctrls[c].textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(cTxt)return cTxt;}var txt=(el.innerText||el.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();return txt;}function getF(keys,excludeKeys,labelTexts){excludeKeys=excludeKeys||[];keys=keys||[];labelTexts=labelTexts||[];var docs=getDocs();for(var d=0;d<docs.length;d++){var doc=docs[d];for(var i=0;i<keys.length;i++){var els=doc.querySelectorAll('[data-id*="'+keys[i]+'" i]');for(var j=0;j<els.length;j++){var val=extractValFromEl(els[j],excludeKeys);if(val&&val.trim()){var isLbl=false;for(var l=0;l<labelTexts.length;l++){if(val.trim().toLowerCase()===labelTexts[l].toLowerCase()){isLbl=true;break;}}if(!isLbl)return val.trim();}}}}if(labelTexts&&labelTexts.length>0){for(var d2=0;d2<docs.length;d2++){var doc2=docs[d2];for(var l2=0;l2<labelTexts.length;l2++){var target=labelTexts[l2].toLowerCase();var labels=doc2.querySelectorAll('label,span[role="presentation"]');for(var b=0;b<labels.length;b++){var lText=(labels[b].innerText||labels[b].textContent||'').replace(DYNAMICS_ICON_REGEX,'').replace(/[\\s\\*:]+/g,'').replace(/\\uD83D\\uDD12/g,'').trim().toLowerCase();if(lText===target){var row=labels[b].parentElement;for(var up=0;up<5&&row;up++){var inp=row.querySelector('input,textarea');if(inp&&inp.value&&inp.value.trim()&&inp.value.trim().toLowerCase()!==target)return inp.value.trim();var lnk=row.querySelector('a');if(lnk){var lt=(lnk.innerText||lnk.textContent||'').trim();if(lt&&lt.toLowerCase()!==target)return lt;var lh=(lnk.getAttribute('href')||'').trim();if(lh&&lh.indexOf('.')!==-1&&!lh.startsWith('javascript:'))return lh;}var tb=row.querySelector('[role="textbox"],[data-id*="value" i]');if(tb){var tt=(tb.innerText||tb.textContent||'').replace(DYNAMICS_ICON_REGEX,'').trim();if(tt&&tt.toLowerCase()!==target)return tt;}row=row.parentElement;}}}}}}return '';}function getSiteOrigin(u){if(!u)return '';var s=u.trim();if(!/^https?:\\/\\//i.test(s))s='https://'+s;try{return new URL(s).origin;}catch(e){var m=s.match(/^(https?:\\/\\/[^\\/\\?\\#]+)/i);return m?m[1]:'';}}var delId=cleanFieldText(getF(['deliverablenumber.fieldControl','deliverableid.fieldControl','ticketnumber.fieldControl','deliverableid','deliverable_number']));if(!delId){var params=new URLSearchParams(window.location.search);var rawId=params.get('id')||'';if(rawId)delId=rawId.split('-')[0].toUpperCase();}var title=cleanFieldText(getF(['ddcms_name.fieldControl','ddcms_name','ddcms_h1','ddcms_title','h1title.fieldControl','targeth1.fieldControl','pagetitle.fieldControl','h1','name.fieldControl'],['account','customer','parentaccount','owner','createdby','modifiedby','header_crmformheader','dealer','quickview']));var copy=cleanFieldText(getF(['completedcopy.fieldControl','completedcopy']));var url=cleanFieldText(getF(['completedpageurl.fieldControl','completedpageurl']));var httpIdx=url.indexOf('http');if(httpIdx!==-1){url=url.substring(httpIdx).split(/[\\s\\)\\'"]/)[0];}var ctas=cleanCtaPayload(getF(['callstoaction.fieldControl','callstoaction']));var links=cleanCtaPayload(getF(['links.fieldControl','links']));var combinedCtas=[];if(ctas)combinedCtas.push(ctas);if(links)combinedCtas.push(links);var details=cleanFieldText(getF(['ddcms_details.fieldControl','ddcms_details','details.fieldControl','details','specialinstructions'],['copywriting']));var rawPageEx=cleanFieldText(getF(['ddcms_pageexample.fieldControl','ddcms_pageexample','pageexample.fieldControl','pageexample'],[],['Page Example']));var primaryUrl='';if(rawPageEx){var trimmedEx=rawPageEx.trim();if(/^https?:\\/\\//i.test(trimmedEx)){primaryUrl=trimmedEx;}else if(trimmedEx.indexOf('//')===0){primaryUrl='https:'+trimmedEx;}else if(/^www\\./i.test(trimmedEx)){primaryUrl='https://'+trimmedEx;}else{var dealerOrigin=getSiteOrigin(url);var normPath=trimmedEx.indexOf('/')===0?trimmedEx:('/'+trimmedEx);primaryUrl=dealerOrigin?(dealerOrigin+normPath):normPath;}}var payload={deliverable_id:delId,deliverable_url:window.location.href,title:title,completed_copy:copy,completed_page_url:url,ctas_and_links:combinedCtas.join('\\n'),special_instructions:details,page_example_raw:rawPageEx,page_example_url:primaryUrl,page_example_live_url:primaryUrl,page_example_cms_url:'',page_example_path:rawPageEx?(rawPageEx.indexOf('/')===0?rawPageEx:('/'+rawPageEx)):'',page_example_type:/^https?:\\/\\//i.test(rawPageEx)?'direct':'resolved',website:'',product_fulfillment_account:'',source:'bookmarklet',timestamp:Date.now()};var qaUrl='https://qa-tool-brown.vercel.app';var jsonStr=JSON.stringify(payload);try{fetch('http://127.0.0.1:5000/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).catch(function(){});}catch(e){}fetch(qaUrl+'/api/save-extracted-dynamics',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:jsonStr}).then(function(){window.open(qaUrl,'_blank');}).catch(function(){window.open(qaUrl,'_blank');});})();`;
 
 function initBookmarkletModal() {
     const bookmarkletBtn = document.getElementById('bookmarklet-btn');
@@ -3554,7 +3681,7 @@ function initBookmarkletModal() {
         copyCodeBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(DYNAMICS_BOOKMARKLET_CODE).then(() => {
                 const origText = copyCodeBtn.textContent;
-                copyCodeBtn.textContent = '✅ ¡Copiado!';
+                copyCodeBtn.textContent = '✅ Copied!';
                 copyCodeBtn.style.background = '#2e7d32';
                 setTimeout(() => {
                     copyCodeBtn.textContent = origText;
@@ -3563,7 +3690,7 @@ function initBookmarkletModal() {
             }).catch(err => {
                 codeTextarea.select();
                 document.execCommand('copy');
-                alert('¡Código copiado al portapapeles!');
+                alert('Bookmarklet code copied to clipboard!');
             });
         });
     }

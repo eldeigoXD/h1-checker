@@ -17,9 +17,17 @@ import re
 import json
 from urllib.parse import urlparse
 
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+try:
+    from sentence_transformers import SentenceTransformer
+    from sklearn.metrics.pairwise import cosine_similarity
+    import numpy as np
+    HAVE_SENTENCE_TRANSFORMERS = True
+except Exception as e:
+    SentenceTransformer = None
+    cosine_similarity = None
+    np = None
+    HAVE_SENTENCE_TRANSFORMERS = False
+    print(f"[CoherenceEngine] AVISO: sentence_transformers / PyTorch no disponible ({e}). Usando motor heurístico seguro.")
 
 # ---------------------------------------------------------------------------
 # Global model — loaded once at server startup, reused for every request.
@@ -29,6 +37,8 @@ _model = None
 
 def _get_model():
     global _model
+    if not HAVE_SENTENCE_TRANSFORMERS:
+        return None
     if _model is None:
         print(f"[CoherenceEngine] Loading '{MODEL_NAME}'...")
         try:
@@ -83,30 +93,55 @@ def _build_meta_text(title: str, path: str) -> str:
 # ---------------------------------------------------------------------------
 # Primary coherence analyzer
 # ---------------------------------------------------------------------------
+def _heuristic_coherence(url: str, title: str, page_text: str) -> dict:
+    if not page_text or len(page_text.strip()) < 80:
+        return {
+            "score": None,
+            "explanation": "Not enough page text to evaluate semantic coherence.",
+            "status": "error"
+        }
+    path_slug = urlparse(url).path.lower().replace('.htm', '').replace('.html', '')
+    path_slug = re.sub(r'[/_-]', ' ', path_slug).strip()
+    combined_text = f"{(title or '').lower()} {path_slug}"
+    words = set(re.findall(r'\b[a-z]{3,}\b', combined_text))
+    stop_words = {'for', 'sale', 'new', 'used', 'the', 'and', 'with', 'inventory', 'index', 'page', 'cars', 'vehicles', 'dealership', 'auto', 'from', 'your', 'our', 'are', 'this', 'that'}
+    important_words = words - stop_words
+    
+    page_text_lower = (page_text or '').lower()
+    if not important_words:
+        return {
+            "score": 90,
+            "explanation": "Página coherente con los términos clave.",
+            "status": "coherent"
+        }
+    
+    matched = [w for w in important_words if w in page_text_lower]
+    ratio = len(matched) / len(important_words)
+    display_score = min(100, int(ratio * 100))
+    
+    missing_words = [w for w in important_words if w not in page_text_lower]
+    missing_str = f" Términos ausentes: {', '.join(missing_words)}." if missing_words else ""
+    
+    if display_score >= 60:
+        status = "coherent"
+        explanation = f"Buena alineación semántica ({display_score}%). El contenido coincide con el título y URL."
+    elif display_score >= 40:
+        status = "suspicious"
+        explanation = f"Alineación parcial ({display_score}%).{missing_str}"
+    else:
+        status = "incoherent"
+        explanation = f"Baja alineación ({display_score}%). El texto no parece coincidir con la URL.{missing_str}"
+        
+    return {"score": display_score, "explanation": explanation, "status": status}
+
 def analyze_coherence(url: str, title: str, page_text: str) -> dict:
     """
     Scores how well the page's metadata (Title + URL path) matches its
     actual visible text content.
-
-    Args:
-        url:        Full URL of the page.
-        title:      H1 or page title (from the scan).
-        page_text:  Plain-text content of the page (e.g. soup.get_text()).
-
-    Returns:
-        {
-            "score":        int 0-100,
-            "explanation":  str  (1 sentence, human-readable),
-            "status":       "coherent" | "suspicious" | "incoherent"
-        }
     """
     model = _get_model()
     if not model:
-        return {
-            "score": None,
-            "explanation": "NLP coherence model unavailable. Check server logs.",
-            "status": "error"
-        }
+        return _heuristic_coherence(url, title, page_text)
 
     path = urlparse(url).path
 
@@ -227,7 +262,7 @@ def nlp_inventory_fallback(
     # --- 1. Determine inventory type ---
     is_new  = any(k in path for k in ['/new-', '/new/', 'new-inventory', 'new-cars', 'new-vehicles']) or \
               any(k in title_low for k in ['new ', 'new vehicle', 'new car', 'nuevo'])
-    is_used = any(k in path for k in ['/used-', '/pre-owned', 'used-inventory', 'preowned']) or \
+    is_used = any(k in path for k in ['/used-', '/pre-owned', 'used-inventory', 'preowned', '-used-', '-used.', '/used.', '-pre-owned-']) or \
               any(k in title_low for k in ['used ', 'pre-owned', 'preowned'])
     is_cert = any(k in path for k in ['/certified', '/cpo']) or 'certified' in title_low
 

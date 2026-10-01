@@ -242,6 +242,100 @@ button:disabled {
     font-weight: 500;
 }
 
+.result-header-row {
+    margin-bottom: 0.4rem;
+}
+
+.result-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline;
+    border-bottom: 1px dashed rgba(187, 134, 252, 0.4);
+    word-break: break-all;
+    cursor: pointer;
+}
+
+.result-link:hover {
+    color: #ffffff;
+    border-bottom-color: var(--primary-color);
+    text-shadow: 0 0 10px rgba(187, 134, 252, 0.5);
+}
+
+.result-actions-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0.75rem 0 1rem 0;
+    padding: 0.35rem 0;
+}
+
+.action-badge-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.action-badge-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.action-badge-btn svg {
+    flex-shrink: 0;
+}
+
+.composer-badge-btn {
+    background: rgba(187, 134, 252, 0.1);
+    border-color: rgba(187, 134, 252, 0.35);
+    color: #d7b4fe;
+}
+
+.composer-badge-btn:hover {
+    background: rgba(187, 134, 252, 0.22);
+    border-color: #bb86fc;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(187, 134, 252, 0.3);
+}
+
+.deliverable-badge-btn {
+    background: rgba(77, 208, 225, 0.1);
+    border-color: rgba(77, 208, 225, 0.35);
+    color: #80deea;
+}
+
+.deliverable-badge-btn:hover {
+    background: rgba(77, 208, 225, 0.22);
+    border-color: #4dd0e1;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(77, 208, 225, 0.3);
+}
+
+.sub-badge {
+    font-size: 0.72rem;
+    padding: 0.1rem 0.45rem;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    font-family: monospace;
+    opacity: 0.9;
+}
+
 .highlight {
     color: var(--primary-color);
     word-break: break-all;

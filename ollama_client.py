@@ -29,7 +29,7 @@ from typing import Optional
 # Config
 # ---------------------------------------------------------------------------
 OLLAMA_BASE_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-DEFAULT_MODEL   = os.getenv("OLLAMA_MODEL", "phi3:mini")
+DEFAULT_MODEL   = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 DEFAULT_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "45"))   # seconds
 
 # ---------------------------------------------------------------------------
@@ -98,6 +98,10 @@ def ask_ollama(
         "model":  model,
         "prompt": prompt,
         "stream": False,
+        "options": {
+            "temperature": 0.0,
+            "top_p": 0.9,
+        },
     }
     if system:
         payload["system"] = system
@@ -143,18 +147,26 @@ def ask_ollama_json(
         "prompt": prompt,
         "stream": False,
         "format": "json",   # Forces valid JSON output
+        "options": {
+            "temperature": 0.0,
+            "top_p": 0.9,
+        },
     }
     if system:
         payload["system"] = system
 
     try:
+        t0 = time.time()
+        print(f"[OllamaClient] Consulting LLM '{model}' for QA analysis...")
         resp = requests.post(
             f"{OLLAMA_BASE_URL}/api/generate",
             json=payload,
             timeout=timeout,
         )
         resp.raise_for_status()
+        elapsed = time.time() - t0
         raw = resp.json().get("response", "").strip()
+        print(f"[OllamaClient] LLM '{model}' responded successfully in {elapsed:.2f}s")
         return json.loads(raw) if raw else default
     except (json.JSONDecodeError, ValueError) as e:
         print(f"[OllamaClient] JSON parse error: {e}")

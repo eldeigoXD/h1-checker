@@ -16,6 +16,13 @@ from typing import List, Dict
 
 from ollama_client import ask_ollama_json, is_ollama_available
 
+STOP_WORDS = {
+    'used', 'new', 'cars', 'trucks', 'suvs', 'page', 'sale', 'dealership', 'vehicles', 
+    'make', 'model', 'inventory', 'for', 'with', 'from', 'this', 'that', 'have', 'need', 
+    'must', 'should', 'create', 'build', 'update', 'check', 'view', 'look', 'auto', 'dealer',
+    'near', 'harrisonburg', 'portsmouth', 'texas', 'florida', 'county', 'please', 'section', 'sections'
+}
+
 _PARSE_SYSTEM = (
     "You are an expert technical QA parser for automotive dealership websites. "
     "The user provides a set of layout, inventory configuration, and tone instructions in natural language. "
@@ -84,7 +91,8 @@ def parse_instructions(instructions: str) -> tuple[List[Dict], Dict]:
     # Filter out human developer meta-instructions (e.g. "mimic the example page")
     META_INSTRUCTION_KEYWORDS = [
         'mimic', 'example page', 'reference page', 'example url', 'reference url',
-        'copy example', 'duplicate example', 'follow example', 'see example', 'refer to example'
+        'copy example', 'duplicate example', 'follow example', 'see example', 'refer to example',
+        'same button links', 'same button link', 'same buttons', 'same links', 'button links', 'add same button links'
     ]
     
     cleaned_instructions = inst_low
@@ -150,7 +158,7 @@ def parse_instructions(instructions: str) -> tuple[List[Dict], Dict]:
             valid_rules.append(r)
         elif elem_words and any(w in inst_low for w in elem_words):
             valid_rules.append(r)
-        elif elem and any(k in elem for k in ['breadcrumb', 'hero', 'form', 'map', 'accordion', 'faq', 'photo', 'image', 'layout', 'grid', 'list', 'filter']):
+        elif elem and any(k in elem for k in ['breadcrumb', 'hero', 'form', 'map', 'accordion', 'faq', 'photo', 'image', 'layout', 'grid', 'list', 'filter', 'navigation', 'nav', 'section', 'sections', 'menu', 'header']):
             if any(k in inst_low for k in [elem, elem.replace('_', ' '), elem.replace('-', ' ')]):
                 valid_rules.append(r)
 
@@ -301,8 +309,47 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
         has_widget = bool(soup.find(attrs={'data-widget-name': lambda x: x and ('form' in x.lower() or 'lead' in x.lower() or 'contact' in x.lower())}))
         has_class = bool(soup.find(attrs={'class': lambda x: x and ('form' in x.lower() or 'lead' in x.lower() or 'contact' in x.lower())}))
         found = has_form or has_widget or has_class
-        details = "Lead/Contact form detected on page." if found else "No lead/contact form found."
+    elif any(k in element for k in ['button', 'link', 'cta']) or any(k in original_txt for k in ['button', 'link', 'cta']):
+        links = soup.find_all(['a', 'button']) if soup else []
+        words = [w for w in element.replace("'", "").replace('"', '').split() if w not in ['add', 'same', 'button', 'buttons', 'link', 'links', 'the', 'to', 'some', 'of', 'and', 'with', 'for', 'in', 'on', 'a', 'an']]
+        if words:
+            found = any(any(kw in (a.get_text() or '').lower() or kw in (a.get('href') or '').lower() for kw in words) for a in links)
+            details = f"Links or buttons related to '{' '.join(words)}' found on page." if found else f"Could not find links or buttons for '{' '.join(words)}'."
+        else:
+            found = len(links) > 0
+            details = f"Button/Link elements detected on page ({len(links)} found)." if found else "No buttons or links found on page."
+            
+    elif any(k in element for k in ['navigation', 'nav', 'menu', 'header']) or any(k in original_txt for k in ['navigation', 'nav', 'menu', 'header']):
+        has_nav = (
+            bool(soup.find(['nav', 'header'])) 
+            or bool(soup.select('.navbar, .ws-navigation, [data-widget-name*="navigation"], [class*="navigation"], [id*="navigation"], [role="navigation"]'))
+        ) if soup else False
+        found = has_nav
+        details = "Navigation component detected on page." if found else "No navigation component found."
+
+    elif any(k in element for k in ['section', 'sections', 'content section', 'content sections']) or any(k in original_txt for k in ['section', 'sections', 'content section', 'content sections']):
+        import re as _re_sec
+        topic = _re_sec.sub(r'\b(add|include|create|insert|section|sections|content section|content sections|block|widget|component)\b', '', element or original_txt).strip()
+        topic_words = [w for w in topic.split() if len(w) > 2 and w not in STOP_WORDS]
         
+        if topic_words:
+            page_lower = soup.get_text().lower() if soup else ''
+            has_topic = (
+                topic in page_lower 
+                or (len(topic_words) >= 2 and all(w in page_lower for w in topic_words))
+                or any(w in page_lower for w in topic_words if len(w) >= 4)
+            )
+            found = has_topic
+            details = f"Content section related to '{topic}' detected on page." if found else f"Could not find section or content related to '{topic}' on page."
+        else:
+            has_sections = (
+                bool(soup.find_all('section')) 
+                or len(soup.find_all(['h2', 'h3'])) >= 2 
+                or bool(soup.select('[class*="section"], [data-widget-name*="content"], .row, .container'))
+            ) if soup else False
+            found = has_sections
+            details = "Page content sections and structure detected." if found else "No content sections found."
+
     else:
         # Vague/Ambiguous keywords (e.g. "service" suelto)
         vague_kws = ['service', 'update', 'photos', 'page content', 'content']

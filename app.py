@@ -2,9 +2,12 @@ from flask import Flask, request, jsonify, send_from_directory, make_response
 
 from flask_cors import CORS
 try:
-    from curl_cffi import requests
+    from curl_cffi import requests, CurlOpt
+    HAS_CURL_CFFI = True
 except Exception:
     import requests
+    CurlOpt = None
+    HAS_CURL_CFFI = False
 
 from bs4 import BeautifulSoup
 import os
@@ -26,33 +29,77 @@ import re
 DOH_GOOGLE = "https://dns.google/dns-query"
 DOH_CLOUDFLARE = "https://cloudflare-dns.com/dns-query"
 
+def _resolve_clean_ipv4_via_doh(host: str) -> list:
+    """Resolve clean IPv4 addresses directly from Google DoH API to bypass broken ISP DNS / dead local CDN nodes."""
+    try:
+        import urllib.request
+        req = urllib.request.urlopen(f"https://dns.google/resolve?name={host}&type=A", timeout=3)
+        data = json.loads(req.read().decode('utf-8'))
+        return [ans['data'] for ans in data.get('Answer', []) if ans.get('type') == 1]
+    except Exception:
+        return []
+
 def curl_get_robust(url, timeout=25, headers=None, verify=False, **kwargs):
     """
     Robust HTTP GET using curl_cffi with DNS-over-HTTPS (Google & Cloudflare DoH)
-    to bypass ISP DNS failures or broken local CDN edges (e.g. Akamai edge nodes).
-    Falls back gracefully to standard requests if needed.
+    and forced IPv4 resolution to bypass ISP DNS failures, blackholed IPv6 routes,
+    and dead regional CDN edge nodes (e.g. Akamai edge nodes).
+    Falls back gracefully to clean IP pinning or standard requests if needed.
     """
-    # Try 1: curl_cffi with Google DoH
+    parsed = urlparse(url)
+    host = parsed.netloc.split(':')[0] if parsed.netloc else ''
+
+    # Try 1: curl_cffi with Google DoH and forced IPv4
     try:
         s = requests.Session(impersonate='chrome', verify=verify)
-        return s.get(url, timeout=timeout, headers=headers, doh_url=DOH_GOOGLE, **kwargs)
+        if CurlOpt and hasattr(CurlOpt, 'IPRESOLVE'):
+            s.curl_options = {CurlOpt.IPRESOLVE: 1} # 1 = CURL_IPRESOLVE_V4: prevents 21s IPv6 blackhole hangs
+        return s.get(url, timeout=min(timeout, 12), headers=headers, doh_url=DOH_GOOGLE, **kwargs)
+    except TypeError:
+        # Fallback if requests is standard requests library
+        import requests as standard_req
+        hdrs = headers or {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        return standard_req.get(url, headers=hdrs, timeout=timeout, verify=verify)
     except Exception as e_google:
-        print(f"DEBUG: Try 1 Google DoH failed: {e_google}")
-        # Try 2: curl_cffi with Cloudflare DoH
-        try:
-            s = requests.Session(impersonate='chrome', verify=verify)
-            return s.get(url, timeout=timeout, headers=headers, doh_url=DOH_CLOUDFLARE, **kwargs)
-        except Exception as e_cf:
-            print(f"DEBUG: Try 2 CF DoH failed: {e_cf}")
-            # Try 3: curl_cffi direct
+        print(f"DEBUG: Try 1 Google DoH failed: {e_google}. Trying clean IP fallback...")
+
+    # Try 2: Resolve clean IPv4 from Google DNS REST API and pin directly via CURLOPT_RESOLVE
+    if host and HAS_CURL_CFFI and CurlOpt and hasattr(CurlOpt, 'RESOLVE'):
+        clean_ips = _resolve_clean_ipv4_via_doh(host)
+        if clean_ips:
             try:
-                s = requests.Session(impersonate='chrome', verify=verify)
-                return s.get(url, timeout=timeout, headers=headers, **kwargs)
-            except Exception as e_direct:
-                # Try 4: Standard requests
-                import requests as standard_req
-                hdrs = headers or {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-                return standard_req.get(url, headers=hdrs, timeout=timeout, verify=verify)
+                s_pin = requests.Session(impersonate='chrome', verify=verify)
+                resolve_rules = [f"{host}:443:{clean_ips[0]}", f"{host}:80:{clean_ips[0]}"]
+                s_pin.curl_options = {
+                    CurlOpt.IPRESOLVE: 1,
+                    CurlOpt.RESOLVE: resolve_rules
+                }
+                return s_pin.get(url, timeout=min(timeout, 10), headers=headers, **kwargs)
+            except Exception as e_pin:
+                print(f"DEBUG: Try 2 Clean IP pinning failed: {e_pin}")
+
+    # Try 3: curl_cffi with Cloudflare DoH and forced IPv4
+    try:
+        s = requests.Session(impersonate='chrome', verify=verify)
+        if CurlOpt and hasattr(CurlOpt, 'IPRESOLVE'):
+            s.curl_options = {CurlOpt.IPRESOLVE: 1}
+        return s.get(url, timeout=min(timeout, 10), headers=headers, doh_url=DOH_CLOUDFLARE, **kwargs)
+    except Exception as e_cf:
+        print(f"DEBUG: Try 3 CF DoH failed: {e_cf}")
+
+    # Try 4: curl_cffi direct (IPv4)
+    try:
+        s = requests.Session(impersonate='chrome', verify=verify)
+        if CurlOpt and hasattr(CurlOpt, 'IPRESOLVE'):
+            s.curl_options = {CurlOpt.IPRESOLVE: 1}
+        return s.get(url, timeout=min(timeout, 10), headers=headers, **kwargs)
+    except Exception as e_direct:
+        print(f"DEBUG: Try 4 direct failed: {e_direct}")
+
+    # Try 5: Standard requests fallback
+    import requests as standard_req
+    hdrs = headers or {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    return standard_req.get(url, headers=hdrs, timeout=timeout, verify=verify)
 
 # Inventory Database helpers
 INVENTORY_DB = 'inventory_patterns.json'
@@ -218,15 +265,28 @@ def split_compound_line(line):
     line = line.strip()
     if not line: return []
     
-    chunks = [c.strip() for c in re.split(r'[\n,]', line) if c.strip()]
+    # 1. Delimit sentence boundary after a URL ending with .htm. or .html. or / followed by space and words
+    s = re.sub(r'(\.(?:htm|html|php|aspx|asp|jsp|pdf)|/|\))\.\s+([A-Za-z/])', r'\1\n\2', line, flags=re.I)
+    # 2. Delimit text ending with . followed by space and a URL starting with / or http
+    s = re.sub(r'(\S)\.\s+(/(?:[a-zA-Z0-9_.~#-]+/)*[a-zA-Z0-9_.~#-]|https?://|#)', r'\1\n\2', s)
+    
+    chunks = [c.strip() for c in re.split(r'[\n,]', s) if c.strip()]
     final_parts = []
     
     for chunk in chunks:
-        # Space separated URLs/paths
+        # Space separated URLs/paths or URL followed by instructions
         if ' ' in chunk and (chunk.startswith('/') or chunk.startswith('http')):
             sub_elements = chunk.split()
             if all(el.startswith('/') or el.startswith('http') or el.startswith('#') for el in sub_elements):
                 final_parts.extend(sub_elements)
+                continue
+            else:
+                first_url = re.sub(r'[.,;:!?)"\']+$', '', sub_elements[0])
+                rest_chunk = chunk[len(sub_elements[0]):].strip()
+                rest_chunk = re.sub(r'^[.,;:!?\-\s]+', '', rest_chunk).strip()
+                final_parts.append(first_url)
+                if rest_chunk:
+                    final_parts.extend(split_compound_line(rest_chunk))
                 continue
                 
         conj_pattern = r'\s+(?:and/or|and|&|\+|or)\s+'
@@ -243,10 +303,11 @@ def split_compound_line(line):
 
 def clean_cta_url(raw_url):
     """
-    Strips trailing parenthetical notes or extraneous text from CTA URLs.
+    Strips trailing parenthetical notes, punctuation, or extraneous text from CTA URLs.
     Example:
       "/research/mercedes-benz-lineup.htm#contact (anchor link to contact form at the bottom of the page)"
       -> "/research/mercedes-benz-lineup.htm#contact"
+      "/financing/index.htm." -> "/financing/index.htm"
     """
     if not raw_url: return raw_url
     url = raw_url.strip()
@@ -256,6 +317,8 @@ def clean_cta_url(raw_url):
     parts = url.split()
     if len(parts) > 1 and (parts[0].startswith('/') or parts[0].startswith('http://') or parts[0].startswith('https://') or parts[0].startswith('#')):
         url = parts[0]
+    # Strip any trailing sentence punctuation that might have attached to the URL
+    url = re.sub(r'[.,;:!?)"\']+$', '', url).strip()
     return url
 
 def parse_cta_instructions(instructions):
@@ -275,6 +338,16 @@ def parse_cta_instructions(instructions):
     parts = []
     for line in instructions.splitlines():
         parts.extend(split_compound_line(line))
+        
+    rule_keywords = [
+        'update', 'photos', 'add faq', 'faqs', 'include lead form', 'accordion',
+        'bottom of the page', 'ownership in', 'page content', 'anchor text',
+        'internal links', 'in the body', 'click here', 'descriptive keyword',
+        'relevant internal', 'guidelines', 'follow instructions', 'seo content',
+        'word count', 'minimum of', 'make sure', 'please include', 'ensure that',
+        'a few relevant', 'internal :', 'please also', 'also link', 'link to',
+        'same button', 'same button links', 'button links', 'some of the', 'link some'
+    ]
     
     parsed = []
     for part in parts:
@@ -300,8 +373,15 @@ def parse_cta_instructions(instructions):
         # Format 1: Text (URL) -> e.g. "New Intory (/new-inventory/index.htm)"
         m1 = re.match(r'^(.*?) \((.*?)\)$', part)
         if m1:
-            cta['text'] = m1.group(1).strip()
-            cta['url'] = m1.group(2).strip()
+            txt_candidate = m1.group(1).strip()
+            url_candidate = clean_cta_url(m1.group(2).strip())
+            txt_low = txt_candidate.lower()
+            is_sentence = len(txt_candidate.split()) > 4 or any(txt_low.startswith(w) for w in ['please', 'make sure', 'ensure', 'link to', 'also link', 'add link', 'link some', 'internal link', 'button links', 'same button'])
+            if is_sentence:
+                cta['text'] = None
+            else:
+                cta['text'] = txt_candidate
+            cta['url'] = url_candidate
             parsed.append(cta)
             continue
             
@@ -309,27 +389,40 @@ def parse_cta_instructions(instructions):
         m2 = re.match(r'^\((.*?) to (.*?)\)$', part)
         if m2:
             cta['text'] = m2.group(1).strip()
-            cta['url'] = m2.group(2).strip()
+            cta['url'] = clean_cta_url(m2.group(2).strip())
             parsed.append(cta)
             continue
             
         # Format 3: Just URL
         if part.startswith('/') or part.startswith('http://') or part.startswith('https://') or part.startswith('#'):
-            cta['url'] = part
+            parts_split = part.split(None, 1)
+            first_url = clean_cta_url(parts_split[0])
+            cta['url'] = first_url
+            cta['original'] = first_url
             parsed.append(cta)
+            if len(parts_split) > 1:
+                rem_text = re.sub(r'^[.,;:!?\-\s]+', '', parts_split[1]).strip()
+                if rem_text:
+                    sub_parsed = parse_cta_instructions(rem_text)
+                    if sub_parsed:
+                        parsed.extend(sub_parsed)
             continue
             
         # Format 4: Text: URL -> e.g. "New Inventory: /new-inventory/index.htm"
         m3 = re.match(r'^(.*?):\s*(.*?)$', part)
         if m3:
-            potential_url = m3.group(2).strip()
+            potential_url = clean_cta_url(m3.group(2).strip())
             is_valid_target = (
                 any(potential_url.startswith(prefix) for prefix in ['/', 'http://', 'https://', '#'])
                 or bool(re.search(r'\.(htm|html)\b', potential_url))
                 or bool(HOMEPAGE_REGEX.search(potential_url.lower()))
             )
             if is_valid_target:
-                cta['text'] = m3.group(1).strip()
+                label_txt = m3.group(1).strip()
+                if label_txt.lower() in ['cta', 'ctas', 'call to action', 'button', 'link', 'url', 'destination', 'links']:
+                    cta['text'] = None
+                else:
+                    cta['text'] = label_txt
                 cta['url'] = potential_url
                 parsed.append(cta)
                 continue
@@ -337,8 +430,12 @@ def parse_cta_instructions(instructions):
         # Format 6: Text - URL -> e.g. "Used Ford - /used-inventory/used-ford.htm"
         m4 = re.match(r'^(.*?)\s+-\s+(/.*?|https?://.*?|#.*?)$', part)
         if m4:
-            cta['text'] = m4.group(1).strip()
-            cta['url'] = m4.group(2).strip()
+            label_txt = m4.group(1).strip()
+            if label_txt.lower() in ['cta', 'ctas', 'call to action', 'button', 'link', 'url', 'destination', 'links']:
+                cta['text'] = None
+            else:
+                cta['text'] = label_txt
+            cta['url'] = clean_cta_url(m4.group(2).strip())
             parsed.append(cta)
             continue
             
@@ -346,7 +443,7 @@ def parse_cta_instructions(instructions):
         m5 = re.match(r'^(.*?)\s+(/.*?|https?://.*?|#.*?)$', part)
         if m5:
             cta['text'] = m5.group(1).strip()
-            cta['url'] = m5.group(2).strip()
+            cta['url'] = clean_cta_url(m5.group(2).strip())
             parsed.append(cta)
             continue
 
@@ -359,14 +456,6 @@ def parse_cta_instructions(instructions):
             
         # Format 5: Just Text
         # Ignore parts that look like descriptive instruction sentences rather than explicit CTA button labels
-        rule_keywords = [
-            'update', 'photos', 'add faq', 'faqs', 'include lead form', 'accordion',
-            'bottom of the page', 'ownership in', 'page content', 'anchor text',
-            'internal links', 'in the body', 'click here', 'descriptive keyword',
-            'relevant internal', 'guidelines', 'follow instructions', 'seo content',
-            'word count', 'minimum of', 'make sure', 'please include', 'ensure that',
-            'a few relevant', 'internal :'
-        ]
         if any(kw in part_low for kw in rule_keywords) and not ('http' in part_low or '/' in part_low or '#' in part_low):
             continue
 
@@ -463,6 +552,8 @@ BUG_REGISTRY = {
     'sitemap_xml_missing':     {'platform': 'D/M', 'type': 'Failed',    'category': 'Config'},
     'sitemap_html_missing':    {'platform': 'D/M', 'type': 'Failed',    'category': 'Config'},
     'lead_form_source_wrong':  {'platform': 'M/D', 'type': 'Failed',    'category': 'Form'},
+    'brand_mismatch':          {'platform': 'D/M', 'type': 'Critical',  'category': 'Content'},
+    'cta_brand_mismatch':      {'platform': 'D/M', 'type': 'Critical',  'category': 'Content'},
 }
 
 def make_bug(bug_type: str, message: str, **extra) -> dict:
@@ -565,7 +656,7 @@ LOCAL_MODELS = {
     'pacifica': 'Pacifica', 'voyager': 'Voyager', '300': '300',
     # Toyota
     '4runner i-force max': '4Runner%20i-FORCE%20MAX', '4runner': '4Runner',
-    'bz woodland': 'bZ%20Woodland', 'bz': 'bZ',
+    'bz4x': 'bZ4X', 'bz woodland': 'bZ%20Woodland',
     'c-hr': 'C-HR', 'camry': 'Camry', 
     'corolla cross hybrid': 'Corolla%20Cross%20Hybrid', 'corolla cross': 'Corolla%20Cross',
     'corolla hatchback': 'Corolla%20Hatchback', 'corolla hybrid': 'Corolla%20Hybrid', 'corolla': 'Corolla',
@@ -669,7 +760,7 @@ LOCAL_MODELS = {
     # Audi
     'q3': 'Q3', 'q5': 'Q5', 'q5 sportback': 'Q5%20Sportback', 'q7': 'Q7', 'q8 e-tron': 'Q8%20e-tron', 'q8': 'Q8',
     'sq5 sportback': 'SQ5%20Sportback', 'sq5': 'SQ5', 'sq7': 'SQ7', 'sq8': 'SQ8',
-    'rs q8': 'RS%20Q8', 'rs': 'RS', 's e-tron gt': 'S%20e-tron%20GT',
+    'rs 3': 'RS%203', 'rs 5': 'RS%205', 'rs 6': 'RS%206', 'rs 7': 'RS%207', 'rs q8': 'RS%20Q8', 's e-tron gt': 'S%20e-tron%20GT',
     'a3': 'A3', 'a5': 'A5', 'a6': 'A6', 'a8': 'A8',
     's3': 'S3', 's8': 'S8',
     # Mercedes-Benz
@@ -743,6 +834,7 @@ LOCAL_TRIMS = {
     'sport': 'Sport',
     'v-series premium': 'V-Series%20Premium',
     'v-series': 'V-Series',
+    'rs': 'RS',
 }
 
 LOCAL_FUEL_TYPES = {
@@ -750,6 +842,105 @@ LOCAL_FUEL_TYPES = {
     'hybrid': 'Hybrid', 'phev': 'Hybrid',
     'diesel': 'Diesel',
 }
+
+def infer_site_brands(page_url: str, page_title: str = "", h1_tags: list = None, page_text: str = ""):
+    """
+    Infers the primary brand and all allowed brands for the given dealer URL.
+    Considers:
+    - Domain shortcuts and multi-brand groups (CDJR, Buick-GMC, etc.)
+    - Individual brand names in domain (including 3-letter makes: GMC, RAM, BMW, KIA, VW)
+    - URL path tokens (e.g. /used/gmc-in-lincolnton-nc.htm -> GMC)
+    - Page Title and H1 tags (e.g. "Used GMC For Sale In Lincolnton, NC")
+    - Used / Pre-owned page context (dealers legitimately sell other makes of used cars)
+    """
+    from urllib.parse import urlparse
+    main_brand = None
+    allowed_brands = set()
+    domain_low = urlparse(page_url).netloc.lower()
+    domain_core = re.sub(r'\.(com|net|org|co|us|ca|au|uk|io)$', '', domain_low)
+    domain_core = re.sub(r'^(www|m|mobile)\.', '', domain_core)
+
+    MULTI_BRAND_GROUPS = {
+        'cdjr':   ['Chrysler', 'Dodge', 'Jeep', 'Ram'],
+        'cdj':    ['Chrysler', 'Dodge', 'Jeep'],
+        'cjdr':   ['Chrysler', 'Jeep', 'Dodge', 'Ram'],
+        'chryslerdodgejeep': ['Chrysler', 'Dodge', 'Jeep'],
+        'fca':    ['Chrysler', 'Dodge', 'Jeep', 'Ram', 'Fiat', 'Alfa Romeo'],
+        'gmg':    ['Chevrolet', 'GMC'],
+        'gmc':    ['GMC', 'Buick'],
+        'buickgmc': ['Buick', 'GMC'],
+        'chevygmc': ['Chevrolet', 'GMC'],
+        'gmcchevrolet': ['Chevrolet', 'GMC'],
+        'chevroletgmc': ['Chevrolet', 'GMC'],
+        'chevroletcadillac': ['Chevrolet', 'Cadillac'],
+        'cadillacchevrolet': ['Chevrolet', 'Cadillac'],
+        'fordlincoln': ['Ford', 'Lincoln'],
+        'lincolnford': ['Ford', 'Lincoln'],
+        'hondaacura': ['Honda', 'Acura'],
+        'toyotalexus': ['Toyota', 'Lexus'],
+    }
+
+    # 1. Multi-brand groups from domain
+    for grp_key, grp_brands in MULTI_BRAND_GROUPS.items():
+        if grp_key in domain_core.replace('-', '').replace('_', ''):
+            allowed_brands.update(grp_brands)
+
+    # 2. Individual makes from domain
+    for key, val in LOCAL_MAKES.items():
+        if len(key) <= 3:
+            # 3-letter makes: GMC, RAM, BMW, KIA, VW
+            if re.search(rf'(?:^|[_\-0-9]){re.escape(key)}(?:[_\-0-9]|$)', domain_core) or domain_core.startswith(key) or domain_core.endswith(key):
+                if key == 'ram' and any(domain_core.endswith(w) for w in ['framingham', 'durham', 'ingham']):
+                    continue
+                allowed_brands.add(val)
+                if not main_brand:
+                    main_brand = val
+            continue
+        if key in domain_core:
+            if key == 'ford' and any(domain_core.endswith(w) for w in ['wexford', 'oxford', 'bradford', 'bedford', 'stanford', 'hartford']):
+                continue
+            allowed_brands.add(val)
+            if not main_brand:
+                main_brand = val
+
+    if not main_brand and 'vw' in domain_low:
+        main_brand = 'Volkswagen'
+        allowed_brands.add('Volkswagen')
+
+    # 3. Check URL path tokens (e.g. /used/gmc-in-lincolnton-nc.htm)
+    parsed_path = urlparse(page_url).path.lower()
+    path_slugs = set(re.split(r'[/_\-\.]+', parsed_path))
+    for p_slug in path_slugs:
+        if p_slug in LOCAL_MAKES:
+            make_name = LOCAL_MAKES[p_slug]
+            allowed_brands.add(make_name)
+            if not main_brand:
+                main_brand = make_name
+
+    # 4. Check Page Title and H1
+    h1_str = " ".join([h.get_text(separator=' ', strip=True) if hasattr(h, 'get_text') else str(h) for h in h1_tags]) if h1_tags else ""
+    title_and_h1 = f"{page_title} {h1_str}".lower()
+    for key, val in LOCAL_MAKES.items():
+        if len(key) >= 3 and re.search(rf'\b{re.escape(key)}\b', title_and_h1):
+            allowed_brands.add(val)
+            if not main_brand:
+                main_brand = val
+
+    # 5. Used / Pre-Owned page detection
+    is_used_page = any(u_kw in parsed_path for u_kw in ['/used', '/pre-owned', '/cpo', 'used-', '-used']) or \
+                   any(u_kw in title_and_h1 for u_kw in ['used', 'pre-owned', 'certified pre-owned', 'cpo'])
+
+    if is_used_page and page_text:
+        # Dealerships sell used cars of ANY make.
+        p_text_low = page_text.lower()
+        for key, val in LOCAL_MAKES.items():
+            if len(key) >= 3 and re.search(rf'\b(?:used|pre-owned|certified|preowned|shop)\s+(?:\w+\s+)?{re.escape(key)}\b', p_text_low):
+                allowed_brands.add(val)
+
+    if not allowed_brands and main_brand:
+        allowed_brands.add(main_brand)
+
+    return main_brand, allowed_brands, is_used_page
 
 # Page type detection keywords
 _NEW_KWS  = ['/new-', '/new/', '/shop/new', '/new-inventory', '/new-models', '/new-cars', '/new-vehicles', '/nuevos-']
@@ -928,8 +1119,28 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
 
     # --- 2. Determine page type ---
     is_new  = any(k in path for k in _NEW_KWS) or any(y in path for y in ['2024', '2025', '2026', '2027'])
-    is_used = any(k in path for k in _USED_KWS)
-    is_cert = any(k in path for k in _CERT_KWS)
+    
+    # Robust Used detection from path, slug, and page title
+    path_has_used = any(k in path for k in _USED_KWS) or \
+                    any(k in path for k in ['-used-', '-used.', '/used.', '-pre-owned-', '-preowned-', '-cpo-'])
+    slug_has_used = any(k in f" {slug_spaces} " for k in [' used ', ' pre owned ', ' preowned ', ' cpo ', ' certified pre owned ', ' certified pre-owned '])
+    
+    title_has_used = False
+    if soup_nav:
+        t_tag = soup_nav.find('title')
+        h1_tag = soup_nav.find('h1')
+        title_text = f"{t_tag.get_text() if t_tag else ''} {h1_tag.get_text() if h1_tag else ''}".lower()
+        if any(k in title_text for k in ['used ', 'pre-owned', 'preowned', 'certified pre-owned']):
+            if not any(k in title_text for k in ['new and used', 'used and new', 'new vs used']):
+                title_has_used = True
+
+    is_used = path_has_used or slug_has_used or title_has_used
+
+    # Robust Certified detection
+    path_has_cert = any(k in path for k in _CERT_KWS) or any(k in path for k in ['-certified-', '-certified.', '-cpo-', '-cpo.'])
+    slug_has_cert = any(k in f" {slug_spaces} " for k in [' certified ', ' cpo '])
+    is_cert = path_has_cert or slug_has_cert
+
     is_all  = any(k in path for k in _ALL_KWS) or (is_new and is_used)
     is_gen  = any(k in path for k in _GEN_KWS)
 
@@ -1031,13 +1242,24 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
                 match = True
                 
         if match:
-            # Avoid false matching of the common English word 'is' on non-Lexus pages
-            if key == 'is' and 'Lexus' not in dealer_brands and 'lexus' not in slug_norm:
+            # Lexus short codes (es, is, tx, nx, rx, ux, rz, gx, lx) - only match on Lexus pages
+            _LEXUS_ONLY_KEYS = {'es', 'is', 'tx', 'nx', 'rx', 'ux', 'rz', 'gx', 'lx'}
+            if key in _LEXUS_ONLY_KEYS and 'Lexus' not in dealer_brands and 'lexus' not in domain_low and 'lexus' not in slug_norm:
                 continue
-            # Lexus 2-letter model codes (tx, nx, rx, ux, rz, gx, lx) are also US state
-            # abbreviations or common short strings. Only match them for Lexus dealers.
-            _LEXUS_ONLY_KEYS = {'tx', 'nx', 'rx', 'ux', 'rz', 'gx', 'lx'}
-            if key in _LEXUS_ONLY_KEYS and 'Lexus' not in dealer_brands and 'lexus' not in domain_low:
+
+            # Audi short codes (a3, a5, a6, a8, s3, s8) - only match on Audi pages
+            _AUDI_ONLY_KEYS = {'a3', 'a5', 'a6', 'a8', 's3', 's8'}
+            if key in _AUDI_ONLY_KEYS and 'Audi' not in dealer_brands and 'audi' not in domain_low and 'audi' not in slug_norm:
+                continue
+
+            # Genesis short codes (g70, g80, g90) - only match on Genesis pages
+            _GENESIS_ONLY_KEYS = {'g70', 'g80', 'g90'}
+            if key in _GENESIS_ONLY_KEYS and 'Genesis' not in dealer_brands and 'genesis' not in domain_low and 'genesis' not in slug_norm:
+                continue
+
+            # Lincoln short codes (mkc, mkx, mkz) - only match on Lincoln pages
+            _LINCOLN_ONLY_KEYS = {'mkc', 'mkx', 'mkz'}
+            if key in _LINCOLN_ONLY_KEYS and 'Lincoln' not in dealer_brands and 'lincoln' not in domain_low and 'lincoln' not in slug_norm:
                 continue
             # Block US state abbreviations that appear at the END of the slug
             # (e.g. "used-sedans-el-paso-tx" → tx is a state, not a model)
@@ -1279,9 +1501,18 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
         if f" {key} " in slug:
             if any(key in ak for ak in accepted_keys):
                 continue
-            # Ignore 'luxury' trim for Mercedes-Benz as it's typically used generically in URLs (e.g. luxury-suvs)
-            if key == 'luxury' and found_make == 'Mercedes-Benz':
-                continue
+            # 'luxury' is almost always generic descriptive text (e.g. "luxury vehicles", "luxury buyers", "luxury suvs")
+            # Luxury brands (Lincoln, Mercedes-Benz, BMW, Lexus, etc.) do NOT have a 'Luxury' trim filter.
+            if key == 'luxury':
+                if found_make in ['Lincoln', 'Mercedes-Benz', 'BMW', 'Lexus', 'Audi', 'Genesis', 'Porsche', 'Volvo', 'Infiniti', 'Land Rover', 'Jaguar']:
+                    continue
+                if any(phrase in slug for phrase in [
+                    'luxury buyers', 'luxury-buyers', 'luxury vehicles', 'luxury-vehicles',
+                    'luxury cars', 'luxury-cars', 'luxury suvs', 'luxury-suvs',
+                    'luxury inventory', 'luxury-inventory', 'first time luxury', 'first-time-luxury',
+                    'first time', 'first-time', 'luxury buyer', 'luxury-buyer'
+                ]):
+                    continue
             found_trim = val
             break
             
@@ -1865,13 +2096,29 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                 if facet_fallback:
                     return facet_fallback
 
+                # 2.5 DDC Meta Description & JSON-LD Structured Count (Authoritative for Dealer.com static SRPs)
+                # e.g. "Browse our inventory of 192   vehicles for sale." in meta description or schema
+                ddc_meta_match = re.search(r'inventory\s+of\s+([\d,]+)\s+vehicles\s+for\s+sale', raw_html, re.IGNORECASE)
+                if ddc_meta_match:
+                    val = ddc_meta_match.group(1).replace(',', '').strip()
+                    if val.isdigit() and int(val) > 0:
+                        return val
+
                 # 3. Global Regex Fallback (Final attempt on raw HTML)
-                # Handle &nbsp; and multiple spaces
+                # Handle &nbsp; and multiple spaces, requiring word boundaries and whitespace
+                # to strictly avoid matching image filenames (e.g. Lineups-4Vehicles-L01.jpg)
                 clean_html = raw_html.replace('&nbsp;', ' ').replace('&#160;', ' ')
-                for m in re.finditer(r'(\d[\d,]*)\s*(?:Vehicles?|Matches|Results|Veh[íi]culos?)', clean_html, re.IGNORECASE):
+                for m in re.finditer(r'(?<![-_/\w])\b(\d[\d,]*)\s+(?:Vehicles?|Matches|Results|Veh[íi]culos?)\b', clean_html, re.IGNORECASE):
                     gv_clean = m.group(1).replace(',', '')
+                    start_idx = m.start()
+                    end_idx = m.end()
+                    surrounding = clean_html[max(0, start_idx - 60):min(len(clean_html), end_idx + 60)].lower()
+                    if any(ext in surrounding for ext in ['.jpg', '.png', '.webp', '.svg', '.jpeg', '.gif', 'images.dealer.com', 'image/', 'as="image"']):
+                        continue
+                    if any(attr in clean_html[max(0, start_idx - 30):start_idx].lower() for attr in ['src=', 'href=', 'url(', 'background']):
+                        continue
                     if gv_clean.isdigit() and int(gv_clean) > 0:
-                        if is_false_truck_count(gv_clean, clean_html, m.start()):
+                        if is_false_truck_count(gv_clean, clean_html, start_idx):
                             continue
                         return gv_clean
                 
@@ -2200,6 +2447,20 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
         if any(any(tok in c.lower() for c in curr_config_ids) for tok in path_tokens if len(tok) >= 4):
             is_model_specific_widget = True
 
+        # Check make query param in res (e.g. make=Kia on used page -> 'auto-usedkia' in config_ids)
+        is_make_specific_widget = False
+        make_m = re.search(r'[?&]make=([^&]+)', res, re.I)
+        if make_m:
+            target_make = make_m.group(1).lower().replace('+', '').replace('-', '').strip()
+            for c in curr_config_ids:
+                c_clean = c.lower().replace('-', '').replace('_', '')
+                if target_make in c_clean:
+                    is_res_used = '/used' in res.lower()
+                    is_res_new = '/new' in res.lower()
+                    if (is_res_used and 'used' in c_clean) or (is_res_new and 'new' in c_clean) or (not is_res_used and not is_res_new):
+                        is_make_specific_widget = True
+                        break
+
         curr_val = 0
         try:
             if current_count:
@@ -2208,8 +2469,8 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
 
         if not found_any_count:
             # We could NOT determine the count from the filter URL
-            if is_model_specific_widget and curr_val > 0:
-                # The landing page is already configured with the exact model widget and has vehicles!
+            if (is_model_specific_widget or is_make_specific_widget) and curr_val > 0:
+                # The landing page is already configured with the exact model/make widget and has vehicles!
                 inventory_info['status'] = 'match'
                 inventory_info['filter_count'] = str(curr_val)
             else:
@@ -2232,8 +2493,8 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                 if not existing_patterns.get(domain, {}).get(raw_path):
                     save_inventory_pattern(domain, raw_path, res)
             else:
-                # Counts differ, BUT check if it's already a matching model widget
-                if is_model_specific_widget and curr_val > 0:
+                # Counts differ, BUT check if it's already a matching model or make widget
+                if (is_model_specific_widget or is_make_specific_widget) and curr_val > 0:
                     inventory_info['status'] = 'match'
                     inventory_info['filter_count'] = str(curr_val)
                 else:
@@ -3005,6 +3266,110 @@ def verify_custom_rules(custom_rules_text: str, soup, inventory_info: dict) -> l
     return evaluations
 
 
+def is_inside_inventory_featured(tag):
+    """
+    Returns True if tag is an 'inventory-featured' widget or inside one.
+    Per user requirement, featured inventory widgets display dynamic vehicles (new/used)
+    and elements inside them (links, CTAs, images, text, CARFAX links) must NOT be audited as bugs.
+    """
+    if not tag or not hasattr(tag, 'name'):
+        return False
+    curr = tag
+    depth = 0
+    while curr and curr.name != '[document]' and depth < 15:
+        wn = (curr.get('data-widget-name') or '').lower() if hasattr(curr, 'get') else ''
+        wid = (curr.get('data-widget-id') or '').lower() if hasattr(curr, 'get') else ''
+        classes = ' '.join(curr.get('class') or []).lower() if hasattr(curr, 'get') else ''
+        if 'inventory-featured' in wn or 'inventory-featured' in wid or 'inventory-featured' in classes:
+            return True
+        curr = curr.parent
+        depth += 1
+    return False
+
+def get_ddc_site_id(url, html_raw=None, media_audit=None, inventory_info=None):
+    """
+    Detects the Dealer.com (DDC) Site ID from URL, HTML content, or media/inventory audit.
+    Example: 'mercedesbenzofmobilemb', 'servicechevroletla', etc.
+    """
+    import re
+
+    if not url:
+        return None
+
+    # 1. Direct domain detection: e.g. https://mercedesbenzofmobilemb.cms.dealer.com/...
+    # or https://mercedesbenzofmobilemb.website.dealercenter.coxautoinc.com/...
+    domain_m = re.search(r'https?://([a-zA-Z0-9_-]+)\.(?:cms\.)?dealer\.com', url, re.I)
+    if domain_m:
+        sub = domain_m.group(1).lower()
+        if sub not in ['www', 'pictures', 'images', 'assets', 'static']:
+            return domain_m.group(1)
+
+    dc_domain_m = re.search(r'https?://([a-zA-Z0-9_-]+)\.website\.dealercenter\.coxautoinc\.com', url, re.I)
+    if dc_domain_m:
+        return dc_domain_m.group(1)
+
+    # 2. Cached/already detected in audits
+    if media_audit and media_audit.get('dealer_id'):
+        return media_audit.get('dealer_id')
+    if inventory_info and inventory_info.get('site_id'):
+        return inventory_info.get('site_id')
+
+    # 3. HTML parsing
+    if html_raw:
+        # A: "siteId":"..."
+        m = re.search(r'"siteId"\s*:\s*"([^"]+)"', html_raw)
+        if m and m.group(1) and m.group(1).lower() not in ['undefined', 'null', 'none']:
+            return m.group(1).strip()
+
+        # B: data-site-id="..."
+        m = re.search(r'data-site-id=["\']([^"\']+)["\']', html_raw)
+        if m and m.group(1) and m.group(1).lower() not in ['undefined', 'null', 'none']:
+            return m.group(1).strip()
+
+        # C: "accountId":"..."
+        m = re.search(r'"accountId"\s*:\s*"([^"]+)"', html_raw)
+        if m and m.group(1) and m.group(1).lower() not in ['undefined', 'null', 'none']:
+            return m.group(1).strip()
+
+        # D: data-account-id="..."
+        m = re.search(r'data-account-id=["\']([^"\']+)["\']', html_raw)
+        if m and m.group(1) and m.group(1).lower() not in ['undefined', 'null', 'none']:
+            return m.group(1).strip()
+
+        # E: pictures.dealer.com/[a-z]/[site_id]/
+        pics = re.findall(r'pictures\.dealer\.com/[a-z]/([^/"\'&\s>]+)/', html_raw)
+        if pics:
+            pics = [p.strip() for p in pics if p.lower() not in ['mnao', 'global', 'shared', 'demo', 'default'] and not p.lower().startswith('demo')]
+            if pics:
+                return max(set(pics), key=pics.count)
+
+        # F: ([site_id]).cms.dealer.com inside HTML links or scripts
+        cms_matches = re.findall(r'([a-zA-Z0-9_-]+)\.cms\.dealer\.com', html_raw)
+        if cms_matches:
+            cms_matches = [c.strip() for c in cms_matches if c.lower() not in ['www', 'pictures', 'images', 'assets', 'static']]
+            if cms_matches:
+                return cms_matches[0]
+
+    return None
+
+
+def build_composer_url(site_id, target_url):
+    """
+    Builds the DealerCenter Composer deep link URL for a given site_id and page URL.
+    Example output:
+    https://mercedesbenzofmobilemb.website.dealercenter.coxautoinc.com/cc-website/as/mercedesbenzofmobilemb/mercedesbenzofmobilemb-admin/composer/index?lang=en_US&deeplink=%2Fmercedes-benz-ex-loaner-vehicles.htm&format=&__ssuMode=true#website
+    """
+    if not site_id or not target_url:
+        return None
+    from urllib.parse import urlparse, quote
+    parsed = urlparse(target_url if target_url.startswith(('http://', 'https://')) else f"https://{target_url}")
+    path_and_query = parsed.path or '/'
+    if parsed.query:
+        path_and_query += f"?{parsed.query}"
+    encoded_deep = quote(path_and_query, safe='')
+    return f"https://{site_id}.website.dealercenter.coxautoinc.com/cc-website/as/{site_id}/{site_id}-admin/composer/index?lang=en_US&deeplink={encoded_deep}&format=&__ssuMode=true#website"
+
+
 def run_media_audit(url, html_raw, soup):
     """
     Analyzes content images to ensure they are hosted in the dealer's pictures.dealer.com account.
@@ -3041,31 +3406,115 @@ def run_media_audit(url, html_raw, soup):
             media_audit['dealer_id'] = dealer_id
             print(f"DEBUG: Media Audit - dealer_id detected: {dealer_id}")
 
-            # 2. Widgets and containers to EXCLUDE from image audit (campaigns, specials, inventory, navigation, headers)
+            # 2. Widgets and containers to EXCLUDE from image audit (campaigns, specials, inventory, navigation, headers, alert banners)
             MEDIA_SKIP_KEYWORDS = [
-                'ws-inv-', 'inventory-listing', 'inventory-search',
+                'ws-inv-', 'inventory-listing', 'inventory-search', 'inventory-featured',
+                'ws-inventory-featured', 'inventory-featured-default',
                 'ws-specials', 'specials-listing', 'specials-widget', 'specials',
                 'special', 'campaign', 'coupon', 'promo', 'promotion',
-                'incentive', 'rebate', 'navigation', 'ws-navigation', 'header-default',
+                'incentive', 'rebate', 'navigation', 'ws-navigation',
+                'header-default', 'page-header', 'site-header', 'header',
+                'page-footer', 'site-footer', 'footer',
+                'alert', 'alert-banner', 'content-alert', 'content-alert-banner',
+                'announcement', 'ribbon', 'disclaimer', 'ws-alert', 'ws-disclaimer',
+                'notification', 'notice'
             ]
 
             def _is_excluded_widget(tag):
-                """Returns True if the tag is inside an excluded widget or container."""
+                """Returns True if the tag is inside an excluded widget or container, or is an alert/banner."""
+                if not tag:
+                    return False
+                if is_inside_inventory_featured(tag):
+                    return True
+
+                # 1. Check tag attributes (alt, title, class, id)
+                tag_alt = (tag.get('alt') or '').lower() if hasattr(tag, 'get') else ''
+                tag_title = (tag.get('title') or '').lower() if hasattr(tag, 'get') else ''
+                tag_classes = ' '.join(tag.get('class') or []).lower() if hasattr(tag, 'get') else ''
+                tag_id = (tag.get('id') or '').lower() if hasattr(tag, 'get') else ''
+                if any(skip in f"{tag_alt} {tag_title} {tag_classes} {tag_id}" for skip in ['alert', 'banner', 'announcement', 'ribbon', 'disclaimer']):
+                    return True
+
+                # 2. Check explicit dimensions (e.g. wide aspect ratio alert ribbons / banners)
+                if hasattr(tag, 'get'):
+                    w_str = tag.get('width')
+                    h_str = tag.get('height')
+                    if w_str and h_str:
+                        try:
+                            w = float(_re2.sub(r'[^\d.]', '', str(w_str)))
+                            h = float(_re2.sub(r'[^\d.]', '', str(h_str)))
+                            if h > 0 and (w / h >= 3.0 or (w >= 400 and h <= 150)):
+                                return True
+                        except Exception:
+                            pass
+
+                # 3. Check parents up to 10 levels
                 p = tag
-                while p:
-                    wn = p.get('data-widget-name', '') or ''
-                    wid = p.get('data-widget-id', '') or ''
-                    dname = p.get('data-name', '') or ''
-                    dcomp = p.get('data-component', '') or ''
-                    p_id = p.get('id', '') or ''
-                    classes = ' '.join(p.get('class') or [])
+                depth = 0
+                while p and depth < 10:
+                    wn = (p.get('data-widget-name') or '').lower() if hasattr(p, 'get') else ''
+                    wid = (p.get('data-widget-id') or '').lower() if hasattr(p, 'get') else ''
+                    dname = (p.get('data-name') or '').lower() if hasattr(p, 'get') else ''
+                    dcomp = (p.get('data-component') or '').lower() if hasattr(p, 'get') else ''
+                    p_id = (p.get('id') or '').lower() if hasattr(p, 'get') else ''
+                    classes = ' '.join(p.get('class') or []).lower() if hasattr(p, 'get') else ''
+                    p_tag = (p.name or '').lower()
+
+                    if p_tag in ['nav', 'header', 'footer']:
+                        return True
+                    p_role = (p.get('role') or '').lower() if hasattr(p, 'get') else ''
+                    if p_role in ['banner', 'navigation', 'contentinfo']:
+                        return True
+
                     combined = f"{wn} {wid} {dname} {dcomp} {p_id} {classes}".lower()
                     if any(skip in combined for skip in MEDIA_SKIP_KEYWORDS):
                         return True
-                    # Also skip nav, header, footer tags
-                    if p.name in ['nav', 'header', 'footer']:
-                        return True
+
                     p = p.parent
+                    depth += 1
+                return False
+
+            def _is_same_dealer_group(src_url, local_id):
+                """Checks if the image account and local account belong to the same dealer group."""
+                if not local_id or not src_url:
+                    return False
+                m_acc = _re2.search(r'pictures\.dealer\.com/[a-z]/([^/"\'&\s>]+)/', src_url.lower())
+                if m_acc:
+                    img_acc = m_acc.group(1).lower()
+                    if img_acc == local_id.lower():
+                        return True
+                    # Check common dealer group root (minimum 6 characters, e.g. uebelhor, hendrick, etc.)
+                    for prefix_len in range(len(local_id), 5, -1):
+                        prefix = local_id[:prefix_len].lower()
+                        if img_acc.startswith(prefix):
+                            return True
+                return False
+
+            def _is_banner_aspect_ratio(src_url):
+                """Detects wide banner / alert ribbon aspect ratio (>= 3.0 or wide ribbon dimensions)."""
+                if not src_url:
+                    return False
+                s_l = src_url.lower()
+                # Check dimensions from URL pattern like 2000x60 or 1920x100
+                dim_m = _re2.search(r'(\d{3,4})x(\d{2,4})', s_l)
+                if dim_m:
+                    w = float(dim_m.group(1))
+                    h = float(dim_m.group(2))
+                    if h > 0 and (w / h >= 3.0 or (w >= 400 and h <= 150)):
+                        return True
+
+                # Check actual image dimensions via lightweight inspect
+                try:
+                    r_i = curl_get_robust(urljoin(url, src_url), timeout=5)
+                    if r_i and r_i.content:
+                        from PIL import Image as _PIL_Img
+                        from io import BytesIO as _BytesIO
+                        im = _PIL_Img.open(_BytesIO(r_i.content))
+                        w_im, h_im = im.size
+                        if h_im > 0 and (w_im / h_im >= 3.0 or (w_im >= 500 and h_im <= 150)):
+                            return True
+                except Exception:
+                    pass
                 return False
 
             def _extract_img_srcs(tag):
@@ -3105,9 +3554,12 @@ def run_media_audit(url, html_raw, soup):
                 if any(k in s_low for k in [
                     'dealer.com/graphics/', 'images.dealer.com/graphics/',
                     'dealer.com/ddc/', 'static.dealer.com',
+                    'dealer.com/global/', 'images.dealer.com/global/', 'pictures.dealer.com/global/',
+                    '/global/finance-center/', '/global/service/', '/global/oem/', '/global/',
                     'dbcreative', 'automotive brands', 'automotive%20brands',
                     '/oem/', 'shared/oem', 'global/oem', '/adchoice/',
-                    '/d/demo'
+                    '/d/demo',
+                    'dealer.com/autodata/', 'images.dealer.com/autodata/', 'stockphoto', 'large_stockphoto'
                 ]):
                     return True
 
@@ -3175,15 +3627,15 @@ def run_media_audit(url, html_raw, soup):
                         
                     # Only check pictures.dealer.com images — skip other CDNs and local paths
                     if 'pictures.dealer.com' in src or 'dealer.com' in src:
-                        if _is_system_or_oem_image(src, img_tag):
-                            # Skip OEM brand images, static third-party logos (like ad-choices), and default DDC stock images which are not dealer-specific media library content
+                        if _is_system_or_oem_image(src, img_tag) or _is_excluded_widget(img_tag):
                             pass
                         elif dealer_id not in src:
-                            offending.append({
-                                'src': src.split('?')[0],  # strip query params for display
-                                'type': 'img',
-                                'widget': widget_name
-                            })
+                            if not _is_same_dealer_group(src, dealer_id) and not _is_banner_aspect_ratio(src):
+                                offending.append({
+                                    'src': src.split('?')[0],  # strip query params for display
+                                    'type': 'img',
+                                    'widget': widget_name
+                                })
 
             # Scan all elements with background-image inline styles
             for el in soup.find_all(style=_re2.compile(r'pictures\.dealer\.com', _re2.I)):
@@ -3197,14 +3649,15 @@ def run_media_audit(url, html_raw, soup):
                         analyzed_images.append({'src': src.split('?')[0], 'type': 'background', 'widget': wn})
                         
                     if 'pictures.dealer.com' in src or 'dealer.com' in src:
-                        if _is_system_or_oem_image(src, el):
+                        if _is_system_or_oem_image(src, el) or _is_excluded_widget(el):
                             pass
                         elif dealer_id not in src:
-                            offending.append({
-                                'src': src.split('?')[0],
-                                'type': 'background',
-                                'widget': wn
-                            })
+                            if not _is_same_dealer_group(src, dealer_id) and not _is_banner_aspect_ratio(src):
+                                offending.append({
+                                    'src': src.split('?')[0],
+                                    'type': 'background',
+                                    'widget': wn
+                                })
 
             # Deduplicate
             seen_srcs = set()
@@ -3784,7 +4237,11 @@ def extract_sections_and_widgets(soup, url: str = ""):
         elif 'ws-inv-data-service' in w_name_low:
             display_title = f'v9.newmodel.inventory-listing.ws-inv-data-service ({w_id})'
             subtext = f'v9.newmodel.inventory-listing.ws-inv-data-service - {page_alias}:{w_id}' if page_alias else w_name
-        elif 'placeholder' in w_id.lower() or 'tps-placeholder' in w_name_low:
+        elif any(k in w_name_low for k in ['inventory-featured', 'featured-inventory']):
+            w_type = 'inventory-featured'
+            display_title = f'Featured Inventory ( {clean_wid} )'
+            subtext = 'Displays a configurable grid/list of featured vehicles (new or used).'
+        elif any(k in w_name_low for k in ['placeholder', 'tps']):
             display_title = f'Third Party API Placement ({w_id})'
             subtext = f'Third Party API Placement ({w_id})'
         elif 'disclaimer' in w_name_low:
@@ -3818,7 +4275,7 @@ def extract_sections_and_widgets(soup, url: str = ""):
         return {
             'id': w_id or f'widget-{id(w_el)}',
             'widget_name': w_name,
-            'name': w_name.replace('ws-', '').replace('-', ' ').title(),
+            'name': 'Featured Inventory' if 'inventory-featured' in w_name_low else w_name.replace('ws-', '').replace('-', ' ').title(),
             'display_title': display_title,
             'subtext': subtext,
             'type': w_type,
@@ -3865,8 +4322,16 @@ def extract_sections_and_widgets(soup, url: str = ""):
                 if wn in existing.find_all():
                     is_inner = True
                     break
-            if not is_inner:
-                unique_nodes.append(wn)
+            if is_inner:
+                continue
+            # If wn is inside an inventory-featured container and is not the container itself, skip it
+            if is_inside_inventory_featured(wn) and not any('inventory-featured' in k for k in [
+                (wn.get('data-widget-name') or '').lower(),
+                (wn.get('data-widget-id') or '').lower(),
+                ' '.join(wn.get('class') or []).lower()
+            ]):
+                continue
+            unique_nodes.append(wn)
 
         sec_widgets = [parse_widget_node(wn) for wn in unique_nodes]
         total_widgets_count += len(sec_widgets)
@@ -4090,6 +4555,9 @@ def extract_h1():
     custom_rules = ''
     case_id = ''
 
+    deliverable_url = ''
+    deliverable_id = ''
+
     if request.method == 'POST':
         data = request.json or {}
         url = (data.get('url') or '').strip()
@@ -4098,6 +4566,8 @@ def extract_h1():
         special_instructions = (data.get('special_instructions') or '').strip()
         custom_rules = (data.get('custom_rules') or '').strip()
         case_id = (data.get('case_number') or '').strip()
+        deliverable_url = (data.get('deliverable_url') or '').strip()
+        deliverable_id = (data.get('deliverable_id') or case_id or '').strip()
         page_example_url = (data.get('page_example_url') or '').strip()
         page_example_cms_url = (data.get('page_example_cms_url') or '').strip()
         page_example_live_url = (data.get('page_example_live_url') or '').strip()
@@ -4105,11 +4575,19 @@ def extract_h1():
         page_example_type = (data.get('page_example_type') or '').strip()
     else:
         url = (request.args.get('url') or '').strip()
+        deliverable_url = (request.args.get('deliverable_url') or '').strip()
+        deliverable_id = (request.args.get('deliverable_id') or '').strip()
         page_example_url = (request.args.get('page_example_url') or '').strip()
         page_example_cms_url = (request.args.get('page_example_cms_url') or '').strip()
         page_example_live_url = (request.args.get('page_example_live_url') or '').strip()
         page_example_raw = (request.args.get('page_example_raw') or '').strip()
         page_example_type = (request.args.get('page_example_type') or '').strip()
+
+    if not deliverable_url and LATEST_DYNAMICS_STORE:
+        if not case_id or LATEST_DYNAMICS_STORE.get('deliverable_id') == case_id:
+            deliverable_url = (LATEST_DYNAMICS_STORE.get('deliverable_url') or '').strip()
+    if not deliverable_id and LATEST_DYNAMICS_STORE:
+        deliverable_id = (LATEST_DYNAMICS_STORE.get('deliverable_id') or '').strip()
 
     if not page_example_url and LATEST_DYNAMICS_STORE:
         if not case_id or LATEST_DYNAMICS_STORE.get('deliverable_id') == case_id:
@@ -4133,7 +4611,10 @@ def extract_h1():
             page_example_url = origin + norm_path
 
     try:
-        session = requests.Session(impersonate='chrome', verify=False)
+        try:
+            session = requests.Session(impersonate='chrome', verify=False)
+        except (TypeError, Exception):
+            session = requests.Session()
         driver = None
         response = None
         _response_time_ms = 0
@@ -4295,11 +4776,48 @@ def extract_h1():
                 return True
 
             # 5. Fuzzy match for common sections (e.g. #contact matching #contact-form or #contact_us)
-            if any(a_low in target or target in a_low for target in valid_anchor_targets_lower if len(a_low) >= 4 and len(target) >= 4):
+            if any(a_low in target or target in a_low for target in valid_anchor_targets_lower if len(a_low) >= 3 and len(target) >= 3):
                 return True
-                
-            # 6. Check if soup has an element containing this anchor ID or name
+
+            # 6. Popular in-page anchors aliases / synonyms (#learn, #contact, #research, #inventory, #inv, #top, #trims, #new, #performance, #form, #contactform, #galery, #gallery, #map)
+            ANCHOR_SYNONYMS = {
+                'inv': ['inv', 'inventory', 'listing', 'vehicles'],
+                'inventory': ['inv', 'inventory', 'listing', 'vehicles'],
+                'contact': ['contact', 'form', 'contactform', 'contact-us', 'reach', 'inquiry'],
+                'form': ['form', 'contact', 'contactform', 'lead', 'inquiry'],
+                'contactform': ['contact', 'form', 'contactform'],
+                'research': ['research', 'overview', 'details', 'specs', 'features', 'learn'],
+                'learn': ['learn', 'about', 'overview', 'research', 'more'],
+                'top': ['top', 'header', 'page-top'],
+                'trims': ['trim', 'trims', 'models', 'packages'],
+                'new': ['new', 'inventory', 'listing', 'vehicles'],
+                'performance': ['performance', 'specs', 'engine', 'capability'],
+                'galery': ['gallery', 'galery', 'photos', 'images', 'media'],
+                'gallery': ['gallery', 'galery', 'photos', 'images', 'media'],
+                'map': ['map', 'directions', 'location', 'hours'],
+            }
+
+            if a_low in ANCHOR_SYNONYMS:
+                for syn in ANCHOR_SYNONYMS[a_low]:
+                    if any(syn in target for target in valid_anchor_targets_lower):
+                        return True
+                    if soup.find(attrs={'data-widget-name': lambda w: w and syn in w.lower()}):
+                        return True
+                    if soup.find(attrs={'data-widget-id': lambda w: w and syn in w.lower()}):
+                        return True
+                    if soup.find(id=lambda i: i and syn in i.lower()):
+                        return True
+                    if soup.find(class_=lambda c: c and any(syn in cl.lower() for cl in (c if isinstance(c, list) else [c]))):
+                        return True
+
+            # 7. Check if soup has an element containing this anchor ID, name, widget, or class
             if soup.find(id=lambda i: i and a_low in i.lower()) or soup.find(attrs={'name': lambda n: n and a_low in n.lower()}):
+                return True
+            if soup.find(attrs={'data-widget-name': lambda w: w and a_low in w.lower()}):
+                return True
+            if soup.find(attrs={'data-widget-id': lambda w: w and a_low in w.lower()}):
+                return True
+            if soup.find(class_=lambda c: c and any(a_low in cl.lower() for cl in (c if isinstance(c, list) else [c]))):
                 return True
 
             return False
@@ -4334,6 +4852,34 @@ def extract_h1():
                 if 'widget' in classes: return "Widget " + str(classes[0])
             return "Main Content"
 
+        def is_accordion_element(tag):
+            if not tag:
+                return False
+            w_name = get_widget_name(tag).lower()
+            if 'accordion' in w_name:
+                return True
+            classes = [c.lower() for c in (tag.get('class') or [])]
+            if any(k in c for k in ['accordion', 'collapse', 'collapsed'] for c in classes):
+                return True
+            if tag.has_attr('data-toggle') and tag.get('data-toggle') in ['collapse']:
+                return True
+            if tag.has_attr('data-bs-toggle') and tag.get('data-bs-toggle') in ['collapse']:
+                return True
+            if tag.has_attr('aria-controls') and 'collapse' in (tag.get('aria-controls') or '').lower():
+                return True
+            href_tag = (tag.get('href') or '').strip().lower()
+            if href_tag.startswith('#collapse') or href_tag.startswith('#widget-accordion'):
+                return True
+            for p in list(tag.parents)[:4]:
+                pw = (p.get('data-widget-name') or '').lower()
+                pid = (p.get('data-widget-id') or '').lower()
+                pcls = ' '.join(p.get('class', [])).lower()
+                if 'accordion' in pw or 'accordion' in pid or 'accordion' in pcls:
+                    return True
+                if p.has_attr('data-toggle') and p.get('data-toggle') in ['collapse']:
+                    return True
+            return False
+
         broken_anchors = []
         popup_links = []
         absolute_internal_links = []
@@ -4363,6 +4909,8 @@ def extract_h1():
         _breadcrumb_hash_seen = 0  # Counter of allowed bare '#' links in breadcrumbs (only ONE allowed per page)
 
         for a in a_tags:
+            if is_inside_inventory_featured(a):
+                continue
             href = a.get('href', '').strip()
             
             # ---------------- CTA LINK AUDIT RULES ----------------
@@ -4386,8 +4934,8 @@ def extract_h1():
                         continue
 
                 # 2. Ignore accordion toggles/headers that act as collapse trigger rather than CTA link
-                is_accordion_toggle = False
-                if 'accordion' in _empty_widget.lower():
+                is_accordion_toggle = is_accordion_element(a)
+                if not is_accordion_toggle and 'accordion' in _empty_widget.lower():
                     classes = [c.lower() for c in (a.get('class') or [])]
                     if any(k in c for k in ['toggle', 'title', 'header', 'trigger', 'heading', 'collapsed'] for c in classes):
                         is_accordion_toggle = True
@@ -4567,6 +5115,14 @@ def extract_h1():
         inventory_validation_bugs = []
         inventory_info = {'status': 'skipped'}
         
+        # -------- SITE BRAND INFERENCE (Available early for CTA & Coherence) --------
+        main_brand, allowed_brands, is_used_page = infer_site_brands(
+            page_url=url,
+            page_title=page_title,
+            h1_tags=h1_tags,
+            page_text=response.text if 'response' in locals() and hasattr(response, 'text') else ''
+        )
+
         # -------- CTA VALIDATION (Deterministic & Learning) --------
         parsed_instructions = parse_cta_instructions(special_instructions)
         cta_db = load_cta_patterns()
@@ -4793,12 +5349,58 @@ def extract_h1():
                         )
                     cta_evaluations.append(result)
                 else:
-                    # Bug: path not found on the page at all
-                    hint = ''
-                    if inst['url']:
-                        hint = f" ({inst['url']})"
+                    # Bug: path or text not found on the page at all
+                    orig_clean = (inst.get('original') or '').strip().strip('\'"')
+                    u_clean = (inst.get('url') or '').strip().strip('\'"')
+                    t_clean = (inst.get('text') or '').strip().strip('\'"')
+
+                    # Check for near-match CTA that is corrupted by a competitor brand
+                    corrupted_match = None
+                    if allowed_brands:
+                        other_makes_set = [b for b in set(LOCAL_MAKES.values()) if b not in allowed_brands and len(b) > 2]
+                        for a in a_tags:
+                            a_txt = a.get_text(strip=True)
+                            a_hrf = a.get('href', '').strip()
+                            if not a_txt and not a_hrf:
+                                continue
+
+                            found_alien = None
+                            for ob in other_makes_set:
+                                if re.search(rf'\b{re.escape(ob.lower())}\b', a_txt.lower()):
+                                    found_alien = ob
+                                    break
+
+                            if found_alien:
+                                a_path = urlparse(a_hrf).path.lower().rstrip('/')
+                                t_path = urlparse(u_clean).path.lower().rstrip('/') if u_clean else ''
+                                overlap = set(re.findall(r'\b[a-z]{3,}\b', (t_clean or orig_clean).lower())) & set(re.findall(r'\b[a-z]{3,}\b', a_txt.lower()))
+                                is_inv_related = ('inventory' in overlap or 'inventory' in a_txt.lower()) and any(k in a_txt.lower() for k in ['new', 'used', 'view', 'shop'])
+                                if (t_path and t_path == a_path) or is_inv_related or len(overlap) >= 2:
+                                    corrupted_match = {
+                                        'text': a_txt,
+                                        'href': a_hrf,
+                                        'brand': found_alien
+                                    }
+                                    break
+
+                    if corrupted_match:
+                        special_instructions_bugs.append(make_bug(
+                            'cta_brand_mismatch',
+                            f"Critical CTA Error: Requested '{orig_clean}', but on-page button is '{corrupted_match['text']}' which contains competitor brand '{corrupted_match['brand']}' on a {main_brand or 'dealership'} website.",
+                            platform='D/M',
+                            type='Critical',
+                            category='Content'
+                        ))
+                        entry = f"'{orig_clean}' (Found on page as '{corrupted_match['text']}' with INVALID brand '{corrupted_match['brand']}')"
+                    elif t_clean and u_clean and t_clean.lower() != u_clean.lower() and u_clean not in orig_clean and not orig_clean.startswith('/'):
+                        entry = f"'{t_clean}' ({u_clean})"
+                    elif u_clean:
+                        entry = u_clean
+                    else:
+                        entry = f"'{orig_clean}'"
+                    
                     repeat_txt = f" (x{repeat_count})" if repeat_count > 1 else ""
-                    missing_ctas_list.append(f"'{inst['original']}'{hint}{repeat_txt}")
+                    missing_ctas_list.append(f"{entry}{repeat_txt}")
                     cta_evaluations.append({
                         'original': inst['original'],
                         'status': 'error',
@@ -4807,12 +5409,19 @@ def extract_h1():
                     
         if missing_ctas_list:
             ctas_str = ', '.join(missing_ctas_list)
-            if len(ctas_str) > 150: ctas_str = ctas_str[:147] + '...'
+            if len(ctas_str) > 350: ctas_str = ctas_str[:347] + '...'
             special_instructions_bugs.append(make_bug('cta_missing', f"Requested CTAs are missing from the page: {ctas_str}"))
 
         # ── LOCAL NLP COHERENCE (replaces Gemini unified AI call) ─────────────
         try:
-            coherence_result = analyze_coherence(url, expected_title or (h1_tags[0].get_text(strip=True) if h1_tags else ''), full_page_text)
+            # Semantic/Coherence clean text — excludes dynamic inventory-featured widgets
+            # so vehicle cards don't confuse brand or model coherence
+            soup_semantic = BeautifulSoup(str(soup), 'html.parser')
+            for feat in soup_semantic.find_all(lambda el: is_inside_inventory_featured(el)):
+                feat.decompose()
+            semantic_page_text = soup_semantic.get_text(separator=' ', strip=True)
+
+            coherence_result = analyze_coherence(url, expected_title or (h1_tags[0].get_text(strip=True) if h1_tags else ''), semantic_page_text)
             coherence_score = coherence_result.get('score', 100)  # already 0-100
             coherence_explanation = coherence_result.get('explanation', '')
             
@@ -4826,7 +5435,7 @@ def extract_h1():
             deep_semantic = semantic_qa.run_semantic_check(
                 url=url, 
                 h1=h1_tags[0].get_text(strip=True) if h1_tags else '', 
-                page_text=full_page_text, 
+                page_text=semantic_page_text, 
                 page_title=page_title,
                 rag_context=rag_context,
                 run_llm=True
@@ -4849,57 +5458,25 @@ def extract_h1():
                     coherence_score = min(coherence_score, 75)
             
             # --- NEW: DETAILED CTA COHERENCE ---
-            # 1. Infer Site Brand(s) for context — multi-brand dealers supported
-            main_brand = None
-            allowed_brands = set()  # All brands the dealer is allowed to mention
-            domain_low = urlparse(url).netloc.lower()
-            domain_core = re.sub(r'\.(com|net|org|co|us|ca|au|uk|io)$', '', domain_low)
-            domain_core = re.sub(r'^(www|m|mobile)\.', '', domain_core)
-
-            # Known multi-brand group shortcuts in domain names
-            MULTI_BRAND_GROUPS = {
-                'cdjr':   ['Chrysler', 'Dodge', 'Jeep', 'Ram'],
-                'cdj':    ['Chrysler', 'Dodge', 'Jeep'],
-                'cjdr':   ['Chrysler', 'Jeep', 'Dodge', 'Ram'],
-                'chryslerdodgejeep': ['Chrysler', 'Dodge', 'Jeep'],
-                'fca':    ['Chrysler', 'Dodge', 'Jeep', 'Ram', 'Fiat', 'Alfa Romeo'],
-                'gmg':    ['Chevrolet', 'GMC'],
-                'gmc':    ['GMC', 'Buick'],
-                'buickgmc': ['Buick', 'GMC'],
-                'chevygmc': ['Chevrolet', 'GMC'],
-                'fordlincoln': ['Ford', 'Lincoln'],
-                'lincolnford': ['Ford', 'Lincoln'],
-                'hondaacura': ['Honda', 'Acura'],
-                'toyotalexus': ['Toyota', 'Lexus'],
-            }
-
-            for grp_key, grp_brands in MULTI_BRAND_GROUPS.items():
-                if grp_key in domain_core.replace('-', '').replace('_', ''):
-                    allowed_brands.update(grp_brands)
-
-            for key, val in LOCAL_MAKES.items():
-                if len(key) <= 3:
-                    continue
-                if key in domain_core:
-                    if key == 'ford' and any(domain_core.endswith(w) for w in ['wexford', 'oxford', 'bradford', 'bedford', 'stanford', 'hartford']):
-                        continue
-                    allowed_brands.add(val)
-                    if not main_brand:
-                        main_brand = val
-
-            if not main_brand and 'vw' in domain_low:
-                main_brand = 'Volkswagen'
-                allowed_brands.add('Volkswagen')
-            if not allowed_brands and main_brand:
-                allowed_brands.add(main_brand)
-
-            print(f"DEBUG: Brand detection - domain='{domain_core}', main_brand='{main_brand}', allowed_brands={allowed_brands}")
+            # 1. Infer Site Brand(s) for context with full semantic_page_text
+            main_brand, allowed_brands, is_used_page = infer_site_brands(
+                page_url=url,
+                page_title=page_title,
+                h1_tags=h1_tags,
+                page_text=semantic_page_text
+            )
+            print(f"DEBUG: Brand detection - url='{url}', main_brand='{main_brand}', allowed_brands={allowed_brands}, is_used_page={is_used_page}")
             
             # Count bare '#' links for the breadcrumb rule
             hash_only_links_count = 0
             
             # 2. Scan all analyzed links for inconsistencies
-            for lnk, txt, wname, ltype in limit_links:
+            for item in limit_links:
+                lnk, txt, wname, ltype = item[0], item[1], item[2], item[3]
+                if semantic_qa.is_utility_or_compliance_link(txt, lnk):
+                    continue
+                if lnk.startswith('#') or 'accordion' in wname.lower():
+                    continue
                 txt_low = txt.lower()
                 lnk_low = lnk.lower()
                 
@@ -4917,7 +5494,7 @@ def extract_h1():
                     for ob in other_brands:
                         ob_low = ob.lower()
                         if re.search(rf'\b{re.escape(ob_low)}\b', txt_low):
-                            if 'vs' in txt_low or 'compare' in txt_low or 'competitor' in txt_low:
+                            if any(cmp_w in txt_low for cmp_w in ['vs', 'compare', 'competitor', 'used', 'pre-owned', 'trade']):
                                 continue
                             coherence_warnings.append({
                                 'text': txt, 'href': lnk, 'reason': f"Brand Mismatch: Found '{ob}' on a {main_brand} page.", 'level': 'red'
@@ -4942,6 +5519,47 @@ def extract_h1():
                                 coherence_warnings.append({
                                     'text': txt, 'href': lnk, 'reason': f"Incoherent Breadcrumb: Mentioning '{ob}' in a {main_brand} site structure.", 'level': 'red'
                                 })
+
+            # 3. Comprehensive CTA & Brand Audit across ALL on-page buttons
+            page_cta_elements = []
+            for a in a_tags:
+                if is_inside_inventory_featured(a):
+                    continue
+                if is_accordion_element(a):
+                    continue
+                a_href = a.get('href', '').strip()
+                if not a_href or a_href.startswith('#') or a_href.startswith(('javascript:', 'mailto:', 'tel:')):
+                    continue
+                a_txt = a.get_text(strip=True)
+                a_cls = ' '.join(a.get('class', []))
+                a_wname = get_widget_name(a)
+                is_btn = 'btn' in a_cls or 'button' in a_cls or a.name == 'button' or 'btn' in a_wname.lower()
+                if a_txt and (is_btn or len(a_txt) <= 50):
+                    if not semantic_qa.is_utility_or_compliance_link(a_txt, a_href):
+                        page_cta_elements.append({'text': a_txt, 'href': a_href, 'widget': a_wname, 'is_button': is_btn})
+
+            try:
+                cta_audit_issues = semantic_qa.audit_cta_and_brand_coherence(
+                    url=url,
+                    main_brand=main_brand,
+                    allowed_brands=allowed_brands,
+                    ctas=page_cta_elements,
+                    run_llm=True
+                )
+                for issue in cta_audit_issues:
+                    if 'reason' not in issue and 'message' in issue:
+                        issue['reason'] = issue['message']
+                    if issue.get('type') == 'cta_brand_mismatch':
+                        bugs.append(make_bug(
+                            'cta_brand_mismatch',
+                            issue['message'],
+                            platform='D/M',
+                            type='Critical',
+                            category='Content'
+                        ))
+                    coherence_warnings.append(issue)
+            except Exception as e_audit:
+                print(f"[Coherence] CTA audit error: {e_audit}")
             
         except Exception as e:
             coherence_explanation = f"NLP coherence error: {str(e)}"
@@ -5161,25 +5779,70 @@ def extract_h1():
         # -------- IMAGE WIDGET VALIDATION --------
         image_issues = []
         # Find standalone image widgets
-        # Skip certain widgets that auto-handle titles or are specific headers (Hero), campaigns, or specials
-        SKIP_WIDGET_KWS = ['content-w-image', 'content-50-50', 'content-with-image', 'offset-vehicle-hero', 'js-hero-content', 'campaign', 'special', 'coupon', 'promo', 'incentive']
+        # Skip composite section widgets (Content w/ Image, Page Title + CTAs, Hero, Specials, etc.)
+        # where image styling (e.g. w-100) or title/alt cannot be edited in DDC Composer.
+        SKIP_WIDGET_KWS = [
+            'content-w-image', 'content-with-image', 'content-w/-image', 'content-image',
+            'content-background-image', 'content-background', 'background-image',
+            'content-wrapper', 'content-50-50', 'content-split', 'content-column',
+            'page-title-ctas', 'page-title-and-ctas', 'page-title', 'title-ctas',
+            'offset-vehicle-hero', 'vehicle-hero', 'js-hero-content', 'hero',
+            'inventory-featured', 'inventory-featured-default', 'ws-inventory-featured',
+            'campaign', 'special', 'coupon', 'promo', 'incentive',
+            'banner', 'header', 'footer', 'logo', 'badge', 'card'
+        ]
         
+        def is_exempt_image_widget(element):
+            """
+            Checks if a widget or img is part of a composite section widget
+            (e.g., Content w/ Image, Page Title + CTAs, Hero, etc.) where styling
+            and attributes cannot be modified in DDC Composer.
+            """
+            if is_inside_inventory_featured(element):
+                return True
+            curr = element
+            depth = 0
+            while curr and curr.name != '[document]' and depth < 12:
+                # Check data-widget-name and data-name
+                w = (curr.get('data-widget-name') or curr.get('data-name') or '').lower()
+                if w and any(skip in w for skip in SKIP_WIDGET_KWS):
+                    return True
+                
+                # Check id attribute
+                el_id = (curr.get('id') or '').lower()
+                if el_id and any(skip in el_id for skip in SKIP_WIDGET_KWS):
+                    return True
+
+                # Check classes
+                classes = [str(c).lower() for c in (curr.get('class') or [])]
+                for c in classes:
+                    if any(skip in c for skip in SKIP_WIDGET_KWS):
+                        return True
+
+                curr = curr.parent
+                depth += 1
+            return False
+
         # Search for elements that look like widgets
         for widget in search_dom.find_all(lambda t: t.has_attr('data-widget-name') or t.has_attr('data-name')):
             w_name = widget.get('data-widget-name', widget.get('data-name', '')).lower()
             
-            # Skip if it's a known exempted widget type
-            if any(skip in w_name for skip in SKIP_WIDGET_KWS):
+            # Skip if it or any ancestor is a known exempted composite widget type
+            if is_exempt_image_widget(widget):
                 continue
             
-            # Only analyze widgets that are primarily images
+            # Only analyze widgets that are primarily standalone images
             if 'image' not in w_name:
                 continue
                 
             for img in widget.find_all('img'):
-                # Also skip specific img classes mentioned by user
-                img_classes = img.get('class') or []
-                if any(c in ['dynamic-resize', 'img-responsive'] for c in img_classes):
+                # Also check img itself and its immediate parents
+                if is_exempt_image_widget(img):
+                    continue
+
+                # Also skip specific img classes or dynamic/lazy images
+                img_classes = [str(c).lower() for c in (img.get('class') or [])]
+                if any(c in ['dynamic-resize', 'img-responsive', 'responsive-image', 'lazy-image', 'hide', 'd-none'] for c in img_classes):
                     continue
 
                 problems = []
@@ -5227,9 +5890,13 @@ def extract_h1():
             print(f"Mobile Media Audit Error: {e}")
             media_audit_mobile['status'] = 'error'
 
-        # Collect bugs from audits
-        for b in media_audit_desktop['bugs']: bugs.append(b)
-        for b in media_audit_mobile['bugs']: bugs.append(b)
+        # Collect bugs from audits with deduplication
+        seen_media_bugs = set()
+        for b in (media_audit_desktop.get('bugs', []) + media_audit_mobile.get('bugs', [])):
+            b_key = (b.get('bug_type'), b.get('img') or b.get('screenshot_link') or b.get('message'))
+            if b_key not in seen_media_bugs:
+                seen_media_bugs.add(b_key)
+                bugs.append(b)
         
         media_audit = media_audit_desktop # Legacy for any old UI parts
 
@@ -5310,8 +5977,15 @@ def extract_h1():
         for cw in coherence_warnings:
             if not cw.get('text') or cw.get('text') == 'Page Content':
                 continue
+            href_cw = (cw.get('href') or '').strip()
+            if not href_cw or href_cw.startswith('#') or href_cw.startswith(('javascript:', 'mailto:', 'tel:')):
+                continue
+            if semantic_qa.is_utility_or_compliance_link(cw.get('text', ''), href_cw):
+                continue
+            if semantic_qa.is_standard_valid_cta(cw.get('text', ''), href_cw):
+                continue
             text = cw.get('text', '')[:40].strip()
-            reason = cw.get('reason', 'Label does not match destination URL.').strip()
+            reason = (cw.get('reason') or cw.get('message') or 'Label does not match destination URL.').strip()
             item_desc = f"Link '{text}': {reason}"
             if cw.get('level') == 'red':
                 red_issues.append(item_desc)
@@ -5351,7 +6025,7 @@ def extract_h1():
                         a_w = (a_img.get('widget') or '').lower()
                         a_src = a_img.get('src') or ''
                         if a_src and not is_placeholder_url(a_src):
-                            if w_name in a_w or a_w in w_name or 'image' in a_w:
+                            if (w_name == a_w or w_name in a_w) and not any(skip in a_w for skip in SKIP_WIDGET_KWS):
                                 img_issue['src'] = a_src.replace(' ', '%20')
                                 break
 
@@ -5480,6 +6154,10 @@ def extract_h1():
             print(f"Image Harvester error: {_ie}")
             image_harvest = {'status': 'error', 'harvested_count': 0}
 
+        # Determine Dealer.com Site ID & Composer deep link URL
+        site_id = get_ddc_site_id(url, response.text if 'response' in locals() and response else '', media_audit=media_audit_desktop, inventory_info=inventory_info)
+        composer_url = build_composer_url(site_id, url) if site_id else None
+
         return jsonify({
             'success': True,
             'count': h1_count,
@@ -5523,6 +6201,10 @@ def extract_h1():
             'sections_and_widgets': sections_and_widgets,
             'url': url,
             'case_id': case_id,
+            'site_id': site_id,
+            'composer_url': composer_url,
+            'deliverable_url': deliverable_url,
+            'deliverable_id': deliverable_id,
             'page_example_url': page_example_url,
             'page_example_cms_url': page_example_cms_url,
             'page_example_live_url': page_example_live_url,
@@ -5873,6 +6555,7 @@ def extract_dynamics_deliverable(url):
 
     var payload = {
         deliverable_id: delId,
+        deliverable_url: window.location.href,
         title: title,
         completed_copy: copy,
         completed_page_url: url,
