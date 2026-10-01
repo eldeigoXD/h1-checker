@@ -3353,16 +3353,43 @@ def get_ddc_site_id(url, html_raw=None, media_audit=None, inventory_info=None):
     return None
 
 
-def build_composer_url(site_id, target_url):
+def is_draft_url(target_url):
+    """Detects whether target_url is a Dealer.com draft preview link."""
+    if not target_url:
+        return False
+    from urllib.parse import urlparse
+    q = (urlparse(target_url).query or '').lower()
+    return '_ddcpreview' in q or '_preview' in q or '_togglebasepagecache' in q
+
+
+def get_clean_live_url(target_url):
+    """Strips preview parameters like _ddcpreview and _toggleBasePageCache from URL."""
+    if not target_url:
+        return target_url
+    from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+    parsed = urlparse(target_url)
+    clean_params = [(k, v) for k, v in parse_qsl(parsed.query) if not k.lower().startswith('_ddc') and not k.lower().startswith('_togglebase') and k.lower() not in ['_preview', '_draft']]
+    new_query = urlencode(clean_params)
+    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
+
+
+def build_composer_url(site_id, target_url, force_mode=None):
     """
     Builds the DealerCenter Composer deep link URL for a given site_id and page URL.
-    Example output:
-    https://mercedesbenzofmobilemb.website.dealercenter.coxautoinc.com/cc-website/as/mercedesbenzofmobilemb/mercedesbenzofmobilemb-admin/composer/index?lang=en_US&deeplink=%2Fmercedes-benz-ex-loaner-vehicles.htm&format=&__ssuMode=true#website
+    - If target_url has _ddcpreview and force_mode != 'live', it encodes the draft preview in deeplink:
+      deeplink=%2Fnew-inventory%2Fdodge-charger-for-sale.htm%3F_ddcpreview%3D...%26_toggleBasePageCache%3Dfalse
+    - If force_mode == 'live' or target_url is live, deeplink is clean:
+      deeplink=%2Fnew-inventory%2Fdodge-charger-for-sale.htm
     """
     if not site_id or not target_url:
         return None
     from urllib.parse import urlparse, quote
-    parsed = urlparse(target_url if target_url.startswith(('http://', 'https://')) else f"https://{target_url}")
+
+    url_to_use = target_url
+    if force_mode == 'live':
+        url_to_use = get_clean_live_url(target_url)
+
+    parsed = urlparse(url_to_use if url_to_use.startswith(('http://', 'https://')) else f"https://{url_to_use}")
     path_and_query = parsed.path or '/'
     if parsed.query:
         path_and_query += f"?{parsed.query}"
@@ -6154,9 +6181,13 @@ def extract_h1():
             print(f"Image Harvester error: {_ie}")
             image_harvest = {'status': 'error', 'harvested_count': 0}
 
-        # Determine Dealer.com Site ID & Composer deep link URL
+        # Determine Dealer.com Site ID & Composer deep link URL (Draft vs Live distinction)
+        is_draft = is_draft_url(url)
+        clean_live_url = get_clean_live_url(url)
         site_id = get_ddc_site_id(url, response.text if 'response' in locals() and response else '', media_audit=media_audit_desktop, inventory_info=inventory_info)
         composer_url = build_composer_url(site_id, url) if site_id else None
+        composer_draft_url = build_composer_url(site_id, url) if (site_id and is_draft) else None
+        composer_live_url = build_composer_url(site_id, url, force_mode='live') if site_id else None
 
         return jsonify({
             'success': True,
@@ -6201,8 +6232,12 @@ def extract_h1():
             'sections_and_widgets': sections_and_widgets,
             'url': url,
             'case_id': case_id,
+            'is_draft': is_draft,
+            'clean_live_url': clean_live_url,
             'site_id': site_id,
             'composer_url': composer_url,
+            'composer_draft_url': composer_draft_url,
+            'composer_live_url': composer_live_url,
             'deliverable_url': deliverable_url,
             'deliverable_id': deliverable_id,
             'page_example_url': page_example_url,

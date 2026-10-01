@@ -327,6 +327,48 @@ button:disabled {
     box-shadow: 0 4px 14px rgba(77, 208, 225, 0.3);
 }
 
+.draft-mode-pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    background: rgba(255, 171, 64, 0.16);
+    border: 1px solid rgba(255, 171, 64, 0.5);
+    color: #ffb74d;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+    box-shadow: 0 0 10px rgba(255, 171, 64, 0.25);
+    animation: pulse 2.5s infinite;
+}
+
+.draft-badge-btn {
+    background: rgba(255, 171, 64, 0.1);
+    border-color: rgba(255, 171, 64, 0.35);
+    color: #ffb74d;
+}
+
+.draft-badge-btn:hover {
+    background: rgba(255, 171, 64, 0.22);
+    border-color: #ffb74d;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(255, 171, 64, 0.3);
+}
+
+.composer-live-badge-btn {
+    background: rgba(144, 202, 249, 0.1);
+    border-color: rgba(144, 202, 249, 0.35);
+    color: #90caf9;
+}
+
+.composer-live-badge-btn:hover {
+    background: rgba(144, 202, 249, 0.22);
+    border-color: #90caf9;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(144, 202, 249, 0.3);
+}
+
 .sub-badge {
     font-size: 0.72rem;
     padding: 0.1rem 0.45rem;

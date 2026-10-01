@@ -451,6 +451,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const openComposerLiveBtn = document.getElementById('action-open-composer-live');
+    if (openComposerLiveBtn) {
+        openComposerLiveBtn.addEventListener('click', (e) => {
+            const currentHref = openComposerLiveBtn.getAttribute('href');
+            if (!currentHref || currentHref === '#' || currentHref.trim() === '') {
+                e.preventDefault();
+                const curUrl = lastScanData?.url || input.value.trim() || '';
+                const enteredSite = prompt('Enter the Dealer.com Site ID for Composer (e.g. mercedesbenzofmobilemb):');
+                if (enteredSite && enteredSite.trim()) {
+                    const compUrl = buildComposerUrl(enteredSite.trim(), curUrl, true);
+                    if (compUrl) {
+                        window.open(compUrl, '_blank');
+                    }
+                }
+            }
+        });
+    }
+
     const clearBtn = document.getElementById('clear-btn');
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
@@ -467,13 +485,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultUrl.textContent = '';
                 resultUrl.removeAttribute('href');
             }
+            const draftIndicator = document.getElementById('draft-mode-indicator');
+            if (draftIndicator) draftIndicator.style.display = 'none';
             const openPageBtn = document.getElementById('action-open-page');
             if (openPageBtn) openPageBtn.removeAttribute('href');
+            const openDraftPageBtn = document.getElementById('action-open-draft-page');
+            if (openDraftPageBtn) {
+                openDraftPageBtn.style.display = 'none';
+                openDraftPageBtn.removeAttribute('href');
+            }
             if (openComposerBtn) {
                 openComposerBtn.removeAttribute('href');
                 openComposerBtn.removeAttribute('data-site-id');
                 const badge = document.getElementById('composer-site-badge');
                 if (badge) badge.style.display = 'none';
+            }
+            if (openComposerLiveBtn) {
+                openComposerLiveBtn.style.display = 'none';
+                openComposerLiveBtn.removeAttribute('href');
             }
             const openDeliverableBtn = document.getElementById('action-open-deliverable');
             if (openDeliverableBtn) {
@@ -597,6 +626,39 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMsg.style.display = 'none';
     }
 
+    function isDraftUrl(targetUrl) {
+        if (!targetUrl) return false;
+        try {
+            const u = targetUrl.startsWith('http') ? targetUrl : ('https://' + targetUrl);
+            const search = new URL(u).search.toLowerCase();
+            return search.includes('_ddcpreview') || search.includes('_preview') || search.includes('_togglebasepagecache');
+        } catch(e) {
+            return false;
+        }
+    }
+
+    function getCleanLiveUrl(targetUrl) {
+        if (!targetUrl) return targetUrl;
+        try {
+            const u = targetUrl.startsWith('http') ? targetUrl : ('https://' + targetUrl);
+            const parsed = new URL(u);
+            const params = new URLSearchParams(parsed.search);
+            const keysToRemove = [];
+            for (const key of params.keys()) {
+                const kLow = key.toLowerCase();
+                if (kLow.startsWith('_ddc') || kLow.startsWith('_togglebase') || kLow === '_preview' || kLow === '_draft') {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(k => params.delete(k));
+            const newQuery = params.toString();
+            parsed.search = newQuery ? ('?' + newQuery) : '';
+            return parsed.toString();
+        } catch(e) {
+            return targetUrl;
+        }
+    }
+
     function extractSiteIdFromUrl(targetUrl) {
         if (!targetUrl) return '';
         try {
@@ -610,10 +672,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return '';
     }
 
-    function buildComposerUrl(siteId, pageUrl) {
+    function buildComposerUrl(siteId, pageUrl, forceLive = false) {
         if (!siteId || !pageUrl) return '';
         try {
-            const u = pageUrl.startsWith('http') ? pageUrl : ('https://' + pageUrl);
+            let u = pageUrl.startsWith('http') ? pageUrl : ('https://' + pageUrl);
+            if (forceLive) {
+                u = getCleanLiveUrl(u);
+            }
             const parsed = new URL(u);
             let pathAndQuery = parsed.pathname + parsed.search;
             if (!pathAndQuery || pathAndQuery === '') pathAndQuery = '/';
@@ -628,6 +693,15 @@ document.addEventListener('DOMContentLoaded', () => {
         lastScanData = data;
         window.lastScanData = data;
 
+        const isDraft = data.is_draft !== undefined ? data.is_draft : isDraftUrl(data.url);
+        const cleanLiveUrl = data.clean_live_url || getCleanLiveUrl(data.url);
+
+        // Draft mode pill in header
+        const draftIndicator = document.getElementById('draft-mode-indicator');
+        if (draftIndicator) {
+            draftIndicator.style.display = isDraft ? 'inline-block' : 'none';
+        }
+
         // 1. Clickable Main URL
         if (resultUrl) {
             resultUrl.textContent = data.url;
@@ -637,11 +711,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Setup Quick Actions Bar underneath main link
         const openPageBtn = document.getElementById('action-open-page');
+        const openPageBtnText = document.getElementById('open-page-btn-text');
         if (openPageBtn) {
-            openPageBtn.href = data.url;
+            openPageBtn.href = isDraft ? cleanLiveUrl : data.url;
+            if (openPageBtnText) {
+                openPageBtnText.textContent = isDraft ? '🌐 Open Live Page' : 'Open Page';
+            }
+        }
+
+        const openDraftPageBtn = document.getElementById('action-open-draft-page');
+        if (openDraftPageBtn) {
+            if (isDraft) {
+                openDraftPageBtn.style.display = 'inline-flex';
+                openDraftPageBtn.href = data.url;
+            } else {
+                openDraftPageBtn.style.display = 'none';
+            }
         }
 
         const openComposerBtn = document.getElementById('action-open-composer');
+        const composerBtnText = document.getElementById('composer-btn-text');
         const composerSiteBadge = document.getElementById('composer-site-badge');
         const siteId = data.site_id || 
                        data.inventory_info?.site_id || 
@@ -649,12 +738,18 @@ document.addEventListener('DOMContentLoaded', () => {
                        data.media_audit_desktop?.dealer_id || 
                        extractSiteIdFromUrl(data.url);
 
-        const composerUrl = data.composer_url || (siteId ? buildComposerUrl(siteId, data.url) : null);
+        // When in draft mode, primary composerUrl points directly to Draft mode editor
+        const composerDraftUrl = data.composer_draft_url || (isDraft && siteId ? buildComposerUrl(siteId, data.url, false) : null);
+        const composerLiveUrl = data.composer_live_url || (siteId ? buildComposerUrl(siteId, data.url, true) : null);
+        const primaryComposerUrl = isDraft ? (composerDraftUrl || composerLiveUrl) : (data.composer_url || composerLiveUrl);
 
         if (openComposerBtn) {
-            if (composerUrl) {
-                openComposerBtn.href = composerUrl;
+            if (primaryComposerUrl) {
+                openComposerBtn.href = primaryComposerUrl;
                 openComposerBtn.setAttribute('data-site-id', siteId || '');
+                if (composerBtnText) {
+                    composerBtnText.textContent = isDraft ? '🛠️ Open Composer (Draft)' : '🛠️ Open Composer';
+                }
                 if (composerSiteBadge) {
                     composerSiteBadge.textContent = siteId;
                     composerSiteBadge.style.display = 'inline-block';
@@ -662,7 +757,20 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 openComposerBtn.href = '#';
                 openComposerBtn.removeAttribute('data-site-id');
+                if (composerBtnText) composerBtnText.textContent = '🛠️ Open Composer';
                 if (composerSiteBadge) composerSiteBadge.style.display = 'none';
+            }
+        }
+
+        // Secondary Composer Button (for Live version, visible when in draft mode)
+        const openComposerLiveBtn = document.getElementById('action-open-composer-live');
+        if (openComposerLiveBtn) {
+            if (isDraft && composerLiveUrl) {
+                openComposerLiveBtn.style.display = 'inline-flex';
+                openComposerLiveBtn.href = composerLiveUrl;
+                openComposerLiveBtn.setAttribute('data-site-id', siteId || '');
+            } else {
+                openComposerLiveBtn.style.display = 'none';
             }
         }
 
