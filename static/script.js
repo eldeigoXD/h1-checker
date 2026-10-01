@@ -1103,6 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 invActions.innerHTML = '';
 
                 if (info.filter_url) {
+                    const baseOrigin = (info.canonical_domain ? `https://${info.canonical_domain}` : null) || (data.canonical_domain ? `https://${data.canonical_domain}` : null) || data.clean_live_url || data.url;
                     if (info.filter_url.startsWith('SUM:')) {
                         invFilterLink.textContent = 'Multi-link Sum';
                         const urls = info.filter_url.replace('SUM:', '').split('|');
@@ -1111,13 +1112,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             const btn = document.createElement('a');
                             btn.className = 'inventory-btn';
                             btn.target = '_blank';
-                            btn.href = data.url ? (new URL(path, data.url)).href : '#';
+                            btn.href = baseOrigin ? (new URL(path, baseOrigin)).href : '#';
                             btn.innerHTML = `<span>Page ${idx + 1}</span> ↗`;
                             invActions.appendChild(btn);
                         });
                     } else {
                         invFilterLink.textContent = info.filter_url;
-                        invFilterLink.href = data.url ? (new URL(info.filter_url, data.url)).href : '#';
+                        invFilterLink.href = baseOrigin ? (new URL(info.filter_url, baseOrigin)).href : '#';
 
                         const btn = document.createElement('a');
                         btn.className = 'inventory-btn';

@@ -518,7 +518,9 @@ def is_utility_or_compliance_link(text: str, href: str) -> bool:
         'hours', 'store hours', 'sales hours', 'service hours', 'parts hours',
         'visit us', 'visit our', 'address', 'location', 'accessibility', 'sitemap',
         'site map', 'do not sell', 'your privacy choices', 'contact us', 'contact',
-        'call us', 'call now', 'phone'
+        'call us', 'call now', 'phone', 'freight charge', 'freight charges',
+        'destination charge', 'destination charges', 'destination freight', 'handling charge',
+        'handling charges', 'freight/destination'
     ]):
         return True
 
@@ -916,7 +918,11 @@ def audit_cta_and_brand_coherence(
                                 'electric', 'ev', 'phev', 'diesel', 'gas', 'awd', '4wd', 'fwd', 'rwd',
                                 'bmw', 'xm', 'ford', 'chevy', 'chevrolet', 'gmc', 'cadillac', 'buick',
                                 'toyota', 'honda', 'nissan', 'jeep', 'ram', 'dodge', 'chrysler', 'kia',
-                                'hyundai', 'subaru', 'volkswagen', 'vw', 'audi', 'lexus', 'mazda', 'mercedes'
+                                'hyundai', 'subaru', 'volkswagen', 'vw', 'audi', 'lexus', 'mazda', 'mercedes',
+                                'destination', 'freight', 'charge', 'charges', 'handling', 'pricing', 'price', 'prices',
+                                'disclaimer', 'disclaimers', 'fee', 'fees', 'taxes', 'tax', 'title', 'license', 'licensing',
+                                'registration', 'dealer', 'processing', 'msrp', 'invoice', 'package', 'packages',
+                                'accessories', 'equipment', 'transportation', 'delivery', 'cost', 'costs'
                             }
                             words = [w.strip(" .,!?:;'\"-()[]{}") for w in txt_l.split()]
                             words = [w for w in words if w]
@@ -925,6 +931,9 @@ def audit_cta_and_brand_coherence(
                                 for w in words
                             ):
                                 print(f"[SemanticQA] Suppressed hallucinated typo/spelling on valid text '{iss_txt}': {iss_msg}")
+                                continue
+                            if quoted_typos and any(qt.lower() in valid_common_words for qt in quoted_typos):
+                                print(f"[SemanticQA] Suppressed hallucinated typo on valid word '{quoted_typos}' on '{iss_txt}': {iss_msg}")
                                 continue
 
                         # Suppress pedantic meta-complaints and style suggestions from small LLMs

@@ -291,7 +291,8 @@
     "/used-ford-trucks-hillsboro-ks.htm": "https://www.hillsborofordks.net/used-inventory/index.htm?normalBodyStyle=Truck&make=Ford"
   },
   "www.ottawacdjr.net": {
-    "/new-ram/2500-ottawa-il.htm": "/new-inventory/index.htm?model=Ram+2500&make=Ram"
+    "/new-ram/2500-ottawa-il.htm": "/new-inventory/index.htm?model=Ram+2500&make=Ram",
+    "/new-inventory/dodge-charger.htm": "/new-inventory/index.htm?model=Charger&make=Dodge"
   },
   "www.murphymotorco.com": {
     "/used/suvs-raleigh-youngsville-oxford-nc.htm": "https://www.murphymotorco.com/used-inventory/index.htm?normalBodyStyle=SUV",
@@ -1955,5 +1956,31 @@
   },
   "www.lakelanddodge.com": {
     "/new-inventory/dodge-charger-for-sale.htm": "/new-inventory/index.htm?model=Charger&make=Dodge"
+  },
+  "www.teamgreenwoodford.com": {
+    "/research/ford-f-250-hollister-ca.htm": "/new-inventory/index.htm?model=F-250SD&make=Ford"
+  },
+  "www.billdelucachevroletgmc.com": {
+    "/new-chevrolet-equinox-haverhill-ma.htm": "/new-inventory/index.htm?model=Equinox&make=Chevrolet",
+    "/new-chevrolet-silverado-haverhill-ma.htm": "/new-inventory/index.htm?model=Silverado%201500&make=Chevrolet"
+  },
+  "envisionmotorsgroup.cms.dealer.com": {
+    "/certified-inventory/index.htm": "/certified-inventory/index.htm"
+  },
+  "www.traditionschevrolet.com": {
+    "/new-chevy/equinox-east-bernard-tx.htm": "/new-inventory/index.htm?model=Equinox&make=Chevrolet"
+  },
+  "hyundaikyletx.cms.dealer.com": {
+    "/new-hyundai/kona-kyle-tx.htm": "/new-inventory/index.htm?model=Kona&make=Hyundai"
+  },
+  "www.woodmotorchevy.com": {
+    "/new-chevrolet/chevrolet-equinox-harrison-ar.htm": "/new-inventory/index.htm?model=Equinox&make=Chevrolet"
+  },
+  "www.demontronddcj.com": {
+    "/used-inventory/jeep-gladiator-conroe-tx.htm": "/used-inventory/index.htm?model=Gladiator&make=Jeep",
+    "/used-inventory/jeep-compass-conroe-tx.htm": "/used-inventory/index.htm?model=Compass&make=Jeep"
+  },
+  "hyundainewbraunfels.cms.dealer.com": {
+    "/new-hyundai/kona-new-braunfels-tx.htm": "/new-inventory/index.htm?model=Kona&make=Hyundai"
   }
 }

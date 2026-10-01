@@ -1316,6 +1316,64 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
             for am in accepted_models:
                 if am[1] not in final_models:
                     final_models.append(am[1])
+
+        # Collect rich page context from Title, H1, instructions, and widget config IDs
+        context_parts = []
+        if soup_nav:
+            t_tag = soup_nav.find('title')
+            if t_tag:
+                context_parts.append(t_tag.get_text(separator=' ', strip=True))
+            h1_tag = soup_nav.find('h1')
+            if h1_tag:
+                context_parts.append(h1_tag.get_text(separator=' ', strip=True))
+        if instructions:
+            context_parts.append(instructions)
+        if page_html:
+            _, c_ids = extract_inventory_configs(page_html)
+            if c_ids:
+                context_parts.extend(c_ids)
+        
+        context_norm = f" {' '.join(context_parts).lower()} "
+
+        # Specific model family refinements: when slug only specifies a broad family
+        # (e.g. 'Silverado', 'Sierra', 'Ram', 'Transit', 'Bronco', 'Mustang', 'Equinox', 'Blazer'),
+        # check if context (Title, H1, instructions, or widget configs) specifies a sub-model.
+        SPECIFIC_FAMILY_REFINEMENTS = {
+            'Silverado': ['Silverado 1500', 'Silverado 2500 HD', 'Silverado 3500 HD', 'Silverado EV'],
+            'Sierra': ['Sierra 1500', 'Sierra 2500 HD', 'Sierra 3500 HD', 'Sierra EV'],
+            'Ram': ['Ram 1500', 'Ram 2500', 'Ram 3500'],
+            'Ram 1500': ['Ram 1500', 'Ram 2500', 'Ram 3500'],
+            'Bronco': ['Bronco Sport'],
+            'Mustang': ['Mustang Mach-E'],
+            'Equinox': ['Equinox EV'],
+            'Blazer': ['Blazer EV'],
+            'Yukon': ['Yukon XL'],
+            'Expedition': ['Expedition Max'],
+            'Corvette': ['Corvette Z06', 'Corvette Stingray'],
+            'Transit': ['Transit-150', 'Transit-250', 'Transit-350'],
+            'Grand Cherokee': ['Grand Cherokee L'],
+            'Wagoneer': ['Grand Wagoneer'],
+        }
+
+        refined_final_models = []
+        for fm in final_models:
+            fm_dec = fm.replace('%20', ' ')
+            if fm_dec in SPECIFIC_FAMILY_REFINEMENTS:
+                matched_specific = None
+                for candidate in SPECIFIC_FAMILY_REFINEMENTS[fm_dec]:
+                    cand_key = candidate.lower()
+                    cand_tokens = cand_key.split()
+                    distinguishing = [tok for tok in cand_tokens if tok != fm_dec.lower()]
+                    if cand_key in context_norm or (distinguishing and all(d in context_norm for d in distinguishing)):
+                        matched_specific = candidate
+                        break
+                if matched_specific:
+                    refined_final_models.append(matched_specific.replace(' ', '%20'))
+                else:
+                    refined_final_models.append(fm)
+            else:
+                refined_final_models.append(fm)
+        final_models = refined_final_models
             
         # --- NEW: Family Expansion (Silverado 3500 -> 3500 HD + 3500 HD Chassis Cab, etc.) ---
         families = ['Silverado 1500', 'Silverado 2500', 'Silverado 3500', 
@@ -1425,6 +1483,29 @@ def local_inventory_inference(url: str, page_html: str, instructions: str = "") 
                     if len(pf_expanded) > 1:
                         found_model = '%2C'.join(pf_expanded)
                         print(f"DEBUG: Path-folder family expansion -> {found_model}")
+
+    if not found_model:
+        # Search page context (Title, H1, instructions, widget configs) for model names
+        if 'context_norm' not in locals():
+            context_parts = []
+            if soup_nav:
+                t_tag = soup_nav.find('title')
+                if t_tag: context_parts.append(t_tag.get_text(separator=' ', strip=True))
+                h1_tag = soup_nav.find('h1')
+                if h1_tag: context_parts.append(h1_tag.get_text(separator=' ', strip=True))
+            if instructions: context_parts.append(instructions)
+            if page_html:
+                _, c_ids = extract_inventory_configs(page_html)
+                if c_ids: context_parts.extend(c_ids)
+            context_norm = f" {' '.join(context_parts).lower()} "
+
+        for key in sorted(LOCAL_MODELS.keys(), key=len, reverse=True):
+            if len(key) <= 3: continue
+            norm_k = key.replace('-', ' ').replace('_', ' ')
+            if f" {norm_k} " in context_norm or f" {key} " in context_norm:
+                found_model = LOCAL_MODELS[key]
+                print(f"DEBUG: Found model from page context: {key} -> {found_model}")
+                break
 
     # Match makes
     found_make_in_slug = False
@@ -2128,7 +2209,8 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
                     r'["\']inventoryCount["\']\s*:\s*(\d+)',
                     r'["\']totalVehicles["\']\s*:\s*(\d+)',
                     r'["\']totalResults["\']\s*:\s*(\d+)',
-                    r'["\']count["\']\s*:\s*(\d+)',
+                    r'["\']totalCount["\']\s*:\s*(\d+)',
+                    r'["\']resultCount["\']\s*:\s*(\d+)',
                     r'inventory\s*=\s*\{[^}]*["\']count["\']\s*:\s*(\d+)'
                 ]
                 for sp in script_patterns:
@@ -2372,8 +2454,30 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
             urls_to_visit = [res]
 
         found_any_count = False
+        # Check canonical URL in HTML to identify true canonical live domain
+        canonical_url = None
+        canonical_domain = None
+        html_for_canon = initial_html if initial_html else (driver.page_source if driver else "")
+        if html_for_canon:
+            try:
+                from bs4 import BeautifulSoup as BS
+                csoup = BS(html_for_canon, 'html.parser')
+                can_tag = csoup.find('link', rel='canonical')
+                if can_tag and can_tag.get('href'):
+                    canonical_url = can_tag['href'].strip()
+                    can_p = urlparse(canonical_url)
+                    if can_p.netloc and can_p.netloc.lower() != domain.lower():
+                        canonical_domain = can_p.netloc.lower()
+            except Exception:
+                pass
+        if canonical_url:
+            inventory_info['canonical_url'] = canonical_url
+        if canonical_domain:
+            inventory_info['canonical_domain'] = canonical_domain
+
         for target_path in urls_to_visit:
-            f_url = urljoin(url, target_path)
+            effective_base = f"https://{canonical_domain}" if canonical_domain else url
+            f_url = urljoin(effective_base, target_path)
             try:
                 sub_count = None
                 
@@ -2435,17 +2539,38 @@ def validate_inventory(url: str, nav_links: list, initial_html: str = None, inst
         curr_config_ids = inventory_info.get('config_ids', [])
         is_model_specific_widget = False
         
-        # Check model query param in res (e.g. model=Acadia)
+        # Check model query param in res (e.g. model=Silverado 1500)
         model_m = re.search(r'[?&]model=([^&]+)', res, re.I)
         if model_m:
-            target_model = model_m.group(1).lower().replace('+', '').replace('-', '').strip()
-            if any(target_model in c.lower().replace('-', '').replace('_', '') for c in curr_config_ids):
-                is_model_specific_widget = True
+            target_model = model_m.group(1).lower().replace('+', ' ').replace('-', ' ').strip()
+            target_model_compact = target_model.replace(' ', '')
+            model_tokens = [tok for tok in target_model.split() if len(tok) >= 3]
+            for c in curr_config_ids:
+                c_clean = c.lower().replace('-', ' ').replace('_', ' ')
+                c_compact = c.lower().replace('-', '').replace('_', '')
+                if target_model_compact in c_compact or any(tok in c_clean for tok in model_tokens if tok.isdigit() or len(tok) >= 4):
+                    is_model_specific_widget = True
+                    break
+                # Fuzzy match for typos in widget IDs (e.g. sivlerado vs silverado)
+                import difflib
+                c_tokens = c_clean.split()
+                for m_tok in model_tokens:
+                    if any(difflib.SequenceMatcher(None, m_tok, ct).ratio() >= 0.8 for ct in c_tokens):
+                        is_model_specific_widget = True
+                        break
         
         # Also check path tokens (e.g. /new-inventory/gmc-acadia.htm -> 'acadia' in config_ids)
         path_tokens = [tok for tok in re.split(r'[-_/.]+', raw_path.lower()) if tok and tok not in ['new', 'used', 'inventory', 'index', 'htm', 'html', 'gmc', 'ford', 'chevy', 'chevrolet']]
         if any(any(tok in c.lower() for c in curr_config_ids) for tok in path_tokens if len(tok) >= 4):
             is_model_specific_widget = True
+        else:
+            # Fuzzy match path tokens against config tokens (e.g. silverado vs sivlerado)
+            import difflib
+            for c in curr_config_ids:
+                c_tokens = re.split(r'[-_.]+', c.lower())
+                if any(any(difflib.SequenceMatcher(None, p_tok, ct).ratio() >= 0.8 for ct in c_tokens) for p_tok in path_tokens if len(p_tok) >= 5):
+                    is_model_specific_widget = True
+                    break
 
         # Check make query param in res (e.g. make=Kia on used page -> 'auto-usedkia' in config_ids)
         is_make_specific_widget = False
@@ -5598,7 +5723,7 @@ def extract_h1():
             nav_selector = 'nav a, header a, .navbar-nav a, .ws-navigation a, [data-widget-name*="navigation"] a'
             nav_links_raw = soup.select(nav_selector)
             nav_links = [{"text": a.get_text(strip=True), "href": a.get('href')} for a in nav_links_raw if a.get('href') and not a['href'].startswith(('javascript', 'tel', 'mailto'))][:25]
-            inv_rules = clean_inventory_instructions(f"{special_instructions}\n{custom_rules}")
+            inv_rules = clean_inventory_instructions(f"{expected_title}\n{special_instructions}\n{custom_rules}")
             inventory_validation_bugs, inventory_info = validate_inventory(url, nav_links, response.text, inv_rules)
         except Exception as e:
 
@@ -6105,15 +6230,18 @@ def extract_h1():
         sitemap_info = {'xml_found': None, 'html_found': None, 'xml_url': None, 'html_url': None}
         try:
             sitemap_info = validate_sitemap(url)
-            xml_missing = sitemap_info.get('xml_found') == False
-            html_missing = sitemap_info.get('html_found') == False
-            
-            if xml_missing and html_missing:
-                bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML/ HTML sitemap", platform='D/M'))
-            elif xml_missing:
-                bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML sitemap", platform='D/M'))
-            elif html_missing:
-                bugs.append(make_bug('sitemap_html_missing', f"Page URL is missing from the HTML sitemap", platform='D/M'))
+            if is_draft_url(url):
+                sitemap_info['is_draft'] = True
+            else:
+                xml_missing = sitemap_info.get('xml_found') == False
+                html_missing = sitemap_info.get('html_found') == False
+                
+                if xml_missing and html_missing:
+                    bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML/ HTML sitemap", platform='D/M'))
+                elif xml_missing:
+                    bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML sitemap", platform='D/M'))
+                elif html_missing:
+                    bugs.append(make_bug('sitemap_html_missing', f"Page URL is missing from the HTML sitemap", platform='D/M'))
         except Exception as e:
             print(f"Sitemap validation error: {e}")
 
@@ -6234,6 +6362,8 @@ def extract_h1():
             'case_id': case_id,
             'is_draft': is_draft,
             'clean_live_url': clean_live_url,
+            'canonical_url': inventory_info.get('canonical_url'),
+            'canonical_domain': inventory_info.get('canonical_domain'),
             'site_id': site_id,
             'composer_url': composer_url,
             'composer_draft_url': composer_draft_url,
