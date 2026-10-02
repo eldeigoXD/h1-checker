@@ -929,7 +929,7 @@ def infer_site_brands(page_url: str, page_title: str = "", h1_tags: list = None,
     # 5. Used / Pre-Owned page detection
     is_used_page = any(u_kw in parsed_path for u_kw in ['/used', '/pre-owned', '/cpo', 'used-', '-used', '/preowned']) or \
                    any(u_kw in title_and_h1 for u_kw in ['used', 'pre-owned', 'certified pre-owned', 'cpo']) or \
-                   any(u_kw in domain for u_kw in ['usedcar', 'preowned', 'used-car', 'used_car'])
+                   any(u_kw in domain_low for u_kw in ['usedcar', 'preowned', 'used-car', 'used_car'])
 
     if is_used_page and page_text:
         # Dealerships sell used cars of ANY make.
