@@ -6249,19 +6249,21 @@ def extract_h1():
         # -------- SITEMAP VALIDATION --------
         sitemap_info = {'xml_found': None, 'html_found': None, 'xml_url': None, 'html_url': None}
         try:
-            sitemap_info = validate_sitemap(url)
+            # Strip preview query parameters (e.g. _ddcpreview) to search the clean canonical path in the sitemap
+            clean_sitemap_url = get_clean_live_url(url)
+            sitemap_info = validate_sitemap(clean_sitemap_url)
             if is_draft_url(url):
                 sitemap_info['is_draft'] = True
-            else:
-                xml_missing = sitemap_info.get('xml_found') == False
-                html_missing = sitemap_info.get('html_found') == False
-                
-                if xml_missing and html_missing:
-                    bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML/ HTML sitemap", platform='D/M'))
-                elif xml_missing:
-                    bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML sitemap", platform='D/M'))
-                elif html_missing:
-                    bugs.append(make_bug('sitemap_html_missing', f"Page URL is missing from the HTML sitemap", platform='D/M'))
+
+            xml_missing = sitemap_info.get('xml_found') == False
+            html_missing = sitemap_info.get('html_found') == False
+            
+            if xml_missing and html_missing:
+                bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML/ HTML sitemap", platform='D/M'))
+            elif xml_missing:
+                bugs.append(make_bug('sitemap_xml_missing', f"Page URL is missing from the XML sitemap", platform='D/M'))
+            elif html_missing:
+                bugs.append(make_bug('sitemap_html_missing', f"Page URL is missing from the HTML sitemap", platform='D/M'))
         except Exception as e:
             print(f"Sitemap validation error: {e}")
 

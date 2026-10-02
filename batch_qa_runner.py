@@ -1486,7 +1486,7 @@ def run_qa_app_audit(driver, dyn_data, smartsheet_handle, dynamics_handle, reser
         """)
         
         # 5. Esperar resultado y asistir como worker autónomo si Home PC no responde
-        max_scan_timeout = 55  # Timeout optimizado a 55s para evitar bloqueos largos si Home PC se desconecta
+        max_scan_timeout = 35  # Máximo 35s para nunca quedarse trabado esperando 180s
         log_info(f"[{del_id}] Waiting for app to complete analysis (up to {max_scan_timeout}s)...")
         start_wait = time.time()
         completed = False
@@ -1538,30 +1538,40 @@ def run_qa_app_audit(driver, dyn_data, smartsheet_handle, dynamics_handle, reser
                         log_success(f"[{del_id}] ✅ Scan completed successfully in the tool ({int(elapsed)}s).")
                         break
                         
-                    # Feedback periódico cada 10 segundos
-                    if int(elapsed) - last_logged_sec >= 10:
+                    if int(elapsed) - last_logged_sec >= 8:
                         last_logged_sec = int(elapsed)
                         p_text = status_check.get('progress_text') or 'Scanning elements...'
                         log_info(f"[{del_id}] ⏳ Scan in progress ({last_logged_sec}s elapsed)... [Status: {p_text}]")
             except Exception:
                 pass
                 
-            # Si pasaron 5 segundos y sigue pendiente, verificar si Vercel tiene un job relay pendiente
-            if elapsed > 5 and requests:
+            # Fallback autónomo si pasaron 18 segundos y Home PC o Vercel no han entregado resultado a la pestaña:
+            if elapsed > 18 and not completed:
                 try:
-                    p_resp = requests.get('https://qa-tool-brown.vercel.app/api/jobs/pending?key=h1-checker-secret-key-2026', timeout=4)
-                    if p_resp.status_code == 200:
-                        j_data = p_resp.json()
-                        job_id = j_data.get('job_id')
-                        if job_id:
-                            log_info(f"[{del_id}] Assisting autonomous scan in Vercel (Job: {job_id})...")
-                            if not page_html:
-                                page_html, _ = fetch_page_html(driver, target_url)
-                                driver.switch_to.window(qa_tab)
-                                
-                            rich_res = build_rich_audit_result(page_html or "<html></html>", target_url, dyn_data)
-                            requests.post('https://qa-tool-brown.vercel.app/api/jobs/complete?key=h1-checker-secret-key-2026', json={'job_id': job_id, 'result': rich_res}, timeout=6)
-                except Exception:
+                    log_warn(f"[{del_id}] Vercel/Home PC demorando ({int(elapsed)}s). Asistiendo auditoría autónoma directa...")
+                    if not page_html:
+                        page_html, _ = fetch_page_html(driver, target_url)
+                        driver.switch_to.window(qa_tab)
+                    rich_res = build_rich_audit_result(page_html or "<html></html>", target_url, dyn_data)
+                    driver.execute_script("""
+                        var data = arguments[0];
+                        if (window.renderResults) {
+                            window.renderResults(data);
+                        } else {
+                            window.lastScanData = data;
+                        }
+                        var resultsArea = document.getElementById('results-area');
+                        if (resultsArea) resultsArea.style.display = 'flex';
+                        var loader = document.querySelector('#submit-btn .loader');
+                        if (loader) loader.style.display = 'none';
+                        var btnText = document.querySelector('#submit-btn .btn-text');
+                        if (btnText) { btnText.style.display = 'inline'; btnText.textContent = 'Scan Quality'; }
+                    """, rich_res)
+                    completed = True
+                    log_success(f"[{del_id}] ✅ Auditoría autónoma inyectada y renderizada con éxito ({int(elapsed)}s).")
+                    break
+                except Exception as e_assist:
+                    log_warn(f"[{del_id}] Fallback assist error: {e_assist}")
                     try:
                         driver.switch_to.window(qa_tab)
                     except Exception:

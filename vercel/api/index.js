@@ -343,27 +343,38 @@ module.exports = async (req, res) => {
     }
 
     const { job_id, result, error } = body;
-    if (!job_id || !jobs.has(job_id)) {
-      return res.status(404).json({ error: 'Job not found' });
+    if (!job_id) {
+      return res.status(400).json({ error: 'Missing job_id' });
     }
 
-    const job = jobs.get(job_id);
-    if (error) {
-      job.status = 'failed';
-      job.error = error;
+    if (!jobs.has(job_id)) {
+      jobs.set(job_id, {
+        id: job_id,
+        status: error ? 'failed' : 'completed',
+        result: result || null,
+        error: error || null,
+        createdAt: Date.now(),
+        completedAt: Date.now()
+      });
     } else {
-      job.status = 'completed';
-      job.result = result;
+      const job = jobs.get(job_id);
+      if (error) {
+        job.status = 'failed';
+        job.error = error;
+      } else {
+        job.status = 'completed';
+        job.result = result;
+      }
+      job.completedAt = Date.now();
+    }
 
-      // Automatically extract and store harvested images in Vercel Image Bank
-      if (result && result.image_harvest) {
-        const assetsToMerge = result.image_harvest.harvested_assets || result.image_harvest.harvested_items;
-        if (Array.isArray(assetsToMerge)) {
-          mergeImageAssets(assetsToMerge);
-        }
+    // Automatically extract and store harvested images in Vercel Image Bank
+    if (result && result.image_harvest) {
+      const assetsToMerge = result.image_harvest.harvested_assets || result.image_harvest.harvested_items;
+      if (Array.isArray(assetsToMerge)) {
+        mergeImageAssets(assetsToMerge);
       }
     }
-    job.completedAt = Date.now();
 
     return res.status(200).json({ success: true, job_id });
   }
@@ -371,8 +382,16 @@ module.exports = async (req, res) => {
   // 2. Client Status Endpoint (Used by Remote PC UI to check progress)
   if (pathname === '/api/jobs/status' || (pathname === '/api/jobs' && url.searchParams.get('action') === 'status')) {
     const jobId = url.searchParams.get('job_id') || body.job_id;
-    if (!jobId || !jobs.has(jobId)) {
-      return res.status(404).json({ error: 'Job not found or expired' });
+    if (!jobId) {
+      return res.status(400).json({ error: 'Missing job_id' });
+    }
+    if (!jobs.has(jobId)) {
+      // If job is in another lambda container or still pending, return pending instead of breaking 404
+      return res.status(200).json({
+        job_id: jobId,
+        status: 'pending',
+        message: 'Waiting for worker processing...'
+      });
     }
     const job = jobs.get(jobId);
     return res.status(200).json({

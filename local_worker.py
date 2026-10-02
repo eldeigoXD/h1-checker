@@ -137,8 +137,18 @@ def poll_and_process():
                     "job_id": job_id,
                     "result": result_data
                 }
-                requests.post(complete_url, json=post_body, headers=headers, timeout=15)
-                print(f"   [SYNCED] Audit results sent back to Vercel for Job {job_id}.\n")
+                post_resp = requests.post(complete_url, json=post_body, headers=headers, timeout=15)
+                if post_resp.status_code == 200:
+                    print(f"   [SYNCED] Audit results successfully sent to Vercel for Job {job_id}.\n")
+                else:
+                    print(f"   [WARN] Vercel returned status {post_resp.status_code} on complete: {post_resp.text}")
+                    # Retry in case routed to a separate Vercel container
+                    for retry in range(2):
+                        time.sleep(1)
+                        r_retry = requests.post(complete_url, json=post_body, headers=headers, timeout=15)
+                        if r_retry.status_code == 200:
+                            print(f"   [SYNCED on retry {retry+1}] Audit results delivered to Vercel for Job {job_id}.\n")
+                            break
 
                 # 4. Sync harvested images to Vercel Image Bank
                 sync_image_bank_to_vercel()
