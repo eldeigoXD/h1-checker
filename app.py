@@ -284,6 +284,12 @@ def split_compound_line(line):
                 first_url = re.sub(r'[.,;:!?)"\']+$', '', sub_elements[0])
                 rest_chunk = chunk[len(sub_elements[0]):].strip()
                 rest_chunk = re.sub(r'^[.,;:!?\-\s]+', '', rest_chunk).strip()
+                # Check if rest_chunk is an explanatory parenthetical note or button text for this URL, e.g. "(courtesy vehicles)"
+                if rest_chunk.startswith('(') and rest_chunk.endswith(')'):
+                    inside_text = rest_chunk[1:-1].strip()
+                    if inside_text and not any(inside_text.startswith(p) for p in ['/', 'http://', 'https://', '#']):
+                        final_parts.append(f"{inside_text} ({first_url})")
+                        continue
                 final_parts.append(first_url)
                 if rest_chunk:
                     final_parts.extend(split_compound_line(rest_chunk))

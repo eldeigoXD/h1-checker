@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper to poll background relay jobs when deployed on Vercel Cloud
     async function pollRelayJob(jobId) {
         const startTime = Date.now();
-        const timeoutMs = 180000; // 3 minutes timeout for deep local scans
+        const timeoutMs = 50000; // 50 seconds timeout for local relay scans
         const btnTextEl = document.querySelector('.btn-text');
 
         while (Date.now() - startTime < timeoutMs) {
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if (btnTextEl) btnTextEl.textContent = 'Scan Quality';
-        throw new Error('Timeout: Home PC did not respond within 3 minutes. Please verify start_remote_worker.bat is running on your Home PC.');
+        throw new Error('Timeout (50s): Home PC did not respond. Please verify start_remote_worker.bat is running on your Home PC.');
     }
 
     // Helper to poll PDF relay jobs when deployed on Vercel Cloud
@@ -1423,10 +1423,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 xmlUrlElem.textContent = '-';
             }
 
+            const isDraft = Boolean(sinfo.is_draft || (data && isDraftUrl(data.url)));
+
             if (sinfo.xml_found === true) {
                 xmlBadge.textContent = 'Found ✅';
                 xmlBadge.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
                 xmlBadge.style.color = '#4caf50';
+            } else if (isDraft) {
+                xmlBadge.textContent = 'Draft (N/A) ℹ️';
+                xmlBadge.style.backgroundColor = 'rgba(33, 150, 243, 0.15)';
+                xmlBadge.style.color = '#64b5f6';
             } else if (sinfo.xml_found === false) {
                 xmlBadge.textContent = 'Not Found ❌';
                 xmlBadge.style.backgroundColor = 'rgba(244, 67, 54, 0.2)';
@@ -1448,6 +1454,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 htmlBadge.textContent = 'Found ✅';
                 htmlBadge.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
                 htmlBadge.style.color = '#4caf50';
+            } else if (isDraft) {
+                htmlBadge.textContent = 'Draft (N/A) ℹ️';
+                htmlBadge.style.backgroundColor = 'rgba(33, 150, 243, 0.15)';
+                htmlBadge.style.color = '#64b5f6';
             } else if (sinfo.html_found === false) {
                 htmlBadge.textContent = 'Not Found ❌';
                 htmlBadge.style.backgroundColor = 'rgba(244, 67, 54, 0.2)';
@@ -1459,7 +1469,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Overall sitemap status
-            if (sinfo.xml_found === true && sinfo.html_found === true) {
+            if (isDraft && (sinfo.xml_found === false || sinfo.html_found === false)) {
+                sitemapStatus.textContent = 'Draft Preview (N/A) ℹ️';
+                sitemapStatus.style.color = '#64b5f6';
+                sitemapCard.style.borderLeftColor = '#2196f3';
+            } else if (sinfo.xml_found === true && sinfo.html_found === true) {
                 sitemapStatus.textContent = 'Fully Verified ✅';
                 sitemapStatus.style.color = '#4caf50';
                 sitemapCard.style.borderLeftColor = '#4caf50';

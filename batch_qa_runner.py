@@ -1486,7 +1486,7 @@ def run_qa_app_audit(driver, dyn_data, smartsheet_handle, dynamics_handle, reser
         """)
         
         # 5. Esperar resultado y asistir como worker autónomo si Home PC no responde
-        max_scan_timeout = 180  # Ampliado a 3 minutos para permitir escaneos profundos de inventario y relays
+        max_scan_timeout = 55  # Timeout optimizado a 55s para evitar bloqueos largos si Home PC se desconecta
         log_info(f"[{del_id}] Waiting for app to complete analysis (up to {max_scan_timeout}s)...")
         start_wait = time.time()
         completed = False
@@ -1507,12 +1507,13 @@ def run_qa_app_audit(driver, dyn_data, smartsheet_handle, dynamics_handle, reser
                     var btnText = document.querySelector('#submit-btn .btn-text') || submitBtn;
                     var errorMsg = document.getElementById('error-message');
                     var hasError = errorMsg && window.getComputedStyle(errorMsg).display !== 'none' && errorMsg.innerText.trim().length > 0;
-                    var isDone = resultsArea && window.getComputedStyle(resultsArea).display !== 'none' && (!loader || window.getComputedStyle(loader).display === 'none');
+                    var hasScanData = Boolean(window.lastScanData && (window.lastScanData.success || window.lastScanData.count !== undefined));
+                    var isResultsVisible = resultsArea && window.getComputedStyle(resultsArea).display !== 'none' && (!loader || window.getComputedStyle(loader).display === 'none');
+                    var isDone = hasScanData || isResultsVisible;
                     var progressText = btnText ? (btnText.innerText || btnText.textContent || '').trim() : '';
-                    var hasScanData = Boolean(window.lastScanData && window.lastScanData.success);
                     
                     return {
-                        is_done: isDone && (hasScanData || Boolean(document.getElementById('bug-report-card'))),
+                        is_done: isDone,
                         is_error: hasError,
                         error_text: hasError ? errorMsg.innerText.trim() : '',
                         progress_text: progressText,
