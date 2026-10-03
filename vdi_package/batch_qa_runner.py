@@ -1060,13 +1060,13 @@ def fetch_dynamics_data(driver, dynamics_handle, deliverable_id, cms_link=""):
 def fetch_page_html(driver, url):
     """
     Obtiene el HTML de la página en vivo. Intenta primero vía HTTP requests para evitar
-    abrir o cerrar pestañas en el navegador. Si requiere Helium, garantiza que NUNCA
-    se cierre la pestaña de QA Tool, Smartsheet ni Dynamics, cerrando únicamente la temporal.
+    abrir o cerrar pestañas en el navegador. Si requiere navegador, usa Selenium 4 CDP
+    (new_window) que es 100% inmune a bloqueadores de ventanas emergentes.
     """
     if not url:
         return None, "Empty URL"
 
-    # 1. Intento ultrarrápido con requests para no tocar las pestañas del navegador
+    # 1. Intento con requests con SSL flexible y headers completos
     if requests:
         try:
             headers = {
@@ -1074,13 +1074,13 @@ def fetch_page_html(driver, url):
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9',
             }
-            resp = requests.get(url, headers=headers, timeout=7)
+            resp = requests.get(url, headers=headers, timeout=8, verify=False)
             if resp.status_code == 200 and len(resp.text) > 400:
                 return resp.text, 200
         except Exception:
             pass
 
-    # 2. Respaldo vía Helium con protección absoluta de identificadores de pestañas
+    # 2. Respaldo vía navegador con Selenium 4 new_window('tab')
     if not driver:
         return None, "Driver not available"
 
@@ -1091,31 +1091,35 @@ def fetch_page_html(driver, url):
         pass
 
     try:
-        handles_before = set(driver.window_handles)
-        driver.execute_script("window.open(arguments[0], '_blank');", url)
-        time.sleep(1.2)
-        new_handles = [h for h in driver.window_handles if h not in handles_before]
-        
-        if not new_handles:
-            # Si no se creó una pestaña nueva, NO cerrar nada
-            return None, "Could not open isolated browser tab"
+        # Usar new_window('tab') nativo de Selenium 4 (inmune a bloqueadores de popups)
+        try:
+            driver.switch_to.new_window('tab')
+        except Exception:
+            driver.execute_script("window.open(arguments[0], '_blank');", url)
+            time.sleep(1.0)
+            handles = driver.window_handles
+            if handles:
+                driver.switch_to.window(handles[-1])
 
-        temp_handle = new_handles[0]
-        driver.switch_to.window(temp_handle)
-        
-        # Esperar a que la página cargue en Helium (3.5s)
+        temp_handle = driver.current_window_handle
+        if driver.current_url != url:
+            driver.get(url)
+            
         time.sleep(3.5)
         html = driver.page_source
         
-        # Cerrar ÚNICA y EXCLUSIVAMENTE la pestaña temporal recién creada
-        driver.close()
+        # Cerrar únicamente la pestaña temporal
+        if temp_handle != orig_handle:
+            driver.close()
         
         if orig_handle and orig_handle in driver.window_handles:
             driver.switch_to.window(orig_handle)
         elif driver.window_handles:
             driver.switch_to.window(driver.window_handles[0])
             
-        return html, 200
+        if html and len(html) > 400:
+            return html, 200
+        return None, "Retrieved HTML too short"
     except Exception as e:
         try:
             if orig_handle and orig_handle in driver.window_handles:
@@ -1133,24 +1137,24 @@ def build_rich_audit_result(html, target_url, dyn_data):
     expected_title = (dyn_data.get('title') or '').strip()
     expected_copy = (dyn_data.get('copy') or '').strip()
     
-    soup = BeautifulSoup(html, 'html.parser') if BeautifulSoup else None
-    bugs = []
-    
-    if not soup:
+    if not html or len(html.strip()) < 300:
         return {
-            "success": True,
+            "success": False,
             "url": target_url,
             "count": 0,
             "h1_valid": False,
-            "h1_error_msg": "Could not parse HTML.",
+            "h1_error_msg": "Could not retrieve live page HTML DOM.",
             "h1_snippets": [],
             "title_match": {"status": "no_input", "target": expected_title, "found": ""},
             "seo_coverage": -1,
             "seo_missing_chunks": [],
             "total_links_analyzed": 0,
             "broken_links": [],
-            "bugs": [{'platform': 'M/D', 'type': 'Failed', 'category': 'General', 'message': 'Could not parse DOM'}]
+            "bugs": [{'platform': 'M/D', 'type': 'Observed', 'category': 'General', 'message': 'Could not retrieve live page DOM from browser/server. Please review page manually.'}]
         }
+
+    soup = BeautifulSoup(html, 'html.parser') if BeautifulSoup else None
+    bugs = []
 
     # 1. H1 Tags
     h1_tags = soup.find_all('h1')
