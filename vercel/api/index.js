@@ -42,10 +42,11 @@ function mergeImageAssets(newAssets) {
     const existing = imageBankDb.find(a => a.image_url === imgUrl);
     if (existing) {
       existing.use_count = Math.max(existing.use_count || 1, asset.use_count || 1);
-      if (asset.make && asset.make !== 'unknown') existing.make = asset.make;
-      if (asset.model && asset.model !== 'unknown') existing.model = asset.model;
-      if (asset.condition && asset.condition !== 'general') existing.condition = asset.condition;
-      if (asset.category && asset.category !== 'general') existing.category = asset.category;
+      if (asset.year !== undefined) existing.year = asset.year;
+      if (asset.make !== undefined) existing.make = asset.make;
+      if (asset.model !== undefined) existing.model = asset.model;
+      if (asset.condition !== undefined) existing.condition = asset.condition;
+      if (asset.category !== undefined) existing.category = asset.category;
       if (asset.alt_text) existing.alt_text = asset.alt_text;
       if (asset.section_title) existing.section_title = asset.section_title;
       if (asset.surrounding_text) existing.surrounding_text = asset.surrounding_text;
@@ -53,6 +54,7 @@ function mergeImageAssets(newAssets) {
       imageBankDb.push({
         id: asset.id || `IMG-${Date.now()}-${Math.random().toString(36).substr(2,4)}`,
         image_url: imgUrl,
+        year: asset.year || '',
         make: asset.make || 'unknown',
         model: asset.model || 'unknown',
         condition: asset.condition || 'general',
