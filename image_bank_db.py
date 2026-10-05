@@ -18,6 +18,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS image_assets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             image_url TEXT UNIQUE NOT NULL,
+            year TEXT DEFAULT '',
             make TEXT,
             model TEXT,
             condition TEXT DEFAULT 'general',
@@ -42,7 +43,17 @@ def init_db():
         )
     ''')
     
+    # Ensure 'year' column exists if upgrading existing DB
+    cursor.execute("PRAGMA table_info(image_assets)")
+    cols = [r[1] for r in cursor.fetchall()]
+    if 'year' not in cols:
+        try:
+            cursor.execute("ALTER TABLE image_assets ADD COLUMN year TEXT DEFAULT ''")
+        except Exception:
+            pass
+
     # Indexes for fast filtering
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_asset_year ON image_assets(year)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_asset_make ON image_assets(make)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_asset_model ON image_assets(model)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_asset_category ON image_assets(category)')
@@ -52,7 +63,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-def save_harvested_image(image_url, make, model, condition, category, surrounding_text="", alt_text="", section_title="", dealer_id="", page_url="", case_id=""):
+def save_harvested_image(image_url, make, model, condition, category, surrounding_text="", alt_text="", section_title="", dealer_id="", page_url="", case_id="", year=""):
     """
     Saves an extracted image asset or increments its use_count if already indexed.
     """
@@ -65,30 +76,31 @@ def save_harvested_image(image_url, make, model, condition, category, surroundin
     
     try:
         # Check if asset already exists
-        cursor.execute("SELECT id, use_count, make, model, category, condition FROM image_assets WHERE image_url = ?", (image_url,))
+        cursor.execute("SELECT id, use_count, make, model, category, condition, year FROM image_assets WHERE image_url = ?", (image_url,))
         row = cursor.fetchone()
         
         if row:
             asset_id = row['id']
             new_count = row['use_count'] + 1
             
-            # Enrich fields if current values are empty/general and new data is available
+            # Enrich fields if current values are empty/general/unknown and new data is available
             new_make = make if (make and row['make'] in (None, '', 'unknown')) else row['make']
             new_model = model if (model and row['model'] in (None, '', 'unknown')) else row['model']
+            new_year = year if (year and not row['year']) else (row['year'] or '')
             new_category = category if (category and category != 'general' and row['category'] == 'general') else row['category']
             new_condition = condition if (condition and condition != 'general' and row['condition'] == 'general') else row['condition']
             
             cursor.execute('''
                 UPDATE image_assets 
-                SET use_count = ?, make = ?, model = ?, category = ?, condition = ?, last_seen = ?
+                SET use_count = ?, make = ?, model = ?, category = ?, condition = ?, year = ?, last_seen = ?
                 WHERE id = ?
-            ''', (new_count, new_make, new_model, new_category, new_condition, now, asset_id))
+            ''', (new_count, new_make, new_model, new_category, new_condition, new_year, now, asset_id))
         else:
             cursor.execute('''
                 INSERT INTO image_assets 
-                (image_url, make, model, condition, category, surrounding_text, alt_text, section_title, dealer_id, use_count, first_seen, last_seen)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-            ''', (image_url, make or 'unknown', model or 'unknown', condition or 'general', category or 'general', surrounding_text[:500], alt_text[:250], section_title[:200], dealer_id, now, now))
+                (image_url, year, make, model, condition, category, surrounding_text, alt_text, section_title, dealer_id, use_count, first_seen, last_seen)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            ''', (image_url, year or '', make or 'unknown', model or 'unknown', condition or 'general', category or 'general', surrounding_text[:500], alt_text[:250], section_title[:200], dealer_id, now, now))
             asset_id = cursor.lastrowid
             
         # Log occurrence
@@ -106,7 +118,7 @@ def save_harvested_image(image_url, make, model, condition, category, surroundin
     finally:
         conn.close()
 
-def query_image_assets(make=None, model=None, condition=None, category=None, search=None, limit=50, offset=0):
+def query_image_assets(make=None, model=None, condition=None, category=None, search=None, limit=50, offset=0, year=None):
     """Query harvested image assets with optional filters, sorted by use_count DESC."""
     conn = get_db()
     cursor = conn.cursor()
@@ -114,6 +126,9 @@ def query_image_assets(make=None, model=None, condition=None, category=None, sea
     query = "SELECT * FROM image_assets WHERE 1=1"
     params = []
     
+    if year and year.lower() != 'all':
+        query += " AND year = ?"
+        params.append(str(year))
     if make:
         query += " AND LOWER(make) = LOWER(?)"
         params.append(make)
@@ -127,9 +142,9 @@ def query_image_assets(make=None, model=None, condition=None, category=None, sea
         query += " AND LOWER(category) = LOWER(?)"
         params.append(category)
     if search:
-        query += " AND (LOWER(surrounding_text) LIKE ? OR LOWER(alt_text) LIKE ? OR LOWER(section_title) LIKE ? OR LOWER(image_url) LIKE ?)"
+        query += " AND (LOWER(surrounding_text) LIKE ? OR LOWER(alt_text) LIKE ? OR LOWER(section_title) LIKE ? OR LOWER(image_url) LIKE ? OR year LIKE ?)"
         term = f"%{search.lower()}%"
-        params.extend([term, term, term, term])
+        params.extend([term, term, term, term, term])
         
     count_params = list(params)
     count_query = query.replace("SELECT *", "SELECT COUNT(*) as total", 1)
@@ -150,17 +165,20 @@ def query_image_assets(make=None, model=None, condition=None, category=None, sea
     return {'assets': rows, 'total': total, 'limit': limit, 'offset': offset}
 
 def get_image_bank_stats():
-    """Returns aggregated stats of harvested images by Make, Model, and Category."""
+    """Returns aggregated stats of harvested images by Year, Make, Model, and Category."""
     conn = get_db()
     cursor = conn.cursor()
     
     cursor.execute("SELECT COUNT(*) as total_assets, SUM(use_count) as total_occurrences FROM image_assets")
     totals = dict(cursor.fetchone() or {'total_assets': 0, 'total_occurrences': 0})
     
-    cursor.execute("SELECT make, COUNT(*) as count FROM image_assets WHERE make != 'unknown' GROUP BY make ORDER BY count DESC LIMIT 15")
+    cursor.execute("SELECT year, COUNT(*) as count FROM image_assets WHERE year != '' AND year IS NOT NULL GROUP BY year ORDER BY year DESC")
+    years = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute("SELECT make, COUNT(*) as count FROM image_assets WHERE make != 'unknown' GROUP BY make ORDER BY count DESC LIMIT 20")
     makes = [dict(row) for row in cursor.fetchall()]
     
-    cursor.execute("SELECT model, COUNT(*) as count FROM image_assets WHERE model != 'unknown' GROUP BY model ORDER BY count DESC LIMIT 15")
+    cursor.execute("SELECT model, COUNT(*) as count FROM image_assets WHERE model != 'unknown' GROUP BY model ORDER BY count DESC LIMIT 25")
     models = [dict(row) for row in cursor.fetchall()]
     
     cursor.execute("SELECT category, COUNT(*) as count FROM image_assets GROUP BY category ORDER BY count DESC")
@@ -170,6 +188,7 @@ def get_image_bank_stats():
     return {
         'total_assets': totals['total_assets'] or 0,
         'total_occurrences': totals['total_occurrences'] or 0,
+        'years': years,
         'makes': makes,
         'models': models,
         'categories': categories

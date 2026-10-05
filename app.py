@@ -7041,6 +7041,7 @@ def get_image_bank_api():
             ok = delete_image_asset(asset_id=int(asset_id) if asset_id else None, image_url=img_url)
             return jsonify({'success': ok, 'message': 'Asset deleted successfully' if ok else 'Asset not found'})
 
+        year = request.args.get('year')
         make = request.args.get('make')
         model = request.args.get('model')
         condition = request.args.get('condition')
@@ -7056,7 +7057,7 @@ def get_image_bank_api():
             limit = 50
         offset = int(request.args.get('offset', 0))
         
-        result = query_image_assets(make, model, condition, category, search, limit, offset)
+        result = query_image_assets(make=make, model=model, condition=condition, category=category, search=search, limit=limit, offset=offset, year=year)
         return jsonify({'success': True, **result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -7067,6 +7068,15 @@ def get_image_bank_stats_api():
         from image_bank_db import get_image_bank_stats
         stats = get_image_bank_stats()
         return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/image-bank/reclassify', methods=['POST'])
+def reclassify_image_bank_api():
+    try:
+        from reclassify_image_bank import run_reclassification
+        stats = run_reclassification()
+        return jsonify({'success': True, 'message': 'Image Bank reclassified successfully', 'stats': stats})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

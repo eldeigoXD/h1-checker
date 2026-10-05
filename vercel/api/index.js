@@ -210,11 +210,15 @@ module.exports = async (req, res) => {
 
   // 0.7. Image Bank API Endpoints & Sync
   if (pathname === '/api/image-bank/stats' && req.method === 'GET') {
+    const yearCounts = {};
     const makeCounts = {};
     const modelCounts = {};
     const categoryCounts = {};
 
     imageBankDb.forEach(asset => {
+      if (asset.year) {
+        yearCounts[asset.year] = (yearCounts[asset.year] || 0) + 1;
+      }
       if (asset.make && asset.make !== 'unknown') {
         makeCounts[asset.make] = (makeCounts[asset.make] || 0) + 1;
       }
@@ -226,6 +230,7 @@ module.exports = async (req, res) => {
       }
     });
 
+    const years = Object.keys(yearCounts).sort().reverse().map(y => ({ year: y, count: yearCounts[y] }));
     const makes = Object.keys(makeCounts).map(m => ({ make: m, count: makeCounts[m] }));
     const models = Object.keys(modelCounts).map(m => ({ model: m, count: modelCounts[m] }));
     const categories = Object.keys(categoryCounts).map(c => ({ category: c, count: categoryCounts[c] }));
@@ -234,6 +239,7 @@ module.exports = async (req, res) => {
       success: true,
       stats: {
         total_assets: imageBankDb.length,
+        years: years,
         makes: makes,
         models: models,
         categories: categories
@@ -242,6 +248,7 @@ module.exports = async (req, res) => {
   }
 
   if (pathname === '/api/image-bank' && req.method === 'GET') {
+    const year = url.searchParams.get('year');
     const make = url.searchParams.get('make');
     const model = url.searchParams.get('model');
     const condition = url.searchParams.get('condition');
@@ -252,6 +259,9 @@ module.exports = async (req, res) => {
 
     let filtered = [...imageBankDb];
 
+    if (year && year.toLowerCase() !== 'all') {
+      filtered = filtered.filter(a => (a.year || '') === year);
+    }
     if (make) {
       filtered = filtered.filter(a => (a.make || '').toLowerCase() === make.toLowerCase());
     }
@@ -267,6 +277,7 @@ module.exports = async (req, res) => {
     if (search) {
       const q = search.toLowerCase();
       filtered = filtered.filter(a => 
+        (a.year || '').toLowerCase().includes(q) ||
         (a.surrounding_text || '').toLowerCase().includes(q) ||
         (a.alt_text || '').toLowerCase().includes(q) ||
         (a.section_title || '').toLowerCase().includes(q) ||

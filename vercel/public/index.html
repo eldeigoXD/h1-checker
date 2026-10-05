@@ -593,7 +593,7 @@
             </div>
 
             <!-- Filter Controls -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.6rem; background: rgba(255,255,255,0.03); padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; background: rgba(255,255,255,0.03); padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.08);">
                 <div>
                     <label style="font-size: 0.75rem; color: #aaa; display: block; margin-bottom: 0.2rem;">Make</label>
                     <select id="img-bank-make-select" style="width: 100%; font-size: 0.85rem; padding: 0.4rem; background: #181824; color: #fff; border: 1px solid #333; border-radius: 4px;">
@@ -604,6 +604,12 @@
                     <label style="font-size: 0.75rem; color: #aaa; display: block; margin-bottom: 0.2rem;">Model</label>
                     <select id="img-bank-model-select" style="width: 100%; font-size: 0.85rem; padding: 0.4rem; background: #181824; color: #fff; border: 1px solid #333; border-radius: 4px;">
                         <option value="">All Models</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: #aaa; display: block; margin-bottom: 0.2rem;">Year</label>
+                    <select id="img-bank-year-select" style="width: 100%; font-size: 0.85rem; padding: 0.4rem; background: #181824; color: #fff; border: 1px solid #333; border-radius: 4px;">
+                        <option value="">All Years</option>
                     </select>
                 </div>
                 <div>
@@ -619,11 +625,14 @@
                     <select id="img-bank-category-select" style="width: 100%; font-size: 0.85rem; padding: 0.4rem; background: #181824; color: #fff; border: 1px solid #333; border-radius: 4px;">
                         <option value="all">All Categories</option>
                         <option value="performance">Performance</option>
-                        <option value="exterior">Exterior</option>
+                        <option value="lifestyle">Lifestyle</option>
                         <option value="interior">Interior</option>
-                        <option value="safety">Safety</option>
+                        <option value="service">Service & Parts</option>
+                        <option value="exterior">Exterior</option>
                         <option value="technology">Technology</option>
+                        <option value="safety">Safety</option>
                         <option value="trims">Trims</option>
+                        <option value="general">General</option>
                     </select>
                 </div>
                 <div>
@@ -633,9 +642,10 @@
             </div>
 
             <!-- Stats Bar -->
-            <div id="img-bank-stats-bar" style="font-size: 0.8rem; color: #bbb; margin-bottom: 0.8rem; display: flex; justify-content: space-between;">
+            <div id="img-bank-stats-bar" style="font-size: 0.8rem; color: #bbb; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <span>Total Assets: <strong id="img-bank-total-count">0</strong></span>
-                <span id="img-bank-filter-desc">Showing top assets sorted by usage frequency</span>
+                <span id="img-bank-filter-desc">Sorted by usage frequency</span>
+                <button id="img-bank-reclassify-btn" class="outline-btn" style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.4); color: #64b5f6; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;" title="Re-analizar todas las imágenes con la taxonomía Make/Year/Model y Categorías">🔄 Reclasificar Banco</button>
             </div>
 
             <!-- Image Grid Container -->

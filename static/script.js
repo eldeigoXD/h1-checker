@@ -3183,9 +3183,11 @@ const imgBankGrid = document.getElementById('image-bank-grid');
 
 const makeSelect = document.getElementById('img-bank-make-select');
 const modelSelect = document.getElementById('img-bank-model-select');
+const yearSelect = document.getElementById('img-bank-year-select');
 const conditionSelect = document.getElementById('img-bank-condition-select');
 const categorySelect = document.getElementById('img-bank-category-select');
 const searchInput = document.getElementById('img-bank-search-input');
+const reclassifyBtn = document.getElementById('img-bank-reclassify-btn');
 
 if (imageBankBtn && imageBankModal) {
     imageBankBtn.addEventListener('click', () => {
@@ -3201,11 +3203,35 @@ if (closeImageBankBtn && imageBankModal) {
     });
 }
 
-[makeSelect, modelSelect, conditionSelect, categorySelect].forEach(select => {
+[makeSelect, modelSelect, yearSelect, conditionSelect, categorySelect].forEach(select => {
     if (select) {
         select.addEventListener('change', () => fetchImageBankAssets());
     }
 });
+
+if (reclassifyBtn) {
+    reclassifyBtn.addEventListener('click', async () => {
+        if (!confirm('¿Deseas reclasificar todo el banco de imágenes con las nuevas reglas de año, marca, modelo y categorías?')) return;
+        reclassifyBtn.disabled = true;
+        reclassifyBtn.textContent = '⏳ Reclasificando...';
+        try {
+            const res = await fetch('/api/image-bank/reclassify', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                alert(`¡Banco reclasificado con éxito!\nMakes: ${data.stats.makes}\nModels: ${data.stats.models}\nYears: ${data.stats.years}`);
+                await loadBankStats();
+                await fetchImageBankAssets();
+            } else {
+                alert('Error al reclasificar: ' + (data.error || 'Desconocido'));
+            }
+        } catch(e) {
+            alert('Error de conexión al reclasificar: ' + e.message);
+        } finally {
+            reclassifyBtn.disabled = false;
+            reclassifyBtn.textContent = '🔄 Reclasificar Banco';
+        }
+    });
+}
 
 if (searchInput) {
     let debounceTimer;
@@ -3221,21 +3247,38 @@ async function loadBankStats() {
         const data = await res.json();
         if (data.success && data.stats) {
             const stats = data.stats;
-            if (makeSelect && makeSelect.options.length <= 1) {
+            if (makeSelect) {
+                const cur = makeSelect.value;
+                makeSelect.innerHTML = '<option value="">All Makes</option>';
                 stats.makes.forEach(m => {
                     const opt = document.createElement('option');
                     opt.value = m.make;
                     opt.textContent = `${m.make} (${m.count})`;
                     makeSelect.appendChild(opt);
                 });
+                if (cur) makeSelect.value = cur;
             }
-            if (modelSelect && modelSelect.options.length <= 1) {
+            if (modelSelect) {
+                const cur = modelSelect.value;
+                modelSelect.innerHTML = '<option value="">All Models</option>';
                 stats.models.forEach(m => {
                     const opt = document.createElement('option');
                     opt.value = m.model;
                     opt.textContent = `${m.model} (${m.count})`;
                     modelSelect.appendChild(opt);
                 });
+                if (cur) modelSelect.value = cur;
+            }
+            if (yearSelect && stats.years) {
+                const cur = yearSelect.value;
+                yearSelect.innerHTML = '<option value="">All Years</option>';
+                stats.years.forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y.year;
+                    opt.textContent = `${y.year} (${y.count})`;
+                    yearSelect.appendChild(opt);
+                });
+                if (cur) yearSelect.value = cur;
             }
         }
     } catch(err) {
@@ -3249,11 +3292,13 @@ async function fetchImageBankAssets() {
 
     const make = makeSelect ? makeSelect.value : '';
     const model = modelSelect ? modelSelect.value : '';
+    const year = yearSelect ? yearSelect.value : '';
     const condition = conditionSelect ? conditionSelect.value : 'all';
     const category = categorySelect ? categorySelect.value : 'all';
     const search = searchInput ? searchInput.value.trim() : '';
 
     const params = new URLSearchParams();
+    if (year) params.append('year', year);
     if (make) params.append('make', make);
     if (model) params.append('model', model);
     if (condition && condition !== 'all') params.append('condition', condition);
@@ -3285,8 +3330,10 @@ async function fetchImageBankAssets() {
 
             const catBadgeColors = {
                 'performance': '#ff9800',
-                'exterior': '#2196f3',
+                'lifestyle': '#8bc34a',
                 'interior': '#9c27b0',
+                'service': '#ff5722',
+                'exterior': '#2196f3',
                 'safety': '#4caf50',
                 'technology': '#00bcd4',
                 'trims': '#e91e63',
@@ -3294,10 +3341,16 @@ async function fetchImageBankAssets() {
             };
             const catColor = catBadgeColors[asset.category] || '#78909c';
 
+            const titleParts = [];
+            if (asset.year) titleParts.push(asset.year);
+            if (asset.make && asset.make !== 'unknown') titleParts.push(asset.make);
+            if (asset.model && asset.model !== 'unknown') titleParts.push(asset.model);
+            const vehicleTitle = titleParts.length > 0 ? titleParts.join(' ') : 'Vehicle Asset';
+
             card.innerHTML = `
                 <div style="position: relative; width: 100%; height: 160px; background: #0c0c12; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                     <a href="${escapeHtml(asset.image_url)}" target="_blank" rel="noreferrer" title="Click to view full resolution" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
-                        <img src="${escapeHtml(asset.image_url)}" alt="${escapeHtml(asset.alt_text || 'Vehicle Asset')}" referrerpolicy="no-referrer" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
+                        <img src="${escapeHtml(asset.image_url)}" alt="${escapeHtml(asset.alt_text || vehicleTitle)}" referrerpolicy="no-referrer" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23666\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>';">
                     </a>
                     
                     <span style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.75); color: #4fc3f7; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 1px solid rgba(79,195,247,0.4);">
@@ -3312,7 +3365,7 @@ async function fetchImageBankAssets() {
                 <div style="padding: 0.7rem; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between;">
                     <div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 0.3rem;">
-                            <span>${escapeHtml(asset.make || 'Unknown')} ${escapeHtml(asset.model || '')}</span>
+                            <span>${escapeHtml(vehicleTitle)}</span>
                             <span style="color: #aaa; font-size: 0.75rem; text-transform: capitalize;">${escapeHtml(asset.condition || 'General')}</span>
                         </div>
                         <p style="font-size: 0.75rem; color: #bbb; margin: 0 0 0.5rem 0; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(asset.alt_text || asset.section_title || asset.surrounding_text || '')}">
