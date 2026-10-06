@@ -650,7 +650,7 @@ var done = arguments[arguments.length - 1];
             var alreadyMatched = ownerParts.length > 0 && ownerParts.every(function(p) { return currentVal.indexOf(p) !== -1; });
 
             if (alreadyMatched) {
-                // Ya tiene al targetOwner
+                // Ya tiene al targetOwner seleccionado
                 setTimeout(next, 300);
                 return;
             }
@@ -675,31 +675,55 @@ var done = arguments[arguments.length - 1];
                         if (targetOpt) break;
                     }
 
-                    var options = cDoc.querySelectorAll('[role="option"], div[id*="item"], .sds-option-base, li, span');
-                    for (var o = 0; o < options.length; o++) {
-                        var oTxt = (options[o].innerText || options[o].textContent || '').trim().toLowerCase();
+                    // IMPORTANTE: Buscar opciones EXCLUSIVAMENTE dentro del menú/listbox del desplegable
+                    // (NUNCA en la tabla ni en celdas de la cuadrícula, para evitar coincidir con filas ya asignadas)
+                    var menu = cDoc.querySelector('[role="listbox"], [id*="pli-1-list"], .sds-select-combobox__menu, .sds-select-menu, [id*="menu-pli-1"]');
+                    var optionEls = [];
+                    if (menu) {
+                        optionEls = menu.querySelectorAll('[role="option"], [id*="item"], .sds-option-base, li');
+                    }
+                    if (!optionEls || optionEls.length === 0) {
+                        optionEls = cDoc.querySelectorAll('[id^="pli-1-item-"], [role="listbox"] [role="option"]');
+                    }
+
+                    for (var o = 0; o < optionEls.length; o++) {
+                        var oTxt = (optionEls[o].innerText || optionEls[o].textContent || '').trim().toLowerCase();
                         if (ownerParts.length > 0 && ownerParts.every(function(p) { return oTxt.indexOf(p) !== -1; })) {
-                            targetOpt = options[o].closest('[role="option"], div') || options[o];
+                            targetOpt = optionEls[o];
                             break;
                         }
                     }
                     if (targetOpt) break;
+
+                    // Si tras 1.5s no se ve en los primeros elementos, hacer scroll hacia abajo en el listbox
+                    if (menu && elapsed > 1500) {
+                        menu.scrollTop += 200;
+                    }
                 }
 
                 if (targetOpt) {
                     clearInterval(ownerTimer);
+                    targetOpt.scrollIntoView({ behavior: 'auto', block: 'nearest' });
                     fireMouseEvent(targetOpt, 'mousedown');
                     fireMouseEvent(targetOpt, 'mouseup');
                     targetOpt.click();
 
-                    if (ownerCb.tagName === 'INPUT') {
-                        ownerCb.value = targetOwner;
-                        ownerCb.dispatchEvent(new Event('input', { bubbles: true }));
-                        ownerCb.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    // Pausa deliberada de 800ms tras seleccionar Owner
-                    setTimeout(next, 800);
-                } else if (elapsed > 4500) {
+                    // Cerrar el desplegable y desenfocar para que Smartsheet valide el formulario y active Save
+                    setTimeout(function() {
+                        try {
+                            ownerCb.blur && ownerCb.blur();
+                        } catch(e) {}
+                        
+                        // Clic en área neutral del panel (etiqueta o encabezado) para cerrar cualquier menú flotante
+                        var neutral = panel.querySelector('.details-title, h2, h3, label, .details-header');
+                        if (neutral) {
+                            fireMouseEvent(neutral, 'mousedown');
+                            fireMouseEvent(neutral, 'mouseup');
+                            neutral.click();
+                        }
+                        setTimeout(next, 600);
+                    }, 400);
+                } else if (elapsed > 5500) {
                     clearInterval(ownerTimer);
                     setTimeout(next, 300);
                 }
@@ -707,13 +731,14 @@ var done = arguments[arguments.length - 1];
         }
 
         // =====================================================================
-        // PASO C: Seleccionar QA Status -> In progress (#pli-2)
+        // PASO C: Seleccionar QA Status -> In progress (#pli-2) (si existe en el panel)
         // =====================================================================
         function setQAStatusField(panel, doc, next) {
-            var statusCb = panel.querySelector('#pli-2') || doc.querySelector('#pli-2');
+            // Buscar campo de Status EXCLUSIVAMENTE dentro del panel lateral
+            var statusCb = panel.querySelector('#pli-2, [aria-label*="Status" i], [name*="Status" i]');
             if (!statusCb) {
-                console.warn('[CLAIM] Campo de QA Status #pli-2 no encontrado');
-                setTimeout(next, 400);
+                // En esta vista el QA Status se asigna automáticamente al guardar el Owner
+                setTimeout(next, 300);
                 return;
             }
 
@@ -728,7 +753,7 @@ var done = arguments[arguments.length - 1];
             fireMouseEvent(statusCb, 'mouseup');
             statusCb.click();
 
-            // Esperar opción "In progress"
+            // Esperar opción "In progress" dentro del desplegable
             var startWaitStatus = Date.now();
             var statusTimer = setInterval(function() {
                 var elapsed = Date.now() - startWaitStatus;
@@ -736,15 +761,16 @@ var done = arguments[arguments.length - 1];
 
                 for (var d = 0; d < docs.length; d++) {
                     var cDoc = docs[d];
-                    // Selector exacto de la grabación: #pli-2-item-0
+                    // Selector rápido: #pli-2-item-0
                     inProgOpt = cDoc.querySelector('#pli-2-item-0');
                     if (inProgOpt) break;
 
-                    var options = cDoc.querySelectorAll('[role="option"], div[id*="item"], .sds-option-base, li, span');
-                    for (var o = 0; o < options.length; o++) {
-                        var oTxt = (options[o].innerText || options[o].textContent || '').trim().toLowerCase();
+                    var sMenu = cDoc.querySelector('[role="listbox"], [id*="pli-2-list"], .sds-select-combobox__menu');
+                    var sOptions = sMenu ? sMenu.querySelectorAll('[role="option"], [id*="item"], li') : cDoc.querySelectorAll('[id^="pli-2-item-"]');
+                    for (var o = 0; o < sOptions.length; o++) {
+                        var oTxt = (sOptions[o].innerText || sOptions[o].textContent || '').trim().toLowerCase();
                         if (oTxt === 'in progress') {
-                            inProgOpt = options[o].closest('[role="option"], div') || options[o];
+                            inProgOpt = sOptions[o];
                             break;
                         }
                     }
@@ -757,14 +783,11 @@ var done = arguments[arguments.length - 1];
                     fireMouseEvent(inProgOpt, 'mouseup');
                     inProgOpt.click();
 
-                    if (statusCb.tagName === 'INPUT') {
-                        statusCb.value = 'In progress';
-                        statusCb.dispatchEvent(new Event('input', { bubbles: true }));
-                        statusCb.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    // Pausa deliberada de 800ms tras seleccionar Status
-                    setTimeout(next, 800);
-                } else if (elapsed > 4500) {
+                    setTimeout(function() {
+                        try { statusCb.blur && statusCb.blur(); } catch(e) {}
+                        setTimeout(next, 600);
+                    }, 300);
+                } else if (elapsed > 4000) {
                     clearInterval(statusTimer);
                     setTimeout(next, 300);
                 }
@@ -781,11 +804,24 @@ var done = arguments[arguments.length - 1];
                 var saveBtn = null;
 
                 for (var d = 0; d < docs.length; d++) {
-                    saveBtn = docs[d].querySelector('#detailsDataFooterSaveBtn, button#detailsDataFooterSaveBtn, button[data-client-id="details-footer-save"]');
+                    saveBtn = docs[d].querySelector('#detailsDataFooterSaveBtn, button#detailsDataFooterSaveBtn, button[data-client-id="details-footer-save"], button[data-testid="details-footer-save"]');
                     if (saveBtn) break;
                 }
 
                 if (saveBtn) {
+                    // Si el botón Save sigue deshabilitado tras 1s, cerrar menús flotantes y desenfocar
+                    if (elapsed > 800 && (saveBtn.disabled || saveBtn.getAttribute('aria-disabled') === 'true' || saveBtn.classList.contains('disabled'))) {
+                        if (doc.activeElement && doc.activeElement !== doc.body) {
+                            try { doc.activeElement.blur && doc.activeElement.blur(); } catch(e) {}
+                        }
+                        var neutral = panel.querySelector('.details-title, h2, h3, label, .details-header');
+                        if (neutral) {
+                            fireMouseEvent(neutral, 'mousedown');
+                            fireMouseEvent(neutral, 'mouseup');
+                            neutral.click();
+                        }
+                    }
+
                     var isDisabled = saveBtn.disabled || saveBtn.getAttribute('aria-disabled') === 'true' || saveBtn.classList.contains('disabled');
                     if (!isDisabled) {
                         clearInterval(saveTimer);
@@ -804,7 +840,7 @@ var done = arguments[arguments.length - 1];
                     }
                 }
 
-                if (elapsed > 5500) {
+                if (elapsed > 6000) {
                     clearInterval(saveTimer);
                     done({ success: true, saved: false, reason: 'El botón Save estuvo deshabilitado o expiró el tiempo', deliverable_id: delId });
                 }
