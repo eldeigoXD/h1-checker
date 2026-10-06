@@ -1,0 +1,58 @@
+================================================================================
+          ASIGNADOR AUTOMÁTICO DE CASOS EN SMARTSHEET (QA TOOL)
+================================================================================
+
+Este programa asigna casos en blanco de Smartsheet automáticamente de arriba hacia
+abajo, colocando:
+  • Fecha: Fecha de HOY
+  • QA Completed By (Owner): El nombre que elijas (puedes guardarlo)
+  • QA Status: In progress
+Al terminar de asignar los casos, refresca la página (F5) automáticamente.
+
+--------------------------------------------------------------------------------
+REQUISITOS PREVIOS (Solo se hace la primera vez)
+--------------------------------------------------------------------------------
+1. Tener Python instalado (versión 3.8 o superior).
+   * Al instalar Python, asegúrate de marcar la casilla "Add Python to PATH".
+2. Ejecutar (doble clic) en:
+   👉 instalar_dependencias.bat
+   (Esto instalará automáticamente la librería 'selenium').
+
+--------------------------------------------------------------------------------
+CÓMO USAR EL PROGRAMA DÍA A DÍA
+--------------------------------------------------------------------------------
+Paso 1: ABRIR NAVEGADOR CON PUERTO DEPURACIÓN
+  • Si usas Google Chrome: haz doble clic en 'lanzar_chrome_sesion.bat'.
+  • Si usas Helium: haz doble clic en 'lanzar_helium_sesion.bat'.
+  (Esto abre una ventana de navegador conectable en el puerto 9222).
+
+Paso 2: ENTRAR A SMARTSHEET
+  • En esa misma ventana de navegador, entra a Smartsheet y abre tu reporte:
+    "Report to start QA V2"
+  • Inicia sesión si te lo pide y deja la pestaña abierta.
+
+Paso 3: ASIGNAR CASOS
+  • Haz doble clic en:
+    👉 asignar_casos.bat
+  • El programa te preguntará:
+    1. ¿A quién asignar?:
+       - Puedes presionar ENTER para elegir a Diego Torrez.
+       - Puedes elegir un nombre previamente guardado.
+       - O elegir la opción de "Ingresar nuevo nombre" (escribes tu nombre y apellido
+         y el programa lo recordará automáticamente para las próximas veces).
+    2. ¿Cuántos casos en blanco deseas tomar? (por defecto 10).
+    3. ¿De qué fecha completada tomar los casos de la tabla?
+       - [1] Ayer (ENTER)
+       - [2] Hoy
+       - O escribir una fecha específica (MM/DD/AA).
+
+¡Listo! El programa buscará los casos de arriba hacia abajo, abrirá cada fila,
+asignará la fecha de hoy, tu nombre y estado "In progress", guardará los cambios y
+al finalizar dará un F5 a Smartsheet para que veas todas las filas actualizadas.
+
+--------------------------------------------------------------------------------
+USO POR LÍNEA DE COMANDOS (Opcional para usuarios avanzados)
+--------------------------------------------------------------------------------
+Puedes pasar argumentos directamente si no quieres responder los menús:
+  python assign_cases_runner.py --owner "Juan Perez" --count 10 --date ayer
+================================================================================
