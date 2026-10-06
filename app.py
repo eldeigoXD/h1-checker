@@ -3297,23 +3297,71 @@ def verify_custom_rules(custom_rules_text: str, soup, inventory_info: dict) -> l
                         has_faq_header = True
                         break
 
-            if 'accordion' in rule_lower:
+            is_negation = any(neg in rule_lower for neg in ['not', 'no', 'without', 'remove', "don't", 'never'])
+            has_faq_text = False
+            if soup:
+                body_text = soup.get_text().lower()
+                if any(kw in body_text for kw in ['frequently asked questions', 'frequently asked question', 'faqs', 'common questions']):
+                    has_faq_text = True
+            has_faq_content = has_acc or has_faq_widget or has_faq_header or has_faq_text
+
+            if 'accordion' in rule_lower and is_negation:
+                if has_acc:
+                    res['status'] = 'error'
+                    res['found_text'] = 'Accordion widget detected on page, but prohibited/requested without accordion style.'
+                else:
+                    res['status'] = 'success'
+                    if has_faq_content:
+                        res['found_text'] = 'FAQ section detected in plain text/content without accordion (as requested: *NOT accordion style).'
+                    else:
+                        res['found_text'] = 'No accordion widget detected on page (as requested).'
+            elif 'accordion' in rule_lower and not is_negation:
                 if has_acc:
                     res['status'] = 'success'
                     res['found_text'] = 'Accordion widget detected for FAQ section.'
-                elif has_faq_widget or has_faq_header:
-                    res['status'] = 'manual_review'
-                    res['found_text'] = 'FAQ section found as plain text/HTML, but requested specifically as accordion widget.'
+                elif has_faq_content:
+                    res['status'] = 'success'
+                    res['found_text'] = 'FAQ section detected in page content (formatted as HTML content without accordion).'
                 else:
                     res['status'] = 'error'
-                    res['found_text'] = 'No Accordion or FAQ section found.'
+                    res['found_text'] = 'No Accordion or FAQ section found on page.'
             else:
-                if has_acc or has_faq_widget or has_faq_header:
+                if has_faq_content:
                     res['status'] = 'success'
                     res['found_text'] = 'FAQ section detected (Accordion or HTML text).'
                 else:
                     res['status'] = 'error'
                     res['found_text'] = 'No FAQ section found.'
+
+        # 4b. CTAs / Buttons / Links
+        elif any(k in rule_lower for k in ['cta', 'ctas', 'button', 'buttons', 'link', 'links', 'call to action', 'calls to action']):
+            links = soup.find_all(['a', 'button']) if soup else []
+            CTA_STOP_WORDS = {
+                'add', 'same', 'button', 'buttons', 'link', 'links', 'cta', 'ctas', 'call', 'calls',
+                'action', 'actions', 'the', 'to', 'some', 'of', 'and', 'with', 'for', 'in', 'on', 'a',
+                'an', 'page', 'site', 'include', 'create', 'insert', 'put', 'have', 'make', 'all',
+                'please', 'more', 'new', 'used'
+            }
+            words = [w for w in rule_lower.replace("'", "").replace('"', '').split() if w not in CTA_STOP_WORDS]
+            if words:
+                matching_links = [
+                    a for a in links 
+                    if any(kw in (a.get_text() or '').lower() or kw in (a.get('href') or '').lower() or kw in (a.get('aria-label') or '').lower() for kw in words)
+                ]
+                if matching_links:
+                    res['status'] = 'success'
+                    res['found_text'] = f"Links or buttons related to '{' '.join(words)}' found on page ({len(matching_links)} found)."
+                else:
+                    res['status'] = 'error'
+                    res['found_text'] = f"Could not find links or buttons for '{' '.join(words)}'."
+            else:
+                cta_elements = soup.select('.btn, .button, [class*="btn-"], [class*="cta"], [role="button"], a[href], button') if soup else []
+                if len(cta_elements) > 0 or len(links) > 0:
+                    res['status'] = 'success'
+                    res['found_text'] = f"Call-to-Action (CTA) buttons/links detected on page ({len(cta_elements or links)} elements found)."
+                else:
+                    res['status'] = 'error'
+                    res['found_text'] = "No buttons or links found on page."
 
         # 5. Lead / Contact Form
         elif 'form' in rule_lower or 'lead' in rule_lower or 'contact' in rule_lower:

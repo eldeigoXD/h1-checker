@@ -35,8 +35,8 @@ Natural Language Instructions: "{instructions}"
 
 Parse the instructions into a JSON object.
 Allowed 'type' values for rules:
-  - "presence": an element must exist (e.g. breadcrumbs, accordion, inventory widget, hero image, grid layout, list layout, lead form, contact form, imagery/photos).
-  - "absence": an element must NOT exist (e.g. remove map, no breadcrumbs).
+  - "presence": an element must exist (e.g. breadcrumbs, accordion, inventory widget, hero image, grid layout, list layout, lead form, contact form, imagery/photos, ctas/buttons, faqs).
+  - "absence": an element must NOT exist (e.g. remove map, no breadcrumbs, *NOT accordion style, no accordion, remove accordion).
   - "inventory_config": specific inventory filters requested (e.g. new vehicles under $30,000, used trucks under 20k, Ram 1500).
   - "tone": ONLY use if the user EXPLICITLY requested a specific writing tone or style (e.g. "use formal tone", "casual tone"). NEVER generate a tone rule if not explicitly requested in the instructions.
   - "other": any other instruction.
@@ -134,6 +134,8 @@ def parse_instructions(instructions: str) -> tuple[List[Dict], Dict]:
         'near', 'harrisonburg', 'portsmouth', 'texas', 'florida', 'county', 'please'
     }
 
+    TECH_SHORT_WORDS = {'cta', 'ctas', 'faq', 'faqs', 'map', 'nav', 'h1', 'seo', 'tab', 'top', 'url'}
+
     for r in raw_rules:
         rtype = r.get("type")
         orig = (r.get("original_text") or "").lower().strip()
@@ -151,15 +153,15 @@ def parse_instructions(instructions: str) -> tuple[List[Dict], Dict]:
             continue
 
         # 2. General rules validation: Ensure the element or non-trivial words actually come from user text
-        orig_words = [w for w in orig.split() if len(w) > 3 and w not in STOP_WORDS]
-        elem_words = [w for w in elem.split() if len(w) > 3 and w not in STOP_WORDS]
+        orig_words = [w for w in orig.split() if (len(w) > 3 or w in TECH_SHORT_WORDS) and w not in STOP_WORDS]
+        elem_words = [w for w in elem.split() if (len(w) > 3 or w in TECH_SHORT_WORDS) and w not in STOP_WORDS]
 
         if orig_words and any(w in inst_low for w in orig_words):
             valid_rules.append(r)
         elif elem_words and any(w in inst_low for w in elem_words):
             valid_rules.append(r)
-        elif elem and any(k in elem for k in ['breadcrumb', 'hero', 'form', 'map', 'accordion', 'faq', 'photo', 'image', 'layout', 'grid', 'list', 'filter', 'navigation', 'nav', 'section', 'sections', 'menu', 'header']):
-            if any(k in inst_low for k in [elem, elem.replace('_', ' '), elem.replace('-', ' ')]):
+        elif elem and any(k in elem for k in ['breadcrumb', 'hero', 'form', 'map', 'accordion', 'faq', 'cta', 'button', 'link', 'photo', 'image', 'layout', 'grid', 'list', 'filter', 'navigation', 'nav', 'section', 'sections', 'menu', 'header']):
+            if any(k in inst_low for k in [elem, elem.replace('_', ' '), elem.replace('-', ' '), 'cta', 'ctas', 'button', 'faq', 'faqs', 'accordion']):
                 valid_rules.append(r)
 
     return valid_rules, overrides
@@ -251,20 +253,57 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
                     has_faq_header = True
                     break
 
-        if "accordion" in element or "accordion" in original_txt:
+        has_faq_text = False
+        if soup:
+            body_text = soup.get_text().lower()
+            if any(kw in body_text for kw in ['frequently asked questions', 'frequently asked question', 'faqs', 'common questions']):
+                has_faq_text = True
+        has_faq_content = has_acc or has_faq_widget or has_faq_header or has_faq_text
+
+        is_negation = (
+            not is_presence
+            or any(neg in element for neg in ['not', 'no', 'without', 'remove', "don't", 'never'])
+            or any(neg in original_txt for neg in ['not', 'no', 'without', 'remove', "don't", 'never'])
+        )
+
+        if is_negation and ('accordion' in element or 'accordion' in original_txt):
+            # Prohibición de acordeón (ej: *NOT accordion style, Remove accordion, no accordion)
             if has_acc:
                 found = True
-                details = "Accordion widget detected for FAQ section."
-            elif has_faq_widget or has_faq_header:
-                found = True
-                status = "manual_review"
-                details = "FAQ section found in plain text/HTML headers, but requested specifically as accordion widget."
+                status = "error"
+                details = "Accordion widget detected on page, but prohibited/requested without accordion style."
             else:
                 found = False
-                details = "No Accordion or FAQ section found."
+                status = "success"
+                if has_faq_content:
+                    details = "FAQ section detected in plain text/content without accordion (as requested: *NOT accordion style)."
+                else:
+                    details = "No accordion widget detected on page (as requested)."
+        elif "accordion" in element or "accordion" in original_txt:
+            # Petición positiva específica de acordeón
+            if has_acc:
+                found = True
+                status = "success"
+                details = "Accordion widget detected for FAQ section."
+            elif has_faq_content:
+                # FAQs existen en contenido (content/texto plano)
+                found = True
+                status = "success"
+                details = "FAQ section detected in page content (formatted as HTML content without accordion)."
+            else:
+                found = False
+                status = "error"
+                details = "No Accordion or FAQ section found on page."
         else:
-            found = has_acc or has_faq_widget or has_faq_header
-            details = "FAQ section detected (Accordion or HTML text)." if found else "No FAQ section found."
+            # Petición general de FAQs ("Add faqs", "faqs", etc.)
+            if has_faq_content:
+                found = True
+                status = "success"
+                details = "FAQ section detected on page (Accordion or HTML content)."
+            else:
+                found = False
+                status = "error"
+                details = "No FAQ section or questions found on page."
         
     elif "map" in element:
         has_map = bool(soup.find(attrs={'data-widget-name': lambda x: x and 'map' in x.lower()})) if soup else False
@@ -288,14 +327,10 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
             status = "success"
             details = f"Inventory configuration rule verified against target filter."
 
-
     elif "inventory widget" in element:
-        # Assuming inventory status will be handled globally, but we can do a quick check
         found = bool(soup.find(attrs={'data-widget-name': lambda x: x and 'inventory' in x.lower()})) if soup else False
         details = "Inventory widget detected in DOM." if found else "No inventory widget found."
 
-
-        
     elif "grid" in element:
         found = bool(soup.find(attrs={'class': lambda x: x and 'grid' in x.lower()}))
         details = "Grid layout classes detected." if found else "Grid layout not detected."
@@ -309,15 +344,32 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
         has_widget = bool(soup.find(attrs={'data-widget-name': lambda x: x and ('form' in x.lower() or 'lead' in x.lower() or 'contact' in x.lower())}))
         has_class = bool(soup.find(attrs={'class': lambda x: x and ('form' in x.lower() or 'lead' in x.lower() or 'contact' in x.lower())}))
         found = has_form or has_widget or has_class
+        details = "Lead/Contact form component detected on page." if found else "No lead/contact form found on page."
+
     elif any(k in element for k in ['button', 'link', 'cta']) or any(k in original_txt for k in ['button', 'link', 'cta']):
         links = soup.find_all(['a', 'button']) if soup else []
-        words = [w for w in element.replace("'", "").replace('"', '').split() if w not in ['add', 'same', 'button', 'buttons', 'link', 'links', 'the', 'to', 'some', 'of', 'and', 'with', 'for', 'in', 'on', 'a', 'an']]
+        CTA_STOP_WORDS = {
+            'add', 'same', 'button', 'buttons', 'link', 'links', 'cta', 'ctas', 'call', 'calls',
+            'action', 'actions', 'the', 'to', 'some', 'of', 'and', 'with', 'for', 'in', 'on', 'a',
+            'an', 'page', 'site', 'include', 'create', 'insert', 'put', 'have', 'make', 'all',
+            'please', 'more', 'new', 'used'
+        }
+        words = [w for w in element.replace("'", "").replace('"', '').split() if w not in CTA_STOP_WORDS]
+        if not words:
+            words = [w for w in original_txt.replace("'", "").replace('"', '').split() if w not in CTA_STOP_WORDS]
+
         if words:
-            found = any(any(kw in (a.get_text() or '').lower() or kw in (a.get('href') or '').lower() for kw in words) for a in links)
-            details = f"Links or buttons related to '{' '.join(words)}' found on page." if found else f"Could not find links or buttons for '{' '.join(words)}'."
+            matching_links = [
+                a for a in links 
+                if any(kw in (a.get_text() or '').lower() or kw in (a.get('href') or '').lower() or kw in (a.get('aria-label') or '').lower() for kw in words)
+            ]
+            found = len(matching_links) > 0
+            details = f"Links or buttons related to '{' '.join(words)}' found on page ({len(matching_links)} found)." if found else f"Could not find links or buttons for '{' '.join(words)}'."
         else:
-            found = len(links) > 0
-            details = f"Button/Link elements detected on page ({len(links)} found)." if found else "No buttons or links found on page."
+            cta_elements = soup.select('.btn, .button, [class*="btn-"], [class*="cta"], [role="button"], a[href], button') if soup else []
+            found = len(cta_elements) > 0 or len(links) > 0
+            count = len(cta_elements or links)
+            details = f"Call-to-Action (CTA) buttons/links detected on page ({count} elements found)." if found else "No buttons or links found on page."
             
     elif any(k in element for k in ['navigation', 'nav', 'menu', 'header']) or any(k in original_txt for k in ['navigation', 'nav', 'menu', 'header']):
         has_nav = (
@@ -366,15 +418,15 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
         if is_presence:
             status = "success" if found else "error"
             reason = details if details else f"Required element '{element}' is missing."
-
         else:
             status = "error" if found else "success"
-            reason = f"Prohibited element '{element}' was found on the page." if found else f"Prohibited element '{element}' is successfully absent."
+            reason = details if details else (f"Prohibited element '{element}' was found on the page." if found else f"Prohibited element '{element}' is successfully absent.")
     else:
         reason = details
 
+    orig_prefix = 'Add' if is_presence else 'Remove'
     return {
-        "original": rule.get("original_text", f"{'Add' if is_presence else 'Remove'} {element}"),
+        "original": rule.get("original_text", f"{orig_prefix} {element}"),
         "status": status,
         "reason": reason,
         "type": rule.get("type")
