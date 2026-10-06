@@ -734,10 +734,44 @@ var done = arguments[arguments.length - 1];
         // PASO C: Seleccionar QA Status -> In progress (#pli-2) (si existe en el panel)
         // =====================================================================
         function setQAStatusField(panel, doc, next) {
-            // Buscar campo de Status EXCLUSIVAMENTE dentro del panel lateral
-            var statusCb = panel.querySelector('#pli-2, [aria-label*="Status" i], [name*="Status" i]');
+            // Cerrar cualquier menú contextual previo (ej: tres puntos de "Clear Contents / Insert Image")
+            try {
+                doc.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+            } catch(e) {}
+
+            function findStatusCb() {
+                // 1. Selector directo: #pli-2 (comprobando que NO sea un botón de tres puntos)
+                var p2 = panel.querySelector('#pli-2');
+                if (p2 && p2.tagName !== 'BUTTON') return p2;
+
+                // 2. Buscar por etiqueta "QA Status" y obtener su input/combobox dentro del contenedor
+                var labels = panel.querySelectorAll('label, .sds-form-field__label, .field-label, span, div');
+                for (var l = 0; l < labels.length; l++) {
+                    var lTxt = (labels[l].innerText || labels[l].textContent || '').trim().toLowerCase();
+                    if (lTxt.indexOf('qa status') !== -1 && lTxt.indexOf('completed') === -1) {
+                        var p = labels[l].closest('[data-testid^="ffw-"], .form-group, .sds-form-field, .details-item, div') || labels[l].parentElement;
+                        if (p) {
+                            var cb = p.querySelector('input[role="combobox"], input.sds-select-combobox-input, input:not([type="hidden"]), div[role="combobox"]');
+                            if (cb && cb.tagName !== 'BUTTON') return cb;
+                        }
+                    }
+                }
+
+                // 3. Buscar comboboxes en el panel omitiendo explícitamente pli-1 (Owner) y cualquier botón
+                var allCbs = panel.querySelectorAll('input[role="combobox"], input.sds-select-combobox-input, [role="combobox"]:not(button)');
+                for (var c = 0; c < allCbs.length; c++) {
+                    if (allCbs[c].id === 'pli-1') continue;
+                    if (allCbs[c].id === 'pli-2' && allCbs[c].tagName !== 'BUTTON') return allCbs[c];
+                    var val = (allCbs[c].value || allCbs[c].getAttribute('value') || '').trim().toLowerCase();
+                    if (val === '' || val === 'in progress') return allCbs[c];
+                }
+
+                return null;
+            }
+
+            var statusCb = findStatusCb();
             if (!statusCb) {
-                // En esta vista el QA Status se asigna automáticamente al guardar el Owner
+                console.warn('[CLAIM] Campo de QA Status no encontrado en panel, continuando...');
                 setTimeout(next, 300);
                 return;
             }
@@ -765,8 +799,8 @@ var done = arguments[arguments.length - 1];
                     inProgOpt = cDoc.querySelector('#pli-2-item-0');
                     if (inProgOpt) break;
 
-                    var sMenu = cDoc.querySelector('[role="listbox"], [id*="pli-2-list"], .sds-select-combobox__menu');
-                    var sOptions = sMenu ? sMenu.querySelectorAll('[role="option"], [id*="item"], li') : cDoc.querySelectorAll('[id^="pli-2-item-"]');
+                    var sMenu = cDoc.querySelector('[role="listbox"], [id*="pli-2-list"], .sds-select-combobox__menu, .sds-select-menu');
+                    var sOptions = sMenu ? sMenu.querySelectorAll('[role="option"], [id*="item"], .sds-option-base, li') : cDoc.querySelectorAll('[id^="pli-2-item-"], [role="listbox"] [role="option"]');
                     for (var o = 0; o < sOptions.length; o++) {
                         var oTxt = (sOptions[o].innerText || sOptions[o].textContent || '').trim().toLowerCase();
                         if (oTxt === 'in progress') {
@@ -779,12 +813,19 @@ var done = arguments[arguments.length - 1];
 
                 if (inProgOpt) {
                     clearInterval(statusTimer);
+                    inProgOpt.scrollIntoView({ behavior: 'auto', block: 'nearest' });
                     fireMouseEvent(inProgOpt, 'mousedown');
                     fireMouseEvent(inProgOpt, 'mouseup');
                     inProgOpt.click();
 
                     setTimeout(function() {
                         try { statusCb.blur && statusCb.blur(); } catch(e) {}
+                        var neutral = panel.querySelector('.details-title, h2, h3, label, .details-header');
+                        if (neutral) {
+                            fireMouseEvent(neutral, 'mousedown');
+                            fireMouseEvent(neutral, 'mouseup');
+                            neutral.click();
+                        }
                         setTimeout(next, 600);
                     }, 300);
                 } else if (elapsed > 4000) {
