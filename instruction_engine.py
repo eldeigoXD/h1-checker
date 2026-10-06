@@ -241,8 +241,16 @@ def _check_presence_absence(rule: Dict, soup: BeautifulSoup, is_presence: bool, 
         details = "Hero component detected." if found else "No hero component found."
         
     elif "accordion" in element or "faq" in element or "accordion" in original_txt or "faq" in original_txt:
-        has_acc = bool(soup.find(attrs={'class': lambda x: x and 'accordion' in x.lower()})) if soup else False
-        has_faq_widget = bool(soup.find(attrs={'class': lambda x: x and 'faq' in x.lower()})) if soup else False
+        has_acc = bool(
+            soup.find(attrs={'class': lambda x: x and 'accordion' in x.lower()})
+            or soup.find(attrs={'data-widget-name': lambda x: x and 'accordion' in x.lower()})
+            or soup.find(id=lambda x: x and 'accordion' in x.lower())
+        ) if soup else False
+        has_faq_widget = bool(
+            soup.find(attrs={'class': lambda x: x and 'faq' in x.lower()})
+            or soup.find(attrs={'data-widget-name': lambda x: x and 'faq' in x.lower()})
+            or soup.find(id=lambda x: x and 'faq' in x.lower())
+        ) if soup else False
         
         # Check for plain HTML FAQ headers (e.g. <h2>Frequently Asked Questions</h2>)
         has_faq_header = False

@@ -49,17 +49,24 @@ def curl_get_robust(url, timeout=25, headers=None, verify=False, **kwargs):
     parsed = urlparse(url)
     host = parsed.netloc.split(':')[0] if parsed.netloc else ''
 
+    req_headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+    }
+    if headers:
+        req_headers.update(headers)
+
     # Try 1: curl_cffi with Google DoH and forced IPv4
     try:
         s = requests.Session(impersonate='chrome', verify=verify)
         if CurlOpt and hasattr(CurlOpt, 'IPRESOLVE'):
             s.curl_options = {CurlOpt.IPRESOLVE: 1} # 1 = CURL_IPRESOLVE_V4: prevents 21s IPv6 blackhole hangs
-        return s.get(url, timeout=min(timeout, 12), headers=headers, doh_url=DOH_GOOGLE, **kwargs)
+        return s.get(url, timeout=min(timeout, 12), headers=req_headers, doh_url=DOH_GOOGLE, **kwargs)
     except TypeError:
         # Fallback if requests is standard requests library
         import requests as standard_req
-        hdrs = headers or {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-        return standard_req.get(url, headers=hdrs, timeout=timeout, verify=verify)
+        return standard_req.get(url, headers=req_headers, timeout=timeout, verify=verify)
     except Exception as e_google:
         print(f"DEBUG: Try 1 Google DoH failed: {e_google}. Trying clean IP fallback...")
 
@@ -74,7 +81,7 @@ def curl_get_robust(url, timeout=25, headers=None, verify=False, **kwargs):
                     CurlOpt.IPRESOLVE: 1,
                     CurlOpt.RESOLVE: resolve_rules
                 }
-                return s_pin.get(url, timeout=min(timeout, 10), headers=headers, **kwargs)
+                return s_pin.get(url, timeout=min(timeout, 10), headers=req_headers, **kwargs)
             except Exception as e_pin:
                 print(f"DEBUG: Try 2 Clean IP pinning failed: {e_pin}")
 
@@ -83,7 +90,7 @@ def curl_get_robust(url, timeout=25, headers=None, verify=False, **kwargs):
         s = requests.Session(impersonate='chrome', verify=verify)
         if CurlOpt and hasattr(CurlOpt, 'IPRESOLVE'):
             s.curl_options = {CurlOpt.IPRESOLVE: 1}
-        return s.get(url, timeout=min(timeout, 10), headers=headers, doh_url=DOH_CLOUDFLARE, **kwargs)
+        return s.get(url, timeout=min(timeout, 10), headers=req_headers, doh_url=DOH_CLOUDFLARE, **kwargs)
     except Exception as e_cf:
         print(f"DEBUG: Try 3 CF DoH failed: {e_cf}")
 
@@ -92,14 +99,13 @@ def curl_get_robust(url, timeout=25, headers=None, verify=False, **kwargs):
         s = requests.Session(impersonate='chrome', verify=verify)
         if CurlOpt and hasattr(CurlOpt, 'IPRESOLVE'):
             s.curl_options = {CurlOpt.IPRESOLVE: 1}
-        return s.get(url, timeout=min(timeout, 10), headers=headers, **kwargs)
+        return s.get(url, timeout=min(timeout, 10), headers=req_headers, **kwargs)
     except Exception as e_direct:
         print(f"DEBUG: Try 4 direct failed: {e_direct}")
 
     # Try 5: Standard requests fallback
     import requests as standard_req
-    hdrs = headers or {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-    return standard_req.get(url, headers=hdrs, timeout=timeout, verify=verify)
+    return standard_req.get(url, headers=req_headers, timeout=timeout, verify=verify)
 
 # Inventory Database helpers
 INVENTORY_DB = 'inventory_patterns.json'
@@ -3285,8 +3291,16 @@ def verify_custom_rules(custom_rules_text: str, soup, inventory_info: dict) -> l
                 
         # 4. Accordion / FAQ
         elif 'accordion' in rule_lower or 'faq' in rule_lower:
-            has_acc = bool(soup.find(attrs={'class': lambda x: x and 'accordion' in x.lower()})) if soup else False
-            has_faq_widget = bool(soup.find(attrs={'class': lambda x: x and 'faq' in x.lower()})) if soup else False
+            has_acc = bool(
+                soup.find(attrs={'class': lambda x: x and 'accordion' in x.lower()})
+                or soup.find(attrs={'data-widget-name': lambda x: x and 'accordion' in x.lower()})
+                or soup.find(id=lambda x: x and 'accordion' in x.lower())
+            ) if soup else False
+            has_faq_widget = bool(
+                soup.find(attrs={'class': lambda x: x and 'faq' in x.lower()})
+                or soup.find(attrs={'data-widget-name': lambda x: x and 'faq' in x.lower()})
+                or soup.find(id=lambda x: x and 'faq' in x.lower())
+            ) if soup else False
             
             # Check for plain HTML FAQ headers (e.g. <h2>Frequently Asked Questions</h2>)
             has_faq_header = False
@@ -5838,13 +5852,13 @@ def extract_h1():
             
         for evaluation in custom_layout_evaluations:
             if evaluation['status'] == 'error':
-                reason = evaluation.get('reason') or f"Could not verify '{evaluation['original']}'"
+                reason = evaluation.get('reason') or evaluation.get('found_text') or f"Could not verify '{evaluation['original']}'"
                 special_instructions_bugs.append(make_bug(
                     'instructions_mismatch',
                     f"Rule Failed: {reason} (Rule: '{evaluation['original']}')"
                 ))
             elif evaluation['status'] == 'manual_review':
-                reason = evaluation.get('reason') or f"Manual Verification Needed for Rule: '{evaluation['original']}'"
+                reason = evaluation.get('reason') or evaluation.get('found_text') or f"Manual Verification Needed for Rule: '{evaluation['original']}'"
                 special_instructions_bugs.append(make_bug(
                     'inventory_manual_review',
                     f"Manual Review: {reason}"
